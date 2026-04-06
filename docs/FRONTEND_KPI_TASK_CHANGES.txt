@@ -57,25 +57,46 @@ UI misol:
   )}
 
 
-3. SCORE ENDI AVTOMATIK — QO'LDA KIRITISH SHART EMAS
+3. BALL KONFIGURATSIYASI — DROPDOWN TANLASH
 ================================================================
 
-Oldin: task yaratishda score qo'lda kiritilishi kerak edi
-Endi: backend priority bo'yicha avtomatik hisoblaydi
+Task yaratish/yangilashda "Ball konfiguratsiyasi" dropdown qo'shing.
+Backend'dan tayyor konfiguratsiyalar ro'yxatini oling:
 
-  TaskScoreConfig jadvalidagi ball tizimi:
-    CRITICAL → 50 ball
-    URGENT   → 35 ball
-    HIGH     → 25 ball
-    MEDIUM   → 15 ball
-    LOW      → 5 ball
+  GET /api/v1/task-score-config
 
-Task create/update'da score yuborish IXTIYORIY:
-  - Yuborilsa → qo'lda kiritilgan score ishlatiladi
-  - Yuborilmasa → priority'dan avtomatik hisoblanadi
+  Response:
+  [
+    { "id": "uuid", "priorityLevel": 1,  "priorityCode": "№1",  "baseScore": 50, "description": "Eng muhim, strategik topshiriq" },
+    { "id": "uuid", "priorityLevel": 2,  "priorityCode": "№2",  "baseScore": 45, "description": "Universitet darajasidagi loyiha" },
+    { "id": "uuid", "priorityLevel": 3,  "priorityCode": "№3",  "baseScore": 40, "description": "Tashqi hamkorlik" },
+    ...
+    { "id": "uuid", "priorityLevel": 10, "priorityCode": "№10", "baseScore": 5,  "description": "Oddiy, 1-2 soat ichida" },
+  ]
 
-Frontend'da score inputni olib tashlashingiz mumkin yoki
-ixtiyoriy qoldiring (advanced users uchun).
+Dropdown misol:
+  "№1 — 50 ball (Eng muhim, strategik topshiriq)"
+  "№2 — 45 ball (Universitet darajasidagi loyiha)"
+  ...
+  "№10 — 5 ball (Oddiy, 1-2 soat ichida)"
+
+Task yaratishda scoreConfigId yuboring:
+  POST /api/v1/task
+  {
+    "title": "...",
+    "projectId": "...",
+    "priority": "HIGH",
+    "scoreConfigId": "config-uuid",   // dropdown'dan tanlangan
+    ...
+  }
+
+  - scoreConfigId yuborilsa → config'dagi baseScore task.score ga yoziladi
+  - scoreConfigId yuborilmasa → score = 0 (KPI hisoblanmaydi)
+  - score qo'lda ham yuborish mumkin (ixtiyoriy, advanced)
+
+Task yangilashda ham scoreConfigId yuborish mumkin:
+  PATCH /api/v1/task/:id
+  { "scoreConfigId": "yangi-config-uuid" }
 
 
 4. BOARD DRAG & DROP — AVTOMAT ISHLAYDI

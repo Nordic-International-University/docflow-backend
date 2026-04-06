@@ -512,30 +512,10 @@ export class TaskService {
       throw new NotFoundException('Task not found')
     }
 
-    // Determine if task is moving to/from a closed column
-    let isCompleting = false
-    let isReopening = false
-    if (
-      updateData.boardColumnId &&
-      updateData.boardColumnId !== existingTask.boardColumnId
-    ) {
-      const targetColumn = await this.#_prisma.boardColumn.findFirst({
-        where: { id: updateData.boardColumnId, deletedAt: null },
-        select: { isClosed: true },
-      })
-      if (targetColumn?.isClosed && !existingTask.completedAt) {
-        isCompleting = true
-      } else if (!targetColumn?.isClosed && existingTask.completedAt) {
-        isReopening = true
-      }
-    }
-
     const now = new Date()
 
     const updatePayload: any = {
       updatedAt: now,
-      ...(isCompleting && { completedAt: now }),
-      ...(isReopening && { completedAt: null }),
     }
 
     if (updateData.title !== undefined) {
@@ -604,21 +584,8 @@ export class TaskService {
         },
         data: {
           boardColumnId: updateData.boardColumnId,
-          ...(isCompleting && { completedAt: now }),
-          ...(isReopening && { completedAt: null }),
         },
       })
-    }
-
-    // KPI: board column change triggers complete/uncomplete
-    if (isCompleting) {
-      const score = await this.resolveScore(null, existingTask.score)
-      const penaltyPerDay = existingTask.project?.penaltyPerDay ?? 5
-      const assigneeIds = existingTask.assignees.map(a => a.userId)
-      await this.scoreTaskKpi(id, score, existingTask.dueDate, assigneeIds, penaltyPerDay)
-    }
-    if (isReopening) {
-      await this.removeTaskKpi(id)
     }
 
     // Handle assignees update

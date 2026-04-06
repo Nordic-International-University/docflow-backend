@@ -6,19 +6,16 @@ import {
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
-import { TaskService } from '../task/task.service'
 import { BoardMoveDto } from './dtos'
 
 @Injectable()
 export class BoardService {
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
-  readonly #_taskService: TaskService
 
-  constructor(prisma: PrismaService, auditLogService: AuditLogService, taskService: TaskService) {
+  constructor(prisma: PrismaService, auditLogService: AuditLogService) {
     this.#_prisma = prisma
     this.#_auditLogService = auditLogService
-    this.#_taskService = taskService
   }
 
   async boardRetrieve(projectId: string) {
@@ -192,15 +189,11 @@ export class BoardService {
       }
     }
 
-    const now = new Date()
-    const isCompleting = targetColumn.isClosed && !task.completedAt
-    const isReopening = !targetColumn.isClosed && !!task.completedAt
     const fromColumnId = task.boardColumnId
     const subtaskIds = task.subtasks.map((s) => s.id)
 
-    // Shift positions in target column to make room
+    // Board move — faqat column o'zgaradi, completedAt va KPI ga tegmaydi
     await this.#_prisma.$transaction(async (tx) => {
-      // Push down tasks at or after the target position in the destination column
       await tx.task.updateMany({
         where: {
           boardColumnId: toBoardColumnId,
@@ -212,46 +205,21 @@ export class BoardService {
         data: { position: { increment: 1 } },
       })
 
-      // Move the task
       await tx.task.update({
         where: { id: taskId },
         data: {
           boardColumnId: toBoardColumnId,
           position,
-          ...(isCompleting && { completedAt: now }),
-          ...(isReopening && { completedAt: null }),
         },
       })
 
-      // Move all subtasks to same column
       if (subtaskIds.length > 0) {
         await tx.task.updateMany({
           where: { id: { in: subtaskIds } },
-          data: {
-            boardColumnId: toBoardColumnId,
-            ...(isCompleting && { completedAt: now }),
-            ...(isReopening && { completedAt: null }),
-          },
+          data: { boardColumnId: toBoardColumnId },
         })
       }
-
     })
-
-    // KPI: delegate to TaskService (idempotent, auto-scores from priority)
-    if (isCompleting) {
-      try {
-        await this.#_taskService.taskComplete({ id: taskId, completedBy: movedBy })
-      } catch {
-        // Task may already be completed — ignore
-      }
-    }
-    if (isReopening) {
-      try {
-        await this.#_taskService.taskUncomplete({ id: taskId, reopenedBy: movedBy })
-      } catch {
-        // Task may already be open — ignore
-      }
-    }
 
     // Activity log
     await this.#_prisma.taskActivity.create({
