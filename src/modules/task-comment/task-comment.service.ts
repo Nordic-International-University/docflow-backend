@@ -156,10 +156,33 @@ export class TaskCommentService {
     }
 
     // Fetch full comment with relations for response and real-time
-    const fullComment = await this.#_prisma.taskComment.findFirst({
+    const created = await this.#_prisma.taskComment.findFirst({
       where: { id: comment.id },
-      select: COMMENT_SELECT,
+      select: {
+        ...COMMENT_SELECT,
+        parentComment: {
+          select: {
+            id: true,
+            content: true,
+            user: {
+              select: { id: true, fullname: true, username: true },
+            },
+          },
+        },
+      },
     })
+
+    const fullComment = {
+      ...created,
+      replyTo: created?.parentComment
+        ? {
+            id: created.parentComment.id,
+            content: created.parentComment.content?.substring(0, 100) || '',
+            user: created.parentComment.user,
+          }
+        : null,
+      parentComment: undefined,
+    }
 
     await this.#_auditLogService.logAction(
       'TaskComment',
@@ -200,28 +223,36 @@ export class TaskCommentService {
     const where: any = {
       taskId: payload.taskId,
       deletedAt: null,
-      parentCommentId: null, // Only top-level comments
     }
 
+    // Telegram-style: barcha izohlar flat listda, eski → yangi (asc)
     const comments = await this.#_prisma.taskComment.findMany({
       where,
       select: {
         ...COMMENT_SELECT,
-        replies: {
-          where: { deletedAt: null },
-          select: REPLY_SELECT,
-          orderBy: { createdAt: 'asc' },
+        // Reply bo'lsa — ota izoh haqida qisqa ma'lumot (Telegram style)
+        parentComment: {
+          select: {
+            id: true,
+            content: true,
+            user: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+          },
         },
         _count: {
           select: {
-            replies: { where: { deletedAt: null } },
             reactions: true,
           },
         },
       },
       skip,
       take,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' }, // Eski → yangi (chat style)
     })
 
     const count = await this.#_prisma.taskComment.count({ where })
@@ -235,11 +266,17 @@ export class TaskCommentService {
       isEdited: comment.isEdited,
       editedAt: comment.editedAt,
       user: comment.user,
+      // Telegram-style reply reference
+      replyTo: comment.parentComment
+        ? {
+            id: comment.parentComment.id,
+            content: comment.parentComment.content?.substring(0, 100) || '',
+            user: comment.parentComment.user,
+          }
+        : null,
       reactions: comment.reactions,
       attachments: comment.attachments,
       mentions: comment.mentions,
-      replies: comment.replies,
-      repliesCount: comment._count.replies,
       reactionsCount: comment._count.reactions,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
@@ -260,14 +297,17 @@ export class TaskCommentService {
       where: { id: payload.id, deletedAt: null },
       select: {
         ...COMMENT_SELECT,
-        replies: {
-          where: { deletedAt: null },
-          select: REPLY_SELECT,
-          orderBy: { createdAt: 'asc' },
+        parentComment: {
+          select: {
+            id: true,
+            content: true,
+            user: {
+              select: { id: true, fullname: true, username: true },
+            },
+          },
         },
         _count: {
           select: {
-            replies: { where: { deletedAt: null } },
             reactions: true,
           },
         },
@@ -280,7 +320,14 @@ export class TaskCommentService {
 
     return {
       ...comment,
-      repliesCount: comment._count.replies,
+      replyTo: comment.parentComment
+        ? {
+            id: comment.parentComment.id,
+            content: comment.parentComment.content?.substring(0, 100) || '',
+            user: comment.parentComment.user,
+          }
+        : null,
+      parentComment: undefined,
       reactionsCount: comment._count.reactions,
       _count: undefined,
     } as TaskCommentRetrieveOneResponse
