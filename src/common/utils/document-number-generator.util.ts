@@ -66,7 +66,7 @@ export class DocumentNumberGenerator {
   ): Promise<string> {
     const date = customDate || new Date()
     const hasSequence =
-      config.format.includes('{sequence}') || config.format.includes('{seq}')
+      config.format.includes('{sequence}') || config.format.includes('{seq}') || /{NUMBER(:\d+)?}/i.test(config.format)
 
     // Generate base number without sequence first
     let baseNumber = this.replacePlaceholders(config, date, 0)
@@ -115,19 +115,29 @@ export class DocumentNumberGenerator {
     const dateStr = `${year}${month}${day}`
 
     let result = config.format
-      .replace(/{prefix}/g, config.prefix)
-      .replace(/{year}/g, String(year))
-      .replace(/{yy}/g, yy)
-      .replace(/{month}/g, month)
-      .replace(/{day}/g, day)
-      .replace(/{date}/g, dateStr)
+      .replace(/{prefix}/gi, config.prefix)
+      .replace(/{year}/gi, String(year))
+      .replace(/{yy}/gi, yy)
+      .replace(/{month}/gi, month)
+      .replace(/{day}/gi, day)
+      .replace(/{date}/gi, dateStr)
 
-    // Handle sequence placeholders
+    // Handle sequence placeholders: {sequence}, {seq}, {NUMBER:N}
     if (result.includes('{sequence}')) {
       result = result.replace(/{sequence}/g, String(sequence).padStart(4, '0'))
     }
     if (result.includes('{seq}')) {
       result = result.replace(/{seq}/g, String(sequence).padStart(3, '0'))
+    }
+    // Support {NUMBER:N} format (e.g., {NUMBER:5} = 5 digit padding)
+    const numberMatch = result.match(/{NUMBER:(\d+)}/i)
+    if (numberMatch) {
+      const padding = parseInt(numberMatch[1], 10)
+      result = result.replace(/{NUMBER:\d+}/gi, String(sequence).padStart(padding, '0'))
+    }
+    // Support {NUMBER} without padding (default 4)
+    if (/{NUMBER}/i.test(result)) {
+      result = result.replace(/{NUMBER}/gi, String(sequence).padStart(4, '0'))
     }
 
     return result
@@ -150,6 +160,8 @@ export class DocumentNumberGenerator {
       prefixFormat = config.format.split('{sequence}')[0]
     } else if (config.format.includes('{seq}')) {
       prefixFormat = config.format.split('{seq}')[0]
+    } else if (/{NUMBER(:\d+)?}/i.test(config.format)) {
+      prefixFormat = config.format.split(/{NUMBER(:\d+)?}/i)[0]
     }
 
     // Now replace date placeholders in the prefix part only
@@ -160,12 +172,12 @@ export class DocumentNumberGenerator {
     const dateStr = `${year}${month}${day}`
 
     const prefixBeforeSequence = prefixFormat
-      .replace(/{prefix}/g, config.prefix)
-      .replace(/{year}/g, String(year))
-      .replace(/{yy}/g, yy)
-      .replace(/{month}/g, month)
-      .replace(/{day}/g, day)
-      .replace(/{date}/g, dateStr)
+      .replace(/{prefix}/gi, config.prefix)
+      .replace(/{year}/gi, String(year))
+      .replace(/{yy}/gi, yy)
+      .replace(/{month}/gi, month)
+      .replace(/{day}/gi, day)
+      .replace(/{date}/gi, dateStr)
 
     // Get all documents from this journal that start with the prefix
     const whereClause: any = {
@@ -237,20 +249,22 @@ export class DocumentNumberGenerator {
     let pattern = config.format
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       .replace(
-        /\\{prefix\\}/g,
+        /\\{prefix\\}/gi,
         config.prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
       )
-      .replace(/\\{year\\}/g, String(year))
-      .replace(/\\{yy\\}/g, yy)
-      .replace(/\\{month\\}/g, month)
-      .replace(/\\{day\\}/g, day)
-      .replace(/\\{date\\}/g, dateStr)
+      .replace(/\\{year\\}/gi, String(year))
+      .replace(/\\{yy\\}/gi, yy)
+      .replace(/\\{month\\}/gi, month)
+      .replace(/\\{day\\}/gi, day)
+      .replace(/\\{date\\}/gi, dateStr)
 
     // Replace sequence placeholders with capturing groups
     if (pattern.includes('\\{sequence\\}')) {
       pattern = pattern.replace(/\\{sequence\\}/g, '(\\d+)')
     } else if (pattern.includes('\\{seq\\}')) {
       pattern = pattern.replace(/\\{seq\\}/g, '(\\d+)')
+    } else if (/\\{NUMBER(:\\d+)?\\}/i.test(pattern)) {
+      pattern = pattern.replace(/\\{NUMBER(:\\d+)?\\}/gi, '(\\d+)')
     } else {
       return null
     }
