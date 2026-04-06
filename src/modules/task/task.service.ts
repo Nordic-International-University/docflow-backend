@@ -4,6 +4,7 @@ import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { TaskPriority } from '@prisma/client'
 import { NotificationService } from '../notification/notification.service'
+import { TaskGateway } from './task.gateway'
 import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 
 const VALID_PRIORITIES = Object.values(TaskPriority)
@@ -13,15 +14,18 @@ export class TaskService {
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
   readonly #_notificationService: NotificationService
+  readonly #_taskGateway: TaskGateway
 
   constructor(
     prisma: PrismaService,
     auditLogService: AuditLogService,
     notificationService: NotificationService,
+    taskGateway: TaskGateway,
   ) {
     this.#_prisma = prisma
     this.#_auditLogService = auditLogService
     this.#_notificationService = notificationService
+    this.#_taskGateway = taskGateway
   }
 
   async taskCreate(
@@ -148,6 +152,9 @@ export class TaskService {
       payload.createdById,
       { newValues: { title: task.title, projectId: task.projectId } },
     )
+
+    // Real-time broadcast: task created
+    this.#_taskGateway.emitTaskCreated(task.projectId, task, payload.createdById)
 
     // Notify assignees (skip creator — they already know)
     if (payload.assigneeIds?.length) {
@@ -648,6 +655,29 @@ export class TaskService {
         },
       )
     }
+
+    // Real-time broadcast: task updated
+    const updatedTask = await this.#_prisma.task.findFirst({
+      where: { id },
+      include: {
+        assignees: { include: { user: { select: { id: true, fullname: true, username: true } } } },
+        category: { select: { id: true, name: true, color: true } },
+        boardColumn: { select: { id: true, name: true } },
+      },
+    })
+    if (updatedTask) {
+      // Board move emit
+      if (updateData.boardColumnId && updateData.boardColumnId !== existingTask.boardColumnId) {
+        this.#_taskGateway.emitTaskMoved(
+          existingTask.projectId,
+          id,
+          existingTask.boardColumnId || '',
+          updateData.boardColumnId,
+          updatedBy,
+        )
+      }
+      this.#_taskGateway.emitTaskUpdated(existingTask.projectId, updatedTask, updatedBy)
+    }
   }
 
   async taskDelete(payload: { id: string; deletedBy: string }): Promise<void> {
@@ -676,5 +706,8 @@ export class TaskService {
         },
       },
     )
+
+    // Real-time broadcast: task deleted
+    this.#_taskGateway.emitTaskDeleted(existingTask.projectId, payload.id, payload.deletedBy)
   }
 }

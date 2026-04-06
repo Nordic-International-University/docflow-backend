@@ -32,6 +32,7 @@ interface AuthenticatedSocket extends Socket {
     credentials: true,
   },
   namespace: '/notifications',
+  transports: ['websocket', 'polling'],
 })
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
