@@ -215,9 +215,11 @@ export class WopiService {
         this.logger.log('XFDF merged successfully with new PDF')
       }
 
-      // Upload the final PDF to MinIO with sanitized filename
-      const sanitizedPdfFileName =
-        this.#_minio.sanitizeFileName(finalPdfFileName)
+      // Upload the final PDF — tozalangan nom (eski timestamp va merged prefixlarni olib tashlash)
+      const cleanPdfName = finalPdfFileName
+        .replace(/^\d+-/g, '')           // eski timestamp prefix
+        .replace(/^(merged-)+/g, '')     // merged prefixlar
+      const sanitizedPdfFileName = this.#_minio.sanitizeFileName(cleanPdfName)
       const uploadedPdfFileName = `attachments/${Date.now()}-${sanitizedPdfFileName}`
       await this.#_minio.putFile(
         uploadedPdfFileName,

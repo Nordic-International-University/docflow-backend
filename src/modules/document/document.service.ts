@@ -870,16 +870,14 @@ export class DocumentService {
         )
       console.log('XFDF merged into PDF successfully')
 
-      // Upload merged PDF to MinIO with sanitized filename
-      let sanitizedMergedFileName =
-        this.#_minio.sanitizeFileName(mergedFileName)
-      // Truncate filename if too long (keep extension)
+      // Upload merged PDF — tozalangan nom
+      const cleanMergedName = mergedFileName
+        .replace(/^\d+-/g, '')
+        .replace(/^(merged-)+/g, '')
+      let sanitizedMergedFileName = this.#_minio.sanitizeFileName(cleanMergedName)
       if (sanitizedMergedFileName.length > 100) {
-        const ext = sanitizedMergedFileName.substring(
-          sanitizedMergedFileName.lastIndexOf('.'),
-        )
-        sanitizedMergedFileName =
-          sanitizedMergedFileName.substring(0, 100 - ext.length) + ext
+        const ext = sanitizedMergedFileName.substring(sanitizedMergedFileName.lastIndexOf('.'))
+        sanitizedMergedFileName = sanitizedMergedFileName.substring(0, 100 - ext.length) + ext
       }
       const uploadedPdfFileName = `attachments/${Date.now()}-${sanitizedMergedFileName}`
       await this.#_minio.putFile(
@@ -891,8 +889,8 @@ export class DocumentService {
       const mergedPdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfFileName}`
       console.log('Merged PDF uploaded to MinIO:', mergedPdfUrl)
 
-      // Create attachment for merged PDF (store truncated filename for display)
-      let displayFileName = mergedFileName
+      // Create attachment for merged PDF
+      let displayFileName = cleanMergedName
       if (displayFileName.length > 255) {
         const ext = displayFileName.substring(displayFileName.lastIndexOf('.'))
         displayFileName = displayFileName.substring(0, 255 - ext.length) + ext

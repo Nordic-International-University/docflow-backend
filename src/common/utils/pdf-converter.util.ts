@@ -102,10 +102,12 @@ export class PdfConverterUtil {
   ): Promise<ConversionResult> {
     await this.ensurePDFTronInitialized()
 
+    // Tozalangan nom — "merged-" prefixlarini olib tashlash
+    const cleanName = originalFileName.replace(/^(merged-)+/g, '')
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xfdf-merge-'))
-    const pdfPath = path.join(tempDir, originalFileName)
+    const pdfPath = path.join(tempDir, 'input.pdf')
     const xfdfPath = path.join(tempDir, 'annotations.xfdf')
-    const outputPdfPath = path.join(tempDir, `merged-${originalFileName}`)
+    const outputPdfPath = path.join(tempDir, cleanName)
 
     try {
       logger.log(`Starting XFDF merge for: ${originalFileName}`)
@@ -139,7 +141,7 @@ export class PdfConverterUtil {
 
       return {
         pdfBuffer: mergedPdfBuffer,
-        fileName: `merged-${originalFileName}`,
+        fileName: cleanName,
       }
     } catch (error) {
       logger.error(`Error merging XFDF to PDF: ${error.message}`)
