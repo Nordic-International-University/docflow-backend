@@ -13,6 +13,8 @@ setImmediate(async (): Promise<void> => {
   app.enableCors({
     origin: [
       'http://localhost:3000',
+      'https://docverse.uz',
+      'https://www.docverse.uz',
       'https://e-hujjat.nordicuniversity.org',
       'https://docflow-back.nordicuniversity.org',
     ],
