@@ -313,12 +313,14 @@ export class DocumentService {
 
     // Generate or validate document number
     let documentNumber: string | undefined
+    // Treat empty string as no document number provided
+    const providedNumber = payload.documentNumber?.trim() || undefined
 
-    if (payload.documentNumber) {
+    if (providedNumber) {
       // If document number is provided, validate uniqueness
       const existingDocument = await this.#_prisma.document.findFirst({
         where: {
-          documentNumber: payload.documentNumber,
+          documentNumber: providedNumber,
           deletedAt: null,
         },
       })
@@ -327,7 +329,7 @@ export class DocumentService {
         throw new ConflictException('Document number must be unique')
       }
 
-      documentNumber = payload.documentNumber
+      documentNumber = providedNumber
     } else {
       // Auto-generate document number based on journal format
       documentNumber = await DocumentNumberGenerator.generate(
