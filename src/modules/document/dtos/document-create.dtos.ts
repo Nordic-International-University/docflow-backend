@@ -38,17 +38,6 @@ export class DocumentCreateDto implements Omit<
   description?: string
 
   @ApiPropertyOptional({
-    description:
-      "Unique document identifier or number. If not provided, will be auto-generated based on the journal's format configuration (e.g., {prefix}-{year}-{sequence})",
-    example: 'FIN-2024-Q1-001',
-    maxLength: 100,
-  })
-  @IsOptional()
-  @IsString()
-  @Length(0, 100)
-  documentNumber?: string
-
-  @ApiPropertyOptional({
     description: 'Status of the document',
     enum: DocumentStatus,
     default: DocumentStatus.DRAFT,

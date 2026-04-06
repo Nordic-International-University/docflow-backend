@@ -311,32 +311,11 @@ export class DocumentService {
       }
     }
 
-    // Generate or validate document number
-    let documentNumber: string | undefined
-    // Treat empty string as no document number provided
-    const providedNumber = payload.documentNumber?.trim() || undefined
-
-    if (providedNumber) {
-      // If document number is provided, validate uniqueness
-      const existingDocument = await this.#_prisma.document.findFirst({
-        where: {
-          documentNumber: providedNumber,
-          deletedAt: null,
-        },
-      })
-
-      if (existingDocument) {
-        throw new ConflictException('Document number must be unique')
-      }
-
-      documentNumber = providedNumber
-    } else {
-      // Auto-generate document number based on journal format
-      documentNumber = await DocumentNumberGenerator.generate(
-        this.#_prisma,
-        payload.journalId,
-      )
-    }
+    // Auto-generate document number based on journal format
+    const documentNumber = await DocumentNumberGenerator.generate(
+      this.#_prisma,
+      payload.journalId,
+    )
 
     let templateId: string | undefined = payload.templateId || undefined
     let generatedAttachmentId: string | undefined = undefined
