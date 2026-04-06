@@ -1,11 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsArray,
+} from 'class-validator'
 import { TaskCommentCreateRequest } from '../interfaces'
 
-export class TaskCommentCreateDto implements Omit<
-  TaskCommentCreateRequest,
-  'userId'
-> {
+export class TaskCommentCreateDto
+  implements Omit<TaskCommentCreateRequest, 'userId'>
+{
   @ApiProperty({
     description: 'Task ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -15,19 +20,29 @@ export class TaskCommentCreateDto implements Omit<
   taskId: string
 
   @ApiProperty({
-    description: 'Comment content',
-    example: 'This task needs more clarification',
+    description: 'Izoh matni',
+    example: 'Bu topshiriqqa qo\'shimcha ma\'lumot kerak',
   })
   @IsString()
   @IsNotEmpty()
   content: string
 
-  @ApiProperty({
-    description: 'Parent comment ID for replies',
+  @ApiPropertyOptional({
+    description: 'Javob berilayotgan izoh ID (reply uchun)',
     example: '550e8400-e29b-41d4-a716-446655440001',
-    required: false,
   })
   @IsUUID()
   @IsOptional()
   parentCommentId?: string
+
+  @ApiPropertyOptional({
+    description:
+      'Biriktiriladigan fayllar ID lari (rasm, video, ovozli xabar). Avval /attachment ga yuklang.',
+    type: [String],
+    example: ['550e8400-e29b-41d4-a716-446655440002'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  attachmentIds?: string[]
 }

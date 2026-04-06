@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { PrismaModule } from '@prisma'
 import { TaskCommentService } from './task-comment.service'
 import { TaskCommentController } from './task-comment.controller'
 import { AuditLogModule } from '../audit-log/audit-log.module'
+import { TaskModule } from '../task/task.module'
 
 @Module({
-  imports: [PrismaModule, AuditLogModule],
+  imports: [PrismaModule, AuditLogModule, forwardRef(() => TaskModule)],
   providers: [TaskCommentService],
   controllers: [TaskCommentController],
   exports: [TaskCommentService],

@@ -3,4 +3,5 @@ export interface TaskCommentCreateRequest {
   content: string
   parentCommentId?: string
   userId: string
+  attachmentIds?: string[]
 }
