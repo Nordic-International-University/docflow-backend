@@ -229,8 +229,6 @@ export class BoardService {
         action: 'MOVED',
         changes: {
           boardColumnId: { old: fromColumnId, new: toBoardColumnId },
-          ...(isCompleting && { completedAt: now.toISOString() }),
-          ...(isReopening && { completedAt: null }),
           ...(subtaskIds.length > 0 && { subtasksMoved: subtaskIds.length }),
         },
       },
@@ -257,7 +255,6 @@ export class BoardService {
         id: taskId,
         boardColumnId: toBoardColumnId,
         subtasksMoved: subtaskIds.length,
-        completedAt: isCompleting ? now : isReopening ? null : task.completedAt,
       },
       affectedColumns: [...new Set(affectedColumns)],
     }
