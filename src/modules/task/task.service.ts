@@ -33,18 +33,27 @@ export class TaskService {
   }
 
   /**
-   * Auto-resolve score from TaskScoreConfig if not manually set.
-   * Maps TaskPriority → priorityLevel → baseScore
+   * Resolve score: scoreConfigId → config.baseScore, else manual score, else 0.
+   * Frontend sends scoreConfigId (dropdown), backend looks up baseScore.
    */
-  private async resolveScore(priority: TaskPriority, manualScore?: number | null): Promise<number> {
-    if (manualScore != null) return manualScore
+  private async resolveScore(
+    scoreConfigId?: string | null,
+    manualScore?: number | null,
+  ): Promise<number> {
+    // 1. scoreConfigId tanlangan bo'lsa — config'dan ball olish
+    if (scoreConfigId) {
+      const config = await this.#_prisma.taskScoreConfig.findFirst({
+        where: { id: scoreConfigId, isActive: true, deletedAt: null },
+        select: { baseScore: true },
+      })
+      if (config) return config.baseScore
+    }
 
-    const priorityLevel = KpiCalculationService.getPriorityLevel(priority)
-    const config = await this.#_prisma.taskScoreConfig.findFirst({
-      where: { priorityLevel, isActive: true, deletedAt: null },
-      select: { baseScore: true },
-    })
-    return config?.baseScore ?? 10
+    // 2. Qo'lda score kiritilgan bo'lsa
+    if (manualScore != null && manualScore > 0) return manualScore
+
+    // 3. Hech biri yo'q — 0 (KPI hisoblanmaydi)
+    return 0
   }
 
   /**
@@ -135,6 +144,9 @@ export class TaskService {
       }
     }
 
+    // Resolve score from config or manual input
+    const resolvedScore = await this.resolveScore(payload.scoreConfigId, payload.score)
+
     // Everything inside transaction for data integrity
     const task = await this.#_prisma.$transaction(async (tx) => {
       const updatedProject = await tx.project.update({
@@ -193,7 +205,7 @@ export class TaskService {
           position: payload.position || 0,
           taskNumber: updatedProject.taskCounter,
           boardColumnId,
-          score: payload.score,
+          score: resolvedScore || undefined,
           coverImageUrl: payload.coverImageUrl,
         },
       })
@@ -486,7 +498,7 @@ export class TaskService {
   async taskUpdate(
     payload: TaskUpdateDto & { id: string; updatedBy: string },
   ): Promise<void> {
-    const { id, updatedBy, assigneeIds, ...updateData } = payload
+    const { id, updatedBy, assigneeIds, scoreConfigId, ...updateData } = payload
 
     const existingTask = await this.#_prisma.task.findFirst({
       where: { id, deletedAt: null },
@@ -565,8 +577,10 @@ export class TaskService {
     if (updateData.boardColumnId !== undefined) {
       updatePayload.boardColumnId = updateData.boardColumnId || null
     }
-    if (updateData.score !== undefined) {
-      updatePayload.score = updateData.score
+    // Score: scoreConfigId yoki qo'lda kiritilgan score
+    if (scoreConfigId || updateData.score !== undefined) {
+      const resolved = await this.resolveScore(scoreConfigId, updateData.score)
+      if (resolved > 0) updatePayload.score = resolved
     }
     if (updateData.coverImageUrl !== undefined) {
       updatePayload.coverImageUrl = updateData.coverImageUrl || null
@@ -598,7 +612,7 @@ export class TaskService {
 
     // KPI: board column change triggers complete/uncomplete
     if (isCompleting) {
-      const score = await this.resolveScore(existingTask.priority, existingTask.score)
+      const score = await this.resolveScore(null, existingTask.score)
       const penaltyPerDay = existingTask.project?.penaltyPerDay ?? 5
       const assigneeIds = existingTask.assignees.map(a => a.userId)
       await this.scoreTaskKpi(id, score, existingTask.dueDate, assigneeIds, penaltyPerDay)
@@ -780,19 +794,22 @@ export class TaskService {
       })
     }
 
-    // KPI for main task
-    const score = await this.resolveScore(task.priority, task.score)
+    // KPI for main task — use stored score (set from config at create/update)
+    const score = task.score ?? 0
     const penaltyPerDay = task.project?.penaltyPerDay ?? 5
-    await this.scoreTaskKpi(
-      payload.id, score, task.dueDate,
-      task.assignees.map(a => a.userId), penaltyPerDay,
-    )
+    if (score > 0) {
+      await this.scoreTaskKpi(
+        payload.id, score, task.dueDate,
+        task.assignees.map(a => a.userId), penaltyPerDay,
+      )
+    }
 
     // KPI for subtasks
     for (const sub of task.subtasks) {
-      const subScore = await this.resolveScore(task.priority, sub.score)
+      const subScore = (sub as any).score ?? 0
+      if (subScore <= 0) continue
       await this.scoreTaskKpi(
-        sub.id, subScore, sub.dueDate,
+        sub.id, subScore, (sub as any).dueDate,
         sub.assignees.map(a => a.userId), penaltyPerDay,
       )
     }

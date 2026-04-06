@@ -61,6 +61,10 @@ export class TaskCreateDto {
   @IsOptional()
   score?: number
 
+  @IsUUID()
+  @IsOptional()
+  scoreConfigId?: string
+
   @IsString()
   @IsOptional()
   coverImageUrl?: string

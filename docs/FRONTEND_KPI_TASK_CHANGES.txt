@@ -1,0 +1,154 @@
+================================================================
+KPI-TASK TIZIMI — FRONTEND O'ZGARISHLARI
+================================================================
+
+
+1. YANGI ENDPOINT'LAR
+================================================================
+
+A) Topshiriqni yakunlash:
+   POST /api/v1/task/:id/complete
+
+   Response:
+   {
+     "message": "Topshiriq yakunlandi",
+     "taskId": "uuid",
+     "score": 25,
+     "completedAt": "2026-04-06T17:00:00.000Z"
+   }
+
+B) Topshiriqni qayta ochish:
+   POST /api/v1/task/:id/uncomplete
+
+   Response:
+   {
+     "message": "Topshiriq qayta ochildi",
+     "taskId": "uuid"
+   }
+
+
+2. TASK KARTOCHKAGA "YAKUNLASH" TUGMASI QO'SHISH
+================================================================
+
+Har bir task kartochkada "Yakunlash" tugmasi bo'lishi kerak.
+Board column'ga bog'liq EMAS — istalgan joyda yakunlash mumkin.
+
+  // Yakunlash
+  async function completeTask(taskId) {
+    const { data } = await axios.post(`/api/v1/task/${taskId}/complete`)
+    toast.success(data.message)  // "Topshiriq yakunlandi"
+  }
+
+  // Qayta ochish
+  async function uncompleteTask(taskId) {
+    const { data } = await axios.post(`/api/v1/task/${taskId}/uncomplete`)
+    toast.success(data.message)  // "Topshiriq qayta ochildi"
+  }
+
+UI misol:
+  {task.completedAt ? (
+    <button onClick={() => uncompleteTask(task.id)}>
+      ↩ Qayta ochish
+    </button>
+  ) : (
+    <button onClick={() => completeTask(task.id)}>
+      ✅ Yakunlash
+    </button>
+  )}
+
+
+3. SCORE ENDI AVTOMATIK — QO'LDA KIRITISH SHART EMAS
+================================================================
+
+Oldin: task yaratishda score qo'lda kiritilishi kerak edi
+Endi: backend priority bo'yicha avtomatik hisoblaydi
+
+  TaskScoreConfig jadvalidagi ball tizimi:
+    CRITICAL → 50 ball
+    URGENT   → 35 ball
+    HIGH     → 25 ball
+    MEDIUM   → 15 ball
+    LOW      → 5 ball
+
+Task create/update'da score yuborish IXTIYORIY:
+  - Yuborilsa → qo'lda kiritilgan score ishlatiladi
+  - Yuborilmasa → priority'dan avtomatik hisoblanadi
+
+Frontend'da score inputni olib tashlashingiz mumkin yoki
+ixtiyoriy qoldiring (advanced users uchun).
+
+
+4. BOARD DRAG & DROP — AVTOMAT ISHLAYDI
+================================================================
+
+Board'da task'ni isClosed=true column'ga ko'chirsangiz:
+  → Backend avtomatik taskComplete chaqiradi
+  → KPI hisoblanadi
+  → completedAt o'rnatiladi
+
+Board'da task'ni ochiq column'ga qaytarsangiz:
+  → Backend avtomatik taskUncomplete chaqiradi
+  → KPI bekor qilinadi
+  → completedAt tozalanadi
+
+Frontend hech narsa qilishi SHART EMAS — backend barchasini
+board move ichida bajaradi.
+
+
+5. TASK DETAIL SAHIFASIDA KO'RSATISH KERAK
+================================================================
+
+Task detail'da quyidagi ma'lumotlarni ko'rsating:
+
+  A) Holat:
+     task.completedAt ? "✅ Yakunlangan" : "🔄 Jarayonda"
+
+  B) Ball (score):
+     task.score || "Avtomatik (priority bo'yicha)"
+
+  C) Yakunlangan sana:
+     task.completedAt ? formatDate(task.completedAt) : "-"
+
+
+6. KPI DASHBOARD — O'ZGARISH YO'Q
+================================================================
+
+KPI dashboard API'lari o'zgarmadi:
+  GET /api/v1/user-monthly-kpi/me        — O'z KPI
+  GET /api/v1/user-monthly-kpi/history   — Tarix
+  GET /api/v1/user-monthly-kpi/leaderboard — Reyting
+
+Endi bu API'lar TO'G'RI ishlaydi chunki backend har bir
+task complete/uncomplete da UserMonthlyKpi ni avtomatik
+yangilaydi. Oldin qo'lda finalize qilish kerak edi.
+
+
+7. REAL-TIME — TASK COMPLETE/UNCOMPLETE
+================================================================
+
+WebSocket orqali task:updated event keladi:
+
+  taskSocket.on('task:updated', ({ task, updatedBy }) => {
+    // task.completedAt bor → yakunlangan
+    // task.completedAt null → qayta ochilgan
+    updateTaskOnBoard(task)
+  })
+
+Alohida event qo'shish SHART EMAS — task:updated ichida
+completedAt fieldi keladi.
+
+
+8. XULOSA — FRONTEND QILISHI KERAK
+================================================================
+
+1. Task kartochkaga "✅ Yakunlash" / "↩ Qayta ochish" tugma
+2. POST /api/v1/task/:id/complete chaqirish
+3. POST /api/v1/task/:id/uncomplete chaqirish
+4. task.completedAt ga qarab UI holat ko'rsatish
+5. Score inputni ixtiyoriy qilish (yoki olib tashlash)
+6. Board drag&drop — hech narsa o'zgartirish SHART EMAS
+
+QILMASLIK kerak:
+  ❌ Score'ni majburiy qilish — backend o'zi hisoblaydi
+  ❌ KPI'ni qo'lda hisoblash — backend avtomatik
+  ❌ Board column'ga qarab complete qilish — endpoint bor

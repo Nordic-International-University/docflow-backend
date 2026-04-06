@@ -63,6 +63,10 @@ export class TaskUpdateDto {
   @IsOptional()
   score?: number
 
+  @IsUUID()
+  @IsOptional()
+  scoreConfigId?: string
+
   @IsString()
   @IsOptional()
   coverImageUrl?: string
