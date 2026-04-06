@@ -1,4 +1,9 @@
-import { PDFNet } from '@pdftron/pdfnet-node'
+let PDFNet: any
+try {
+  PDFNet = require('@pdftron/pdfnet-node').PDFNet
+} catch {
+  PDFNet = null
+}
 import { Logger } from '@nestjs/common'
 import * as fs from 'fs/promises'
 import * as path from 'path'
@@ -15,6 +20,9 @@ export class PdfConverterUtil {
   private static pdftronInitialized = false
 
   private static async ensurePDFTronInitialized(): Promise<void> {
+    if (!PDFNet) {
+      throw new Error('PDFTron is not available on this system')
+    }
     if (!this.pdftronInitialized) {
       await PDFNet.initialize(
         'demo:1762777177081:601eabe40300000000e42ddd407e894dff6198482ac17897bce606c4a2',
