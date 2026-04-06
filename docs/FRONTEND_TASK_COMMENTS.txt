@@ -1,0 +1,269 @@
+================================================================
+TASK COMMENT TIZIMI — FRONTEND UCHUN QO'LLANMA
+================================================================
+
+
+1. IZOH YARATISH (matn + fayl)
+================================================================
+
+1-QADAM: Fayl yuklash (agar rasm/video/voice bo'lsa)
+  POST /api/v1/attachment
+  Body: FormData { file: File }
+  Response: { id, fileName, fileUrl, fileSize, mimeType }
+
+2-QADAM: Izoh yaratish
+  POST /api/v1/task-comment
+  Body: {
+    "taskId": "uuid",
+    "content": "Izoh matni",
+    "attachmentIds": ["attachment-uuid-1", "attachment-uuid-2"],  // ixtiyoriy
+    "parentCommentId": "uuid"  // javob bo'lsa
+  }
+
+Misol — rasm bilan izoh:
+  const formData = new FormData()
+  formData.append('file', selectedImage)
+  const { data: file } = await axios.post('/api/v1/attachment', formData)
+
+  await axios.post('/api/v1/task-comment', {
+    taskId: currentTaskId,
+    content: 'Screenshot qarang',
+    attachmentIds: [file.id],
+  })
+
+Misol — ovozli xabar:
+  const formData = new FormData()
+  formData.append('file', audioBlob, 'voice.webm')
+  const { data: file } = await axios.post('/api/v1/attachment', formData)
+
+  await axios.post('/api/v1/task-comment', {
+    taskId: currentTaskId,
+    content: '',
+    attachmentIds: [file.id],
+  })
+
+Misol — oddiy javob (reply):
+  await axios.post('/api/v1/task-comment', {
+    taskId: currentTaskId,
+    content: 'Ha, to\'g\'ri',
+    parentCommentId: parentComment.id,
+  })
+
+
+2. IZOHLAR RO'YXATI — RESPONSE FORMATI
+================================================================
+
+GET /api/v1/task-comment?taskId=uuid&pageSize=100
+
+{
+  "data": [
+    {
+      "id": "uuid",
+      "taskId": "uuid",
+      "content": "Izoh matni",
+      "parentCommentId": null,
+      "isEdited": false,
+      "editedAt": null,
+      "user": {
+        "id": "uuid",
+        "fullname": "Jamshid Alimov",
+        "username": "jamshid.xodim",
+        "avatarUrl": null
+      },
+      "attachments": [
+        {
+          "id": "uuid",
+          "attachment": {
+            "id": "uuid",
+            "fileName": "screenshot.png",
+            "fileUrl": "https://cdn.nordicuniversity.org/docflow-files/...",
+            "fileSize": 245000,
+            "mimeType": "image/png"
+          },
+          "uploadedBy": {
+            "id": "uuid",
+            "fullname": "Jamshid Alimov"
+          },
+          "createdAt": "2026-04-06T15:00:00.000Z"
+        }
+      ],
+      "reactions": [
+        {
+          "id": "uuid",
+          "emoji": "👍",
+          "userId": "uuid",
+          "user": { "id": "uuid", "fullname": "Bobur Tursunov" }
+        }
+      ],
+      "mentions": [
+        {
+          "id": "uuid",
+          "userId": "uuid",
+          "user": { "id": "uuid", "fullname": "Shohruh Umarov", "username": "shohruh.developer" }
+        }
+      ],
+      "replies": [
+        {
+          "id": "uuid",
+          "content": "Ha, ko'rib chiqdim",
+          "user": { "id": "uuid", "fullname": "Bobur Tursunov", "username": "bobur.menejer", "avatarUrl": null },
+          "attachments": [],
+          "reactions": [],
+          "mentions": [],
+          "isEdited": false,
+          "createdAt": "2026-04-06T15:05:00.000Z"
+        }
+      ],
+      "repliesCount": 1,
+      "reactionsCount": 1,
+      "createdAt": "2026-04-06T15:00:00.000Z",
+      "updatedAt": "2026-04-06T15:00:00.000Z"
+    }
+  ],
+  "count": 1,
+  "pageNumber": 1,
+  "pageSize": 100
+}
+
+
+3. FAYL TURINI ANIQLASH (mimeType bo'yicha)
+================================================================
+
+attachment.mimeType ga qarab render qiling:
+
+  image/*          → <img src={fileUrl} />
+  video/*          → <video src={fileUrl} controls />
+  audio/*          → <audio src={fileUrl} controls />  (voice message)
+  application/pdf  → PDF preview yoki link
+  boshqa           → Yuklab olish linki
+
+
+4. WEBSOCKET — REAL-TIME IZOHLAR
+================================================================
+
+Ulanish:
+  const taskSocket = io('https://api.docverse.uz/tasks', {
+    auth: { token: accessToken },
+    transports: ['websocket', 'polling'],
+  })
+  taskSocket.emit('project:join', { projectId })
+
+Tinglanadigan eventlar:
+
+  A) task:comment-added — Yangi izoh/javob qo'shildi
+     {
+       taskId: "uuid",
+       comment: {
+         id, content, user, attachments, reactions, mentions, parentCommentId, createdAt
+       },
+       timestamp: "2026-04-06T15:00:00.000Z"
+     }
+
+     Logika:
+       if (comment.parentCommentId) {
+         // Bu reply — ota izohning replies arrayiga qo'shish
+         addReplyToComment(comment.parentCommentId, comment)
+       } else {
+         // Bu yangi top-level izoh — list boshiga qo'shish
+         addCommentToList(comment)
+       }
+
+  B) task:comment-updated — Izoh tahrirlandi
+     {
+       taskId: "uuid",
+       comment: { id, content, isEdited: true, editedAt, ... },
+       timestamp: "..."
+     }
+
+     Logika:
+       updateCommentInList(comment.id, comment)
+
+  C) task:comment-deleted — Izoh o'chirildi
+     {
+       taskId: "uuid",
+       commentId: "uuid",
+       timestamp: "..."
+     }
+
+     Logika:
+       removeCommentFromList(commentId)
+
+
+5. FRONTEND COMPONENT MISOLI
+================================================================
+
+// hooks/useTaskComments.ts
+
+export function useTaskComments(taskId: string, projectId: string) {
+  const [comments, setComments] = useState([])
+
+  // API dan yuklash
+  useEffect(() => {
+    fetchComments(taskId).then(setComments)
+  }, [taskId])
+
+  // Real-time
+  useEffect(() => {
+    const socket = getTaskSocket()
+
+    socket.on('task:comment-added', ({ taskId: tid, comment }) => {
+      if (tid !== taskId) return
+
+      if (comment.parentCommentId) {
+        // Reply qo'shish
+        setComments(prev => prev.map(c =>
+          c.id === comment.parentCommentId
+            ? { ...c, replies: [...c.replies, comment], repliesCount: c.repliesCount + 1 }
+            : c
+        ))
+      } else {
+        // Yangi izoh
+        setComments(prev => [comment, ...prev])
+      }
+    })
+
+    socket.on('task:comment-updated', ({ taskId: tid, comment }) => {
+      if (tid !== taskId) return
+      setComments(prev => prev.map(c =>
+        c.id === comment.id ? { ...c, ...comment } : c
+      ))
+    })
+
+    socket.on('task:comment-deleted', ({ taskId: tid, commentId }) => {
+      if (tid !== taskId) return
+      setComments(prev => prev.filter(c => c.id !== commentId))
+    })
+
+    return () => {
+      socket.off('task:comment-added')
+      socket.off('task:comment-updated')
+      socket.off('task:comment-deleted')
+    }
+  }, [taskId])
+
+  return comments
+}
+
+
+6. OVOZLI XABAR YUBORISH MISOLI
+================================================================
+
+// Ovoz yozish
+const mediaRecorder = new MediaRecorder(stream)
+const chunks = []
+mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
+mediaRecorder.onstop = async () => {
+  const blob = new Blob(chunks, { type: 'audio/webm' })
+
+  const formData = new FormData()
+  formData.append('file', blob, 'voice-message.webm')
+  const { data: file } = await axios.post('/api/v1/attachment', formData)
+
+  await axios.post('/api/v1/task-comment', {
+    taskId,
+    content: '🎤 Ovozli xabar',
+    attachmentIds: [file.id],
+  })
+}
+mediaRecorder.start()
+// ... to'xtatish uchun: mediaRecorder.stop()

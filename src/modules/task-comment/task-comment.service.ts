@@ -138,7 +138,7 @@ export class TaskCommentService {
       data: {
         taskId: payload.taskId,
         userId: payload.userId,
-        content: payload.content,
+        content: payload.content || '',
         parentCommentId: payload.parentCommentId,
       },
     })

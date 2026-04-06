@@ -20,12 +20,12 @@ export class TaskCommentCreateDto
   taskId: string
 
   @ApiProperty({
-    description: 'Izoh matni',
+    description: 'Izoh matni (fayl yuborilganda bo\'sh bo\'lishi mumkin)',
     example: 'Bu topshiriqqa qo\'shimcha ma\'lumot kerak',
   })
   @IsString()
-  @IsNotEmpty()
-  content: string
+  @IsOptional()
+  content?: string
 
   @ApiPropertyOptional({
     description: 'Javob berilayotgan izoh ID (reply uchun)',
