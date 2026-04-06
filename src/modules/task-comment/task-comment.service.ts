@@ -167,6 +167,10 @@ export class TaskCommentService {
             user: {
               select: { id: true, fullname: true, username: true },
             },
+            attachments: {
+              select: { attachment: { select: { mimeType: true, fileName: true } } },
+              take: 1,
+            },
           },
         },
       },
@@ -318,6 +322,10 @@ export class TaskCommentService {
             content: true,
             user: {
               select: { id: true, fullname: true, username: true },
+            },
+            attachments: {
+              select: { attachment: { select: { mimeType: true, fileName: true } } },
+              take: 1,
             },
           },
         },
