@@ -786,15 +786,25 @@ export class DocumentService {
       throw new NotFoundException('PDF URL not found for this document')
     }
 
-    // Verify user has XFDF editing permission (SIGN, REVIEW, or VERIFICATION)
+    // Check permissions: document creator and Super Admin can always edit
     let userWorkflowStep = null
     if (userId) {
-      await this.#_workflowPermissionService.verifyXfdfEditPermission(
-        userId,
-        documentId,
-      )
+      const isCreator = document.createdById === userId
+      const user = await this.#_prisma.user.findFirst({
+        where: { id: userId, deletedAt: null },
+        select: { role: { select: { name: true } } },
+      })
+      const isSuperAdmin = user?.role?.name === ROLE_NAMES.SUPER_ADMIN
 
-      // Find the user's active workflow step
+      // If not creator and not super admin, verify workflow permission
+      if (!isCreator && !isSuperAdmin) {
+        await this.#_workflowPermissionService.verifyXfdfEditPermission(
+          userId,
+          documentId,
+        )
+      }
+
+      // Find the user's active workflow step (if exists)
       const workflow = await this.#_prisma.workflow.findFirst({
         where: {
           documentId,
@@ -813,9 +823,6 @@ export class DocumentService {
       })
 
       if (workflow) {
-        // Filter steps based on workflow type
-        // For CONSECUTIVE: only IN_PROGRESS steps can submit XFDF (current step only)
-        // For PARALLEL: both IN_PROGRESS and NOT_STARTED can submit (all assigned steps)
         const allowedStatuses =
           workflow.type === 'CONSECUTIVE'
             ? ['IN_PROGRESS']

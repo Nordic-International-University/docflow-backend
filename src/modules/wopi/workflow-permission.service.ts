@@ -25,6 +25,20 @@ export class WorkflowPermissionService {
     userId: string,
     fileId: string,
   ): Promise<WorkflowPermissions> {
+    // Super Admin always has full access
+    const currentUser = await this.#_prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: { role: { select: { name: true } } },
+    })
+    if (currentUser?.role?.name === 'Super Administrator') {
+      return {
+        UserCanWrite: true,
+        UserCanRead: true,
+        ReadOnly: false,
+        WebEditingDisabled: false,
+      }
+    }
+
     const attachment = await this.#_prisma.attachment.findFirst({
       where: {
         id: fileId,
@@ -189,6 +203,16 @@ export class WorkflowPermissionService {
     userId: string,
     documentId: string,
   ): Promise<boolean> {
+    // Check if user is Super Admin — always has permission
+    const user = await this.#_prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: { role: { select: { name: true } } },
+    })
+    if (user?.role?.name === 'Super Administrator') {
+      this.logger.log(`User ${userId} is Super Administrator, granting XFDF edit permission`)
+      return true
+    }
+
     // Check if the user is the document creator - they always have permission
     const document = await this.#_prisma.document.findFirst({
       where: {
