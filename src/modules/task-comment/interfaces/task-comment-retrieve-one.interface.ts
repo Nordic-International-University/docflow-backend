@@ -13,9 +13,17 @@ export interface TaskCommentRetrieveOneResponse {
   user: {
     id: string
     fullname: string
-    avatar?: string
+    username: string
+    avatarUrl?: string
   }
-  repliesCount: number
+  replyTo?: {
+    id: string
+    content: string
+    user: { id: string; fullname: string; username: string }
+  } | null
+  reactions: any[]
+  attachments: any[]
+  mentions: any[]
   reactionsCount: number
   createdAt: Date
   updatedAt: Date
