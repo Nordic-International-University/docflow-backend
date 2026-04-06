@@ -236,8 +236,7 @@ export class WopiTokenService {
    * Construct the WOPI source URL for a file
    */
   private constructWopiSrc(fileId: string): string {
-    // Get the base URL from environment or use default
-    const baseUrl = 'https://docflow-back.nordicuniversity.org'
+    const baseUrl = process.env.WOPI_HOST_URL || 'https://api.docverse.uz'
     return `${baseUrl}/api/v1/wopi/files/${fileId}`
   }
 }

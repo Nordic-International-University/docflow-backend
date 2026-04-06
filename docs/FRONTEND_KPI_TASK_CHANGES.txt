@@ -99,21 +99,19 @@ Task yangilashda ham scoreConfigId yuborish mumkin:
   { "scoreConfigId": "yangi-config-uuid" }
 
 
-4. BOARD DRAG & DROP — AVTOMAT ISHLAYDI
+4. BOARD DRAG & DROP — FAQAT COLUMN O'ZGARADI
 ================================================================
 
-Board'da task'ni isClosed=true column'ga ko'chirsangiz:
-  → Backend avtomatik taskComplete chaqiradi
-  → KPI hisoblanadi
-  → completedAt o'rnatiladi
+Board'da task ko'chirilganda:
+  → Faqat boardColumnId o'zgaradi
+  → completedAt O'ZGARMAYDI
+  → KPI HISOBLANMAYDI
 
-Board'da task'ni ochiq column'ga qaytarsangiz:
-  → Backend avtomatik taskUncomplete chaqiradi
-  → KPI bekor qilinadi
-  → completedAt tozalanadi
+Board move = faqat vizual joy o'zgartirish.
+Complete/uncomplete = faqat tugma orqali (POST /task/:id/complete).
 
-Frontend hech narsa qilishi SHART EMAS — backend barchasini
-board move ichida bajaradi.
+Ya'ni task "Tayyor" column'ga ko'chirilsa ham complete BOLMAYDI.
+User aniq "✅ Yakunlash" tugmasini bosishi kerak.
 
 
 5. TASK DETAIL SAHIFASIDA KO'RSATISH KERAK
@@ -170,6 +168,7 @@ completedAt fieldi keladi.
 6. Board drag&drop — hech narsa o'zgartirish SHART EMAS
 
 QILMASLIK kerak:
-  ❌ Score'ni majburiy qilish — backend o'zi hisoblaydi
+  ❌ Board column'ga qarab complete qilish — board = faqat vizual
+  ❌ isClosed column logikasi — olib tashlandi
   ❌ KPI'ni qo'lda hisoblash — backend avtomatik
-  ❌ Board column'ga qarab complete qilish — endpoint bor
+  ❌ Score'ni majburiy qilish — scoreConfigId tanlansa yetarli
