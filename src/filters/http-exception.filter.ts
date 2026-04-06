@@ -17,8 +17,8 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   'Invalid credentials': "Login yoki parol noto'g'ri",
   'Invalid username or password': "Login yoki parol noto'g'ri",
   'Invalid refresh token': 'Yangilash tokeni yaroqsiz',
-  'Invalid or expired refresh token': 'Yangilash tokeni yaroqsiz yoki muddati tugagan',
-  'User account is inactive or deleted': "Foydalanuvchi hisobi faol emas yoki o'chirilgan",
+  'Invalid or expired refresh token':'Yangilash tokeni yaroqsiz yoki muddati tugagan',
+  'User account is inactive or deleted':"Foydalanuvchi hisobi faol emas yoki o'chirilgan",
   'Insufficient permissions': 'Ruxsat yetarli emas',
   'Missing WOPI access token': 'WOPI kirish tokeni topilmadi',
   'Invalid WOPI access token': 'WOPI kirish tokeni yaroqsiz',
@@ -154,6 +154,87 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
 
   // ==================== AUDIT ====================
   'Audit log entry not found': 'Audit log yozuvi topilmadi',
+
+  // ==================== DOCUMENT (qo'shimcha) ====================
+  'Document does not have an associated workflow': "Hujjatga ish jarayoni biriktirilmagan",
+  'Document workflow is not completed. Only approved documents can be downloaded.': "Hujjat ish jarayoni yakunlanmagan. Faqat tasdiqlangan hujjatlarni yuklab olish mumkin.",
+  'Document is not approved. Only approved documents can be downloaded.': "Hujjat tasdiqlanmagan. Faqat tasdiqlangan hujjatlarni yuklab olish mumkin.",
+  'You do not have permission to download this document': "Siz bu hujjatni yuklab olish huquqiga ega emassiz",
+  'Missing required tags': "Kerakli teglar kiritilmagan",
+
+  // ==================== DOCUMENT TEMPLATE (qo'shimcha) ====================
+  'Document template with this name already exists': "Bu nomdagi hujjat shabloni allaqachon mavjud",
+  'Cannot delete template that is being used by documents': "Hujjatlar tomonidan ishlatiladigan shablonni o'chirib bo'lmaydi",
+
+  // ==================== WORKFLOW (qo'shimcha) ====================
+  'Workflow template not found or is inactive': "Ish jarayoni shabloni topilmadi yoki faol emas",
+  'Either workflowTemplateId or steps must be provided': "workflowTemplateId yoki bosqichlar ko'rsatilishi kerak",
+  'Step with the specified order does not exist': "Ko'rsatilgan tartib raqamli bosqich mavjud emas",
+  'Workflow template with this name already exists': "Bu nomdagi ish jarayoni shabloni allaqachon mavjud",
+  'One or more assigned departments not found': "Bir yoki bir nechta tayinlangan bo'lim topilmadi",
+
+  // ==================== WORKFLOW STEP (qo'shimcha) ====================
+  'This workflow has been completed and cannot be modified': "Bu ish jarayoni yakunlangan va o'zgartirib bo'lmaydi",
+  'Only the workflow creator can add workflow steps': "Faqat ish jarayoni yaratuvchisi bosqich qo'sha oladi",
+  'Only the workflow creator can update workflow steps': "Faqat ish jarayoni yaratuvchisi bosqichni yangilay oladi",
+  'Only the workflow creator can delete workflow steps': "Faqat ish jarayoni yaratuvchisi bosqichni o'chira oladi",
+  'Only the workflow creator can reassign workflow steps': "Faqat ish jarayoni yaratuvchisi bosqichni qayta tayinlay oladi",
+  'A step with this order already exists in the workflow': "Bu tartib raqamli bosqich allaqachon ish jarayonida mavjud",
+  'VERIFICATION type workflow steps cannot be reassigned. They must be completed by the originally assigned user.': "TEKSHIRUV turidagi bosqichlarni qayta tayinlab bo'lmaydi. Ular dastlab tayinlangan foydalanuvchi tomonidan bajarilishi kerak.",
+  'VERIFICATION type workflow steps cannot be rejected or rolled back. They can only be completed with file attachments.': "TEKSHIRUV turidagi bosqichlarni rad etib yoki qaytarib bo'lmaydi. Ular faqat fayl biriktirish orqali yakunlanadi.",
+  'Cannot complete this step. Current workflow step is': "Bu bosqichni yakunlab bo'lmaydi. Bosqichlar tartib bo'yicha yakunlanishi kerak.",
+  'Cannot reject this step. Current workflow step is': "Bu bosqichni rad etib bo'lmaydi. Bosqichlar tartib bo'yicha qayta ishlanishi kerak.",
+  'Creator step not found in this workflow. Unable to reject to creator.': "Yaratuvchi bosqichi topilmadi. Yaratuvchiga qaytarib bo'lmaydi.",
+  'Rollback feature is only available for CONSECUTIVE workflows': "Qaytarish funksiyasi faqat KETMA-KET ish jarayonlari uchun mavjud",
+  'Cannot complete': "Bu bosqichni yakunlab bo'lmaydi",
+  'At least one file attachment is required for verification steps': "Tekshiruv bosqichlari uchun kamida bitta fayl biriktirish talab qilinadi",
+  'This endpoint is only for VERIFICATION type workflow steps': "Bu endpoint faqat TEKSHIRUV turidagi bosqichlar uchun",
+
+  // ==================== WOPI (qo'shimcha) ====================
+  'You do not have permission to edit this document': "Siz bu hujjatni tahrirlash huquqiga ega emassiz",
+  'You do not have permission to access this document.': "Siz bu hujjatga kirish huquqiga ega emassiz",
+  'You do not have permission to edit XFDF annotations. Only users with an active workflow step can perform this action.': "XFDF annotatsiyalarini tahrirlash huquqingiz yo'q. Faqat faol bosqichga ega foydalanuvchilar bu amalni bajara oladi.",
+  'You do not have permission to access this file': "Siz bu faylga kirish huquqiga ega emassiz",
+
+  // ==================== TASK DEPENDENCY (qo'shimcha) ====================
+  'Both tasks must be in the same project to create a dependency': "Bog'liqlik yaratish uchun ikkala topshiriq bir loyihada bo'lishi kerak",
+  'Cannot create circular dependency: the blocking task already depends on the dependent task': "Davriy bog'liqlik yaratib bo'lmaydi: bloklayotgan topshiriq allaqachon bog'liq topshiriqqa bog'langan",
+  'Cannot create dependency: this would create a circular dependency chain': "Bog'liqlik yaratib bo'lmaydi: bu davriy bog'liqlik zanjirini hosil qiladi",
+
+  // ==================== TASK (qo'shimcha) ====================
+  'Parent task not found or not in same project': "Asosiy topshiriq topilmadi yoki boshqa loyihada",
+  'Board column not found or not in same project': "Ustun topilmadi yoki boshqa loyihada",
+  'Label must belong to the same project as the task': "Yorliq topshiriq bilan bir loyihaga tegishli bo'lishi kerak",
+
+  // ==================== TASK COMMENT (qo'shimcha) ====================
+  'Parent comment not found or does not belong to this task': "Asosiy izoh topilmadi yoki bu topshiriqqa tegishli emas",
+
+  // ==================== BOARD (qo'shimcha) ====================
+  'Column name must be unique within the project': "Ustun nomi loyiha ichida takrorlanmasligi kerak",
+  'Cannot delete column with tasks. Move or delete tasks first.': "Topshiriqlari bor ustunni o'chirib bo'lmaydi. Avval topshiriqlarni ko'chiring yoki o'chiring.",
+  'Some columns were not found or do not belong to this project': "Ba'zi ustunlar topilmadi yoki bu loyihaga tegishli emas",
+
+  // ==================== DEPARTMENT (qo'shimcha) ====================
+  'This user is already assigned as a director of another department': "Bu foydalanuvchi allaqachon boshqa bo'lim direktori etib tayinlangan",
+
+  // ==================== ATTACHMENT (qo'shimcha) ====================
+  'Attachment with same file name and URL already exists': "Bir xil fayl nomi va URL bilan biriktirma allaqachon mavjud",
+
+  // ==================== USER (qo'shimcha) ====================
+  'This Telegram ID is already linked to another account': "Bu Telegram ID allaqachon boshqa hisobga ulangan",
+  'No Telegram account is linked to this user': "Bu foydalanuvchiga Telegram hisob ulanmagan",
+
+  // ==================== KPI (qo'shimcha) ====================
+  'Cannot approve reward with status': "Bu holat bilan mukofotni tasdiqlab bo'lmaydi",
+  'Cannot mark as paid with status': "Bu holat bilan to'langan deb belgilab bo'lmaydi",
+  'Score range overlaps with existing tier': "Ball diapazoni mavjud daraja bilan ustma-ust tushadi",
+  'Task score config for priority level': "Ushbu ustuvorlik darajasi uchun ball konfiguratsiyasi",
+
+  // ==================== PERMISSION (qo'shimcha) ====================
+  'Permission key already used by another permission': "Bu ruxsat kaliti boshqa ruxsat tomonidan ishlatilgan",
+
+  // ==================== ROLE (qo'shimcha) ====================
+  'Role not found': "Rol topilmadi",
 }
 
 const STATUS_TRANSLATIONS: Record<number, string> = {
@@ -163,6 +244,7 @@ const STATUS_TRANSLATIONS: Record<number, string> = {
   [HttpStatus.NOT_FOUND]: 'Topilmadi',
   [HttpStatus.CONFLICT]: 'Ziddiyat yuz berdi',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Ichki server xatosi',
+
   [HttpStatus.UNPROCESSABLE_ENTITY]: "Ma'lumotlar noto'g'ri",
   [HttpStatus.TOO_MANY_REQUESTS]: "So'rovlar soni limitdan oshdi",
 }
