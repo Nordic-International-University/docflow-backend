@@ -1,0 +1,5 @@
+export * from './task-comment-create.interface'
+export * from './task-comment-update.interface'
+export * from './task-comment-retrieve-all.interface'
+export * from './task-comment-retrieve-one.interface'
+export * from './task-comment-delete.interface'

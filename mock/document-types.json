@@ -1,0 +1,89 @@
+{
+  "documentTypes": [
+    {
+      "name": "Buyruq",
+      "description": "Tashkilot rahbariyatining rasmiy buyruqlari va farmoyishlari",
+      "isActive": true
+    },
+    {
+      "name": "Shartnoma",
+      "description": "Tashkilot tomonidan tuzilgan shartnomalar va kelishuvlar",
+      "isActive": true
+    },
+    {
+      "name": "Ariza",
+      "description": "Xodimlar va tashqi shaxslarning arizalari",
+      "isActive": true
+    },
+    {
+      "name": "Xat",
+      "description": "Rasmiy yozishmalar va xatlar",
+      "isActive": true
+    },
+    {
+      "name": "Ma'lumotnoma",
+      "description": "Turli xil ma'lumotnomalar va tasdiqlovchi hujjatlar",
+      "isActive": true
+    },
+    {
+      "name": "Hisobot",
+      "description": "Moliyaviy va ish faoliyati hisobotlari",
+      "isActive": true
+    },
+    {
+      "name": "Bayonnoma",
+      "description": "Yig'ilishlar va uchrashuvlar bayonnomalari",
+      "isActive": true
+    },
+    {
+      "name": "Yo'riqnoma",
+      "description": "Ichki yo'riqnomalar va ko'rsatmalar",
+      "isActive": true
+    },
+    {
+      "name": "Akt",
+      "description": "Turli tekshiruvlar va bajarilgan ishlar aktlari",
+      "isActive": true
+    },
+    {
+      "name": "Qaror",
+      "description": "Rahbariyat va kengash qarorlari",
+      "isActive": true
+    },
+    {
+      "name": "Smetа",
+      "description": "Moliyaviy smetalar va byudjetlar",
+      "isActive": true
+    },
+    {
+      "name": "Hisob-faktura",
+      "description": "Moliyaviy hisob-fakturalar va schyotlar",
+      "isActive": true
+    },
+    {
+      "name": "To'lov topshiriqномаsi",
+      "description": "Bank to'lovlari uchun topshiriqnomalar",
+      "isActive": true
+    },
+    {
+      "name": "Shtat jadvali",
+      "description": "Tashkilotning shtat jadvali va o'zgarishlar",
+      "isActive": true
+    },
+    {
+      "name": "Mehnat shartnomasi",
+      "description": "Xodimlar bilan tuzilgan mehnat shartnomalari",
+      "isActive": true
+    },
+    {
+      "name": "Texnik hujjat",
+      "description": "Texnik tavsifnomalar va hujjatlar",
+      "isActive": true
+    },
+    {
+      "name": "Loyiha hujjati",
+      "description": "Loyihalarга oid hujjatlar va taqdimotlar",
+      "isActive": true
+    }
+  ]
+}

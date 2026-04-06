@@ -1,0 +1,5 @@
+export * from './task-category-create.interface'
+export * from './task-category-update.interface'
+export * from './task-category-retrieve-all.interface'
+export * from './task-category-retrieve-one.interface'
+export * from './task-category-delete.interface'

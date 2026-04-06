@@ -1,0 +1,5 @@
+export * from './document-template-create.interface'
+export * from './document-template-delete.interface'
+export * from './document-template-update.interface'
+export * from './document-template-retrieve-all.interface'
+export * from './document-template-retrieve-one.interface'

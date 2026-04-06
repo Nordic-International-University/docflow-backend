@@ -1,0 +1,5 @@
+export * from './department-create.interface'
+export * from './department-retrieve-all.interface'
+export * from './department-retrieve-one.interface'
+export * from './department-update.interface'
+export * from './department-delete.interface'

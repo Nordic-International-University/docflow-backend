@@ -1,0 +1,5 @@
+export * from './permission-create.interface'
+export * from './permission-retrieve-all.interface'
+export * from './permission-retrieve-one.interface'
+export * from './permission-update.interface'
+export * from './permission-delete.interface'

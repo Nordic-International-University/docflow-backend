@@ -1,0 +1,5 @@
+export * from './role-create.interface'
+export * from './role-retrieve-all.interface'
+export * from './role-retrieve-one.interface'
+export * from './role-update.interface'
+export * from './role-delete.interface'

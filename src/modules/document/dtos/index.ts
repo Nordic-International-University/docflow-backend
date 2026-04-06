@@ -1,0 +1,5 @@
+export * from './document-create.dtos'
+export * from './document-delete.dtos'
+export * from './document-retrieve-all.dtos'
+export * from './document-update.dtos'
+export * from './document-public-verification.dto'

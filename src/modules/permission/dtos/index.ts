@@ -1,0 +1,5 @@
+export * from './permission-retrieve-all.dtos'
+export * from './permission-retrieve-one.dtos'
+export * from './permission-create.dtos'
+export * from './permission-update.dtos'
+export * from './permission-delete.dtos'

@@ -1,0 +1,140 @@
+{
+  "departments": [],
+  "users": [
+    {
+      "fullname": "Super Administrator",
+      "username": "superadmin",
+      "password": "12345678",
+      "roleName": "Super Administrator",
+      "departmentName": null,
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Asror Abdullayev",
+      "username": "asror.direktor",
+      "password": "12345678",
+      "roleName": "Direktor",
+      "departmentName": "IT Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Nodira Karimova",
+      "username": "nodira.direktor",
+      "password": "12345678",
+      "roleName": "Direktor",
+      "departmentName": "Moliya Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Zilola Norova",
+      "username": "zilola.hr",
+      "password": "Hr@123",
+      "roleName": "HR Menejer",
+      "departmentName": "Kadrlar Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Bobur Tursunov",
+      "username": "bobur.menejer",
+      "password": "Menejer@123",
+      "roleName": "Menejer",
+      "departmentName": "IT Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Dilnoza Rahimova",
+      "username": "dilnoza.menejer",
+      "password": "Menejer@123",
+      "roleName": "Menejer",
+      "departmentName": "Moliya Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Jamshid Alimov",
+      "username": "jamshid.xodim",
+      "password": "Xodim@123",
+      "roleName": "Xodim",
+      "departmentName": "Dasturlash Sektori",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Malika Safarova",
+      "username": "malika.xodim",
+      "password": "Xodim@123",
+      "roleName": "Xodim",
+      "departmentName": "Buxgalteriya",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Sardor Yusupov",
+      "username": "sardor.arxiv",
+      "password": "Arxiv@123",
+      "roleName": "Arxiv Mutaxassisi",
+      "departmentName": "Arxiv Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Otabek Sharipov",
+      "username": "otabek.sysadmin",
+      "password": "System@123",
+      "roleName": "Tizim Mutaxassisi",
+      "departmentName": "IT Bo'limi",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Feruza Qodirova",
+      "username": "feruza.viewer",
+      "password": "Viewer@123",
+      "roleName": "Ko'rib chiquvchi",
+      "departmentName": null,
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Shohruh Umarov",
+      "username": "shohruh.developer",
+      "password": "Dev@123",
+      "roleName": "Xodim",
+      "departmentName": "Dasturlash Sektori",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Nigora Ismoilova",
+      "username": "nigora.support",
+      "password": "Support@123",
+      "roleName": "Xodim",
+      "departmentName": "Texnik Qo'llab-quvvatlash",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Davron Qosimov",
+      "username": "davron.accountant",
+      "password": "Account@123",
+      "roleName": "Xodim",
+      "departmentName": "Buxgalteriya",
+      "avatarUrl": null,
+      "isActive": true
+    },
+    {
+      "fullname": "Sevara Hamidova",
+      "username": "sevara.treasury",
+      "password": "Treasury@123",
+      "roleName": "Xodim",
+      "departmentName": "Xazina",
+      "avatarUrl": null,
+      "isActive": true
+    }
+  ]
+}

@@ -1,0 +1,1237 @@
+{
+  "permissions": [
+    {
+      "module": "auth",
+      "description": "Autentifikatsiya va avtorizatsiya moduli",
+      "permissions": [
+        {
+          "key": "auth:login",
+          "name": "Tizimga kirish",
+          "description": "Tizimga kirish imkoniyati"
+        },
+        {
+          "key": "auth:logout",
+          "name": "Tizimdan chiqish",
+          "description": "Tizimdan chiqish imkoniyati"
+        },
+        {
+          "key": "auth:refresh",
+          "name": "Tokenni yangilash",
+          "description": "Autentifikatsiya tokenini yangilash imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "user",
+      "description": "Foydalanuvchilarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "user:create",
+          "name": "Foydalanuvchi yaratish",
+          "description": "Yangi foydalanuvchilar yaratish imkoniyati"
+        },
+        {
+          "key": "user:read",
+          "name": "Foydalanuvchilarni ko'rish",
+          "description": "Foydalanuvchi ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "user:update",
+          "name": "Foydalanuvchini tahrirlash",
+          "description": "Foydalanuvchi ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "user:delete",
+          "name": "Foydalanuvchini o'chirish",
+          "description": "Foydalanuvchilarni o'chirish imkoniyati"
+        },
+        {
+          "key": "user:list",
+          "name": "Foydalanuvchilar ro'yxati",
+          "description": "Barcha foydalanuvchilar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "user:activate",
+          "name": "Foydalanuvchini faollashtirish",
+          "description": "Foydalanuvchilarni faollashtirish/o'chirish imkoniyati"
+        },
+        {
+          "key": "user:assign_role",
+          "name": "Rol biriktirish",
+          "description": "Foydalanuvchilarga rol biriktirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "role",
+      "description": "Rollarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "role:create",
+          "name": "Rol yaratish",
+          "description": "Yangi rollar yaratish imkoniyati"
+        },
+        {
+          "key": "role:read",
+          "name": "Rollarni ko'rish",
+          "description": "Rol ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "role:update",
+          "name": "Rolni tahrirlash",
+          "description": "Rol ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "role:delete",
+          "name": "Rolni o'chirish",
+          "description": "Rollarni o'chirish imkoniyati"
+        },
+        {
+          "key": "role:list",
+          "name": "Rollar ro'yxati",
+          "description": "Barcha rollar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "role:assign_permissions",
+          "name": "Ruxsat biriktirish",
+          "description": "Rollarga ruxsatlar biriktirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "permission",
+      "description": "Ruxsatlarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "permission:create",
+          "name": "Ruxsat yaratish",
+          "description": "Yangi ruxsatlar yaratish imkoniyati"
+        },
+        {
+          "key": "permission:read",
+          "name": "Ruxsatlarni ko'rish",
+          "description": "Ruxsat ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "permission:update",
+          "name": "Ruxsatni tahrirlash",
+          "description": "Ruxsat ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "permission:delete",
+          "name": "Ruxsatni o'chirish",
+          "description": "Ruxsatlarni o'chirish imkoniyati"
+        },
+        {
+          "key": "permission:list",
+          "name": "Ruxsatlar ro'yxati",
+          "description": "Barcha ruxsatlar ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "department",
+      "description": "Bo'limlarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "department:create",
+          "name": "Bo'lim yaratish",
+          "description": "Yangi bo'limlar yaratish imkoniyati"
+        },
+        {
+          "key": "department:read",
+          "name": "Bo'limlarni ko'rish",
+          "description": "Bo'lim ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "department:update",
+          "name": "Bo'limni tahrirlash",
+          "description": "Bo'lim ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "department:delete",
+          "name": "Bo'limni o'chirish",
+          "description": "Bo'limlarni o'chirish imkoniyati"
+        },
+        {
+          "key": "department:list",
+          "name": "Bo'limlar ro'yxati",
+          "description": "Barcha bo'limlar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "department:assign_director",
+          "name": "Direktor tayinlash",
+          "description": "Bo'limga direktor tayinlash imkoniyati"
+        },
+        {
+          "key": "department:view_hierarchy",
+          "name": "Ierarxiyani ko'rish",
+          "description": "Bo'limlar ierarxiyasini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "document",
+      "description": "Hujjatlarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "document:create",
+          "name": "Hujjat yaratish",
+          "description": "Yangi hujjatlar yaratish imkoniyati"
+        },
+        {
+          "key": "document:read",
+          "name": "Hujjatlarni ko'rish",
+          "description": "Hujjat ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "document:update",
+          "name": "Hujjatni tahrirlash",
+          "description": "Hujjat ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "document:delete",
+          "name": "Hujjatni o'chirish",
+          "description": "Hujjatlarni o'chirish imkoniyati"
+        },
+        {
+          "key": "document:list",
+          "name": "Hujjatlar ro'yxati",
+          "description": "Barcha hujjatlar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "document:approve",
+          "name": "Hujjatni tasdiqlash",
+          "description": "Hujjatlarni tasdiqlash imkoniyati"
+        },
+        {
+          "key": "document:reject",
+          "name": "Hujjatni rad etish",
+          "description": "Hujjatlarni rad etish imkoniyati"
+        },
+        {
+          "key": "document:archive",
+          "name": "Hujjatni arxivlash",
+          "description": "Hujjatlarni arxivlash imkoniyati"
+        },
+        {
+          "key": "document:restore",
+          "name": "Hujjatni tiklash",
+          "description": "Arxivlangan hujjatlarni tiklash imkoniyati"
+        },
+        {
+          "key": "document:change_status",
+          "name": "Statusni o'zgartirish",
+          "description": "Hujjat statusini o'zgartirish imkoniyati"
+        },
+        {
+          "key": "document:view_history",
+          "name": "Tarixni ko'rish",
+          "description": "Hujjat versiyalari tarixini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "document-type",
+      "description": "Hujjat turlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "document-type:create",
+          "name": "Hujjat turi yaratish",
+          "description": "Yangi hujjat turlari yaratish imkoniyati"
+        },
+        {
+          "key": "document-type:read",
+          "name": "Hujjat turlarini ko'rish",
+          "description": "Hujjat turi ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "document-type:update",
+          "name": "Hujjat turini tahrirlash",
+          "description": "Hujjat turi ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "document-type:delete",
+          "name": "Hujjat turini o'chirish",
+          "description": "Hujjat turlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "document-type:list",
+          "name": "Hujjat turlari ro'yxati",
+          "description": "Barcha hujjat turlari ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "document-type:activate",
+          "name": "Hujjat turini faollashtirish",
+          "description": "Hujjat turlarini faollashtirish/o'chirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "document-template",
+      "description": "Hujjat shablonlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "document-template:create",
+          "name": "Shablon yaratish",
+          "description": "Yangi hujjat shablonlari yaratish imkoniyati"
+        },
+        {
+          "key": "document-template:read",
+          "name": "Shablonlarni ko'rish",
+          "description": "Hujjat shablon ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "document-template:update",
+          "name": "Shablonni tahrirlash",
+          "description": "Hujjat shablon ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "document-template:delete",
+          "name": "Shablonni o'chirish",
+          "description": "Hujjat shablonlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "document-template:list",
+          "name": "Shablonlar ro'yxati",
+          "description": "Barcha hujjat shablonlari ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "document-template:publish",
+          "name": "Shablonni nashr etish",
+          "description": "Shablonlarni nashr etish/bekor qilish imkoniyati"
+        },
+        {
+          "key": "document-template:download",
+          "name": "Shablonni yuklab olish",
+          "description": "Shablon fayllarini yuklab olish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "attachment",
+      "description": "Qo'shimchalarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "attachment:upload",
+          "name": "Fayl yuklash",
+          "description": "Fayllarni yuklash imkoniyati"
+        },
+        {
+          "key": "attachment:read",
+          "name": "Fayllarni ko'rish",
+          "description": "Fayl ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "attachment:download",
+          "name": "Faylni yuklab olish",
+          "description": "Fayllarni yuklab olish imkoniyati"
+        },
+        {
+          "key": "attachment:delete",
+          "name": "Faylni o'chirish",
+          "description": "Fayllarni o'chirish imkoniyati"
+        },
+        {
+          "key": "attachment:list",
+          "name": "Fayllar ro'yxati",
+          "description": "Barcha fayllar ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "journal",
+      "description": "Hujjat jurnali/raqamlash moduli",
+      "permissions": [
+        {
+          "key": "journal:create",
+          "name": "Jurnal yaratish",
+          "description": "Yangi jurnallar yaratish imkoniyati"
+        },
+        {
+          "key": "journal:read",
+          "name": "Jurnallarni ko'rish",
+          "description": "Jurnal ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "journal:update",
+          "name": "Jurnalni tahrirlash",
+          "description": "Jurnal ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "journal:delete",
+          "name": "Jurnalni o'chirish",
+          "description": "Jurnallarni o'chirish imkoniyati"
+        },
+        {
+          "key": "journal:list",
+          "name": "Jurnallar ro'yxati",
+          "description": "Barcha jurnallar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "journal:assign_responsible",
+          "name": "Mas'ul tayinlash",
+          "description": "Jurnalga mas'ul foydalanuvchi tayinlash imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "workflow",
+      "description": "Ish oqimini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "workflow:create",
+          "name": "Ish oqimi yaratish",
+          "description": "Yangi ish oqimlari yaratish imkoniyati"
+        },
+        {
+          "key": "workflow:read",
+          "name": "Ish oqimlarini ko'rish",
+          "description": "Ish oqimi ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow:update",
+          "name": "Ish oqimini tahrirlash",
+          "description": "Ish oqimi ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "workflow:delete",
+          "name": "Ish oqimini o'chirish",
+          "description": "Ish oqimlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "workflow:list",
+          "name": "Ish oqimlari ro'yxati",
+          "description": "Barcha ish oqimlari ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow:advance_step",
+          "name": "Ish oqimini oldinga surish",
+          "description": "Ish oqimini keyingi bosqichga o'tkazish imkoniyati"
+        },
+        {
+          "key": "workflow:reject_step",
+          "name": "Ish oqimini rad etish",
+          "description": "Ish oqimi bosqichini rad etish imkoniyati"
+        },
+        {
+          "key": "workflow:cancel",
+          "name": "Ish oqimini bekor qilish",
+          "description": "Ish oqimlarini bekor qilish imkoniyati"
+        },
+        {
+          "key": "workflow:pause",
+          "name": "Ish oqimini to'xtatish",
+          "description": "Ish oqimlarini vaqtincha to'xtatish imkoniyati"
+        },
+        {
+          "key": "workflow:resume",
+          "name": "Ish oqimini davom ettirish",
+          "description": "To'xtatilgan ish oqimlarini davom ettirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "workflow-step",
+      "description": "Ish oqimi bosqichlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "workflow-step:create",
+          "name": "Bosqich yaratish",
+          "description": "Ish oqimi bosqichlari yaratish imkoniyati"
+        },
+        {
+          "key": "workflow-step:read",
+          "name": "Bosqichlarni ko'rish",
+          "description": "Ish oqimi bosqich ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow-step:update",
+          "name": "Bosqichni tahrirlash",
+          "description": "Ish oqimi bosqich ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "workflow-step:delete",
+          "name": "Bosqichni o'chirish",
+          "description": "Ish oqimi bosqichlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "workflow-step:list",
+          "name": "Bosqichlar ro'yxati",
+          "description": "Barcha ish oqimi bosqichlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow-step:complete",
+          "name": "Bosqichni yakunlash",
+          "description": "Ish oqimi bosqichlarini yakunlash imkoniyati"
+        },
+        {
+          "key": "workflow-step:reject",
+          "name": "Bosqichni rad etish",
+          "description": "Ish oqimi bosqichlarini rad etish imkoniyati"
+        },
+        {
+          "key": "workflow-step:assign",
+          "name": "Bosqichni tayinlash",
+          "description": "Ish oqimi bosqichlarini foydalanuvchilarga tayinlash imkoniyati"
+        },
+        {
+          "key": "workflow-step:reassign",
+          "name": "Bosqichni qayta tayinlash",
+          "description": "Ish oqimi bosqichlarini boshqa foydalanuvchilarga qayta tayinlash imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "workflow-template",
+      "description": "Ish oqimi shablonlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "workflow-template:create",
+          "name": "Ish oqimi shabloni yaratish",
+          "description": "Ish oqimi shablonlari yaratish imkoniyati"
+        },
+        {
+          "key": "workflow-template:read",
+          "name": "Ish oqimi shablonlarini ko'rish",
+          "description": "Ish oqimi shablon ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow-template:update",
+          "name": "Ish oqimi shablonini tahrirlash",
+          "description": "Ish oqimi shablon ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "workflow-template:delete",
+          "name": "Ish oqimi shablonini o'chirish",
+          "description": "Ish oqimi shablonlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "workflow-template:list",
+          "name": "Ish oqimi shablonlari ro'yxati",
+          "description": "Barcha ish oqimi shablonlari ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "workflow-template:activate",
+          "name": "Shablonni faollashtirish",
+          "description": "Ish oqimi shablonlarini faollashtirish/o'chirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "project",
+      "description": "Loyihalarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "project:create",
+          "name": "Loyiha yaratish",
+          "description": "Yangi loyihalar yaratish imkoniyati"
+        },
+        {
+          "key": "project:read",
+          "name": "Loyihalarni ko'rish",
+          "description": "Loyiha ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "project:update",
+          "name": "Loyihani tahrirlash",
+          "description": "Loyiha ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "project:delete",
+          "name": "Loyihani o'chirish",
+          "description": "Loyihalarni o'chirish imkoniyati"
+        },
+        {
+          "key": "project:list",
+          "name": "Loyihalar ro'yxati",
+          "description": "Barcha loyihalar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "project:archive",
+          "name": "Loyihani arxivlash",
+          "description": "Loyihalarni arxivlash imkoniyati"
+        },
+        {
+          "key": "project:restore",
+          "name": "Loyihani tiklash",
+          "description": "Arxivlangan loyihalarni tiklash imkoniyati"
+        },
+        {
+          "key": "project:manage_members",
+          "name": "A'zolarni boshqarish",
+          "description": "Loyiha a'zolarini boshqarish imkoniyati"
+        },
+        {
+          "key": "project:manage_labels",
+          "name": "Yorliqlarni boshqarish",
+          "description": "Loyiha yorliqlarini boshqarish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "project-member",
+      "description": "Loyiha a'zolarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "project-member:create",
+          "name": "A'zo qo'shish",
+          "description": "Loyihaga yangi a'zo qo'shish imkoniyati"
+        },
+        {
+          "key": "project-member:read",
+          "name": "A'zolarni ko'rish",
+          "description": "Loyiha a'zolari ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "project-member:update",
+          "name": "A'zo rolini o'zgartirish",
+          "description": "Loyiha a'zosining rolini o'zgartirish imkoniyati"
+        },
+        {
+          "key": "project-member:delete",
+          "name": "A'zoni olib tashlash",
+          "description": "Loyihadan a'zoni olib tashlash imkoniyati"
+        },
+        {
+          "key": "project-member:list",
+          "name": "A'zolar ro'yxati",
+          "description": "Loyiha a'zolari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "project-label",
+      "description": "Loyiha yorliqlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "project-label:create",
+          "name": "Yorliq yaratish",
+          "description": "Loyiha uchun yangi yorliq yaratish imkoniyati"
+        },
+        {
+          "key": "project-label:read",
+          "name": "Yorliqlarni ko'rish",
+          "description": "Loyiha yorliqlari ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "project-label:update",
+          "name": "Yorliqni tahrirlash",
+          "description": "Loyiha yorliqlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "project-label:delete",
+          "name": "Yorliqni o'chirish",
+          "description": "Loyiha yorliqlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "project-label:list",
+          "name": "Yorliqlar ro'yxati",
+          "description": "Loyiha yorliqlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task",
+      "description": "Vazifalarni boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task:create",
+          "name": "Vazifa yaratish",
+          "description": "Yangi vazifalar yaratish imkoniyati"
+        },
+        {
+          "key": "task:read",
+          "name": "Vazifalarni ko'rish",
+          "description": "Vazifa ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task:update",
+          "name": "Vazifani tahrirlash",
+          "description": "Vazifa ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task:delete",
+          "name": "Vazifani o'chirish",
+          "description": "Vazifalarni o'chirish imkoniyati"
+        },
+        {
+          "key": "task:list",
+          "name": "Vazifalar ro'yxati",
+          "description": "Barcha vazifalar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "task:assign",
+          "name": "Vazifa tayinlash",
+          "description": "Vazifalarni foydalanuvchilarga tayinlash imkoniyati"
+        },
+        {
+          "key": "task:complete",
+          "name": "Vazifani yakunlash",
+          "description": "Vazifalarni bajarilgan deb belgilash imkoniyati"
+        },
+        {
+          "key": "task:change_status",
+          "name": "Statusni o'zgartirish",
+          "description": "Vazifa statusini o'zgartirish imkoniyati"
+        },
+        {
+          "key": "task:watch",
+          "name": "Vazifani kuzatish",
+          "description": "Vazifalarni kuzatishga qo'shish imkoniyati"
+        },
+        {
+          "key": "task:comment",
+          "name": "Izoh qoldirish",
+          "description": "Vazifalarga izoh qoldirish imkoniyati"
+        },
+        {
+          "key": "task:time_track",
+          "name": "Vaqtni hisobga olish",
+          "description": "Vazifa uchun sarflangan vaqtni hisobga olish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-category",
+      "description": "Vazifa kategoriyalarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-category:create",
+          "name": "Kategoriya yaratish",
+          "description": "Yangi vazifa kategoriyalari yaratish imkoniyati"
+        },
+        {
+          "key": "task-category:read",
+          "name": "Kategoriyalarni ko'rish",
+          "description": "Vazifa kategoriyalari ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-category:update",
+          "name": "Kategoriyani tahrirlash",
+          "description": "Vazifa kategoriyalari ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task-category:delete",
+          "name": "Kategoriyani o'chirish",
+          "description": "Vazifa kategoriyalarini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-category:list",
+          "name": "Kategoriyalar ro'yxati",
+          "description": "Barcha vazifa kategoriyalari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-label",
+      "description": "Vazifa yorliqlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-label:create",
+          "name": "Yorliq biriktirish",
+          "description": "Vazifaga yorliq biriktirish imkoniyati"
+        },
+        {
+          "key": "task-label:read",
+          "name": "Yorliqlarni ko'rish",
+          "description": "Vazifa yorliqlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-label:delete",
+          "name": "Yorliqni olib tashlash",
+          "description": "Vazifadan yorliqni olib tashlash imkoniyati"
+        },
+        {
+          "key": "task-label:list",
+          "name": "Yorliqlar ro'yxati",
+          "description": "Vazifa yorliqlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-comment",
+      "description": "Vazifa izohlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-comment:create",
+          "name": "Izoh yaratish",
+          "description": "Vazifaga yangi izoh qo'shish imkoniyati"
+        },
+        {
+          "key": "task-comment:read",
+          "name": "Izohlarni ko'rish",
+          "description": "Vazifa izohlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-comment:update",
+          "name": "Izohni tahrirlash",
+          "description": "Vazifa izohlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task-comment:delete",
+          "name": "Izohni o'chirish",
+          "description": "Vazifa izohlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-comment:list",
+          "name": "Izohlar ro'yxati",
+          "description": "Vazifa izohlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-watcher",
+      "description": "Vazifa kuzatuvchilarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-watcher:create",
+          "name": "Kuzatuvchi qo'shish",
+          "description": "Vazifaga kuzatuvchi qo'shish imkoniyati"
+        },
+        {
+          "key": "task-watcher:read",
+          "name": "Kuzatuvchilarni ko'rish",
+          "description": "Vazifa kuzatuvchilarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-watcher:delete",
+          "name": "Kuzatuvchini olib tashlash",
+          "description": "Vazifadan kuzatuvchini olib tashlash imkoniyati"
+        },
+        {
+          "key": "task-watcher:list",
+          "name": "Kuzatuvchilar ro'yxati",
+          "description": "Vazifa kuzatuvchilari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-time-entry",
+      "description": "Vazifa vaqt yozuvlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-time-entry:create",
+          "name": "Vaqt yozuvi yaratish",
+          "description": "Vazifa uchun vaqt yozuvi yaratish imkoniyati"
+        },
+        {
+          "key": "task-time-entry:read",
+          "name": "Vaqt yozuvlarini ko'rish",
+          "description": "Vazifa vaqt yozuvlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-time-entry:update",
+          "name": "Vaqt yozuvini tahrirlash",
+          "description": "Vazifa vaqt yozuvlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task-time-entry:delete",
+          "name": "Vaqt yozuvini o'chirish",
+          "description": "Vazifa vaqt yozuvlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-time-entry:list",
+          "name": "Vaqt yozuvlari ro'yxati",
+          "description": "Vazifa vaqt yozuvlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-checklist",
+      "description": "Vazifa tekshiruv ro'yxatini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-checklist:create",
+          "name": "Tekshiruv ro'yxati yaratish",
+          "description": "Vazifa uchun tekshiruv ro'yxati yaratish imkoniyati"
+        },
+        {
+          "key": "task-checklist:read",
+          "name": "Tekshiruv ro'yxatini ko'rish",
+          "description": "Vazifa tekshiruv ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-checklist:update",
+          "name": "Tekshiruv ro'yxatini tahrirlash",
+          "description": "Vazifa tekshiruv ro'yxatini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task-checklist:delete",
+          "name": "Tekshiruv ro'yxatini o'chirish",
+          "description": "Vazifa tekshiruv ro'yxatini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-checklist:list",
+          "name": "Tekshiruv ro'yxatlari",
+          "description": "Vazifa tekshiruv ro'yxatlarini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-attachment",
+      "description": "Vazifa qo'shimchalarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-attachment:create",
+          "name": "Qo'shimcha yuklash",
+          "description": "Vazifaga qo'shimcha fayl yuklash imkoniyati"
+        },
+        {
+          "key": "task-attachment:read",
+          "name": "Qo'shimchalarni ko'rish",
+          "description": "Vazifa qo'shimchalarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-attachment:delete",
+          "name": "Qo'shimchani o'chirish",
+          "description": "Vazifa qo'shimchalarini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-attachment:list",
+          "name": "Qo'shimchalar ro'yxati",
+          "description": "Vazifa qo'shimchalari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-dependency",
+      "description": "Vazifa bog'liqliklarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "task-dependency:create",
+          "name": "Bog'liqlik yaratish",
+          "description": "Vazifalar orasida bog'liqlik yaratish imkoniyati"
+        },
+        {
+          "key": "task-dependency:read",
+          "name": "Bog'liqliklarni ko'rish",
+          "description": "Vazifa bog'liqliklarini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-dependency:delete",
+          "name": "Bog'liqlikni o'chirish",
+          "description": "Vazifa bog'liqliklarini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-dependency:list",
+          "name": "Bog'liqliklar ro'yxati",
+          "description": "Vazifa bog'liqliklari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-activity",
+      "description": "Vazifa faoliyat tarixini ko'rish moduli",
+      "permissions": [
+        {
+          "key": "task-activity:read",
+          "name": "Faoliyatni ko'rish",
+          "description": "Vazifa faoliyat tarixini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-activity:list",
+          "name": "Faoliyatlar ro'yxati",
+          "description": "Vazifa faoliyatlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "board-column",
+      "description": "Kanban taxtasi ustunlarini boshqarish moduli",
+      "permissions": [
+        {
+          "key": "board-column:create",
+          "name": "Ustun yaratish",
+          "description": "Yangi Kanban ustunlari yaratish imkoniyati"
+        },
+        {
+          "key": "board-column:read",
+          "name": "Ustunlarni ko'rish",
+          "description": "Kanban ustunlari ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "board-column:update",
+          "name": "Ustunni tahrirlash",
+          "description": "Kanban ustunlari ma'lumotlarini tahrirlash imkoniyati"
+        },
+        {
+          "key": "board-column:delete",
+          "name": "Ustunni o'chirish",
+          "description": "Kanban ustunlarini o'chirish imkoniyati"
+        },
+        {
+          "key": "board-column:list",
+          "name": "Ustunlar ro'yxati",
+          "description": "Barcha Kanban ustunlari ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "board-column:reorder",
+          "name": "Ustunlarni qayta tartiblash",
+          "description": "Kanban ustunlari tartibini o'zgartirish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "audit-log",
+      "description": "Audit jurnali moduli",
+      "permissions": [
+        {
+          "key": "audit-log:create",
+          "name": "Audit yozuvi yaratish",
+          "description": "Yangi audit yozuvlari yaratish imkoniyati"
+        },
+        {
+          "key": "audit-log:read",
+          "name": "Audit jurnalini ko'rish",
+          "description": "Audit jurnal ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "audit-log:list",
+          "name": "Audit jurnali ro'yxati",
+          "description": "Barcha audit yozuvlari ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "analytics",
+      "description": "Tahlil va statistika moduli",
+      "permissions": [
+        {
+          "key": "analytics:view_dashboard",
+          "name": "Dashboard ko'rish",
+          "description": "Tahlil dashboardini ko'rish imkoniyati"
+        },
+        {
+          "key": "analytics:view_reports",
+          "name": "Hisobotlarni ko'rish",
+          "description": "Statistik hisobotlarni ko'rish imkoniyati"
+        },
+        {
+          "key": "analytics:export",
+          "name": "Hisobotlarni eksport qilish",
+          "description": "Tahlil ma'lumotlarini eksport qilish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "notification",
+      "description": "Bildirishnomalar moduli",
+      "permissions": [
+        {
+          "key": "notification:read",
+          "name": "Bildirishnomalarni ko'rish",
+          "description": "Bildirishnomalarni ko'rish imkoniyati"
+        },
+        {
+          "key": "notification:manage",
+          "name": "Bildirishnomalarni boshqarish",
+          "description": "Bildirishnoma sozlamalarini boshqarish imkoniyati"
+        },
+        {
+          "key": "notification:send",
+          "name": "Bildirishnoma yuborish",
+          "description": "Boshqa foydalanuvchilarga bildirishnoma yuborish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "session",
+      "description": "Sessiya va qurilmalar boshqaruvi moduli",
+      "permissions": [
+        {
+          "key": "session:read",
+          "name": "Sessiyani ko'rish",
+          "description": "Faol sessiya ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "session:list",
+          "name": "Sessiyalar ro'yxati",
+          "description": "Barcha faol sessiyalar ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "session:revoke",
+          "name": "Sessiyani bekor qilish",
+          "description": "Qurilmadan chiqish (logout) imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "task-score-config",
+      "description": "Vazifa ball konfiguratsiyasi moduli",
+      "permissions": [
+        {
+          "key": "task-score-config:create",
+          "name": "Ball konfiguratsiyasi yaratish",
+          "description": "Yangi ball konfiguratsiyasi yaratish imkoniyati"
+        },
+        {
+          "key": "task-score-config:read",
+          "name": "Ball konfiguratsiyasini ko'rish",
+          "description": "Ball konfiguratsiyasini ko'rish imkoniyati"
+        },
+        {
+          "key": "task-score-config:update",
+          "name": "Ball konfiguratsiyasini tahrirlash",
+          "description": "Ball konfiguratsiyasini tahrirlash imkoniyati"
+        },
+        {
+          "key": "task-score-config:delete",
+          "name": "Ball konfiguratsiyasini o'chirish",
+          "description": "Ball konfiguratsiyasini o'chirish imkoniyati"
+        },
+        {
+          "key": "task-score-config:list",
+          "name": "Ball konfiguratsiyalari ro'yxati",
+          "description": "Barcha ball konfiguratsiyalari ro'yxatini ko'rish"
+        }
+      ]
+    },
+    {
+      "module": "kpi-reward-tier",
+      "description": "KPI mukofot darajalari moduli",
+      "permissions": [
+        {
+          "key": "kpi-reward-tier:create",
+          "name": "Mukofot darajasi yaratish",
+          "description": "Yangi mukofot darajasi yaratish imkoniyati"
+        },
+        {
+          "key": "kpi-reward-tier:read",
+          "name": "Mukofot darajasini ko'rish",
+          "description": "Mukofot darajasini ko'rish imkoniyati"
+        },
+        {
+          "key": "kpi-reward-tier:update",
+          "name": "Mukofot darajasini tahrirlash",
+          "description": "Mukofot darajasini tahrirlash imkoniyati"
+        },
+        {
+          "key": "kpi-reward-tier:delete",
+          "name": "Mukofot darajasini o'chirish",
+          "description": "Mukofot darajasini o'chirish imkoniyati"
+        },
+        {
+          "key": "kpi-reward-tier:list",
+          "name": "Mukofot darajalari ro'yxati",
+          "description": "Barcha mukofot darajalari ro'yxatini ko'rish"
+        }
+      ]
+    },
+    {
+      "module": "user-monthly-kpi",
+      "description": "Foydalanuvchi oylik KPI moduli",
+      "permissions": [
+        {
+          "key": "user-monthly-kpi:read",
+          "name": "Oylik KPI ko'rish",
+          "description": "Oylik KPI ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "user-monthly-kpi:list",
+          "name": "Oylik KPI ro'yxati",
+          "description": "Barcha oylik KPI ro'yxatini ko'rish imkoniyati"
+        },
+        {
+          "key": "user-monthly-kpi:finalize",
+          "name": "Oylik KPI yakunlash",
+          "description": "Oylik KPI davrini yakunlash imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "department-monthly-kpi",
+      "description": "Bo'lim oylik KPI moduli",
+      "permissions": [
+        {
+          "key": "department-monthly-kpi:read",
+          "name": "Bo'lim KPI ko'rish",
+          "description": "Bo'lim KPI ma'lumotlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "department-monthly-kpi:list",
+          "name": "Bo'lim KPI ro'yxati",
+          "description": "Barcha bo'lim KPI ro'yxatini ko'rish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "kpi-reward",
+      "description": "KPI mukofotlar moduli",
+      "permissions": [
+        {
+          "key": "kpi-reward:read",
+          "name": "Mukofotni ko'rish",
+          "description": "KPI mukofotini ko'rish imkoniyati"
+        },
+        {
+          "key": "kpi-reward:list",
+          "name": "Mukofotlar ro'yxati",
+          "description": "Barcha KPI mukofotlari ro'yxatini ko'rish"
+        },
+        {
+          "key": "kpi-reward:approve",
+          "name": "Mukofotni tasdiqlash",
+          "description": "KPI mukofotini tasdiqlash imkoniyati"
+        },
+        {
+          "key": "kpi-reward:pay",
+          "name": "Mukofotni to'lash",
+          "description": "KPI mukofotini to'langan deb belgilash"
+        },
+        {
+          "key": "kpi-reward:reject",
+          "name": "Mukofotni rad etish",
+          "description": "KPI mukofotini rad etish imkoniyati"
+        }
+      ]
+    },
+    {
+      "module": "kpi-achievement",
+      "description": "KPI yutuqlar moduli",
+      "permissions": [
+        {
+          "key": "kpi-achievement:read",
+          "name": "Yutuqni ko'rish",
+          "description": "KPI yutuqlarini ko'rish imkoniyati"
+        },
+        {
+          "key": "kpi-achievement:list",
+          "name": "Yutuqlar ro'yxati",
+          "description": "Barcha KPI yutuqlari ro'yxatini ko'rish"
+        }
+      ]
+    },
+    {
+      "module": "admin",
+      "description": "Tizim administratori moduli",
+      "permissions": [
+        {
+          "key": "admin:view_dashboard",
+          "name": "Boshqaruv panelini ko'rish",
+          "description": "Administrator boshqaruv panelini ko'rish imkoniyati"
+        },
+        {
+          "key": "admin:view_analytics",
+          "name": "Tahlillarni ko'rish",
+          "description": "Tizim tahlillarini ko'rish imkoniyati"
+        },
+        {
+          "key": "admin:view_audit_logs",
+          "name": "Audit jurnallarini ko'rish",
+          "description": "Audit jurnallarini ko'rish imkoniyati"
+        },
+        {
+          "key": "admin:system_settings",
+          "name": "Tizim sozlamalari",
+          "description": "Tizim sozlamalarini o'zgartirish imkoniyati"
+        },
+        {
+          "key": "admin:manage_all",
+          "name": "Hammasini boshqarish",
+          "description": "Barcha modullarga to'liq administrator kirish huquqi"
+        }
+      ]
+    }
+  ]
+}

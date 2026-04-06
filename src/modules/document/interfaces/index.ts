@@ -1,0 +1,5 @@
+export * from './document-enums'
+export * from './document-create.interface'
+export * from './document-update.interface'
+export * from './document-delete.interface'
+export * from './document-retrieve-all.interface'

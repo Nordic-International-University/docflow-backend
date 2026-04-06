@@ -1,0 +1,6 @@
+export * from './attachment.interface'
+export * from './attachment-create.interface'
+export * from './attachment-update.interface'
+export * from './attachment-delete.interface'
+export * from './attachment-retrieve-all.interface'
+export * from './attachment-retrieve-one.interface'

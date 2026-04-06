@@ -1,0 +1,5 @@
+export * from './project-label-create.interface'
+export * from './project-label-update.interface'
+export * from './project-label-retrieve-all.interface'
+export * from './project-label-retrieve-one.interface'
+export * from './project-label-delete.interface'

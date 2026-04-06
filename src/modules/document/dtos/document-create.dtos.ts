@@ -1,0 +1,114 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
+  IsObject,
+} from 'class-validator'
+import { DocumentStatus } from '../interfaces/document-enums'
+import { DocumentCreateRequest } from '../interfaces'
+
+export class DocumentCreateDto implements Omit<
+  DocumentCreateRequest,
+  'userId'
+> {
+  @ApiProperty({
+    description: 'Title of the document',
+    example: 'Q1 Financial Report',
+    minLength: 2,
+    maxLength: 255,
+  })
+  @IsString()
+  @Length(2, 255)
+  title: string
+
+  @ApiPropertyOptional({
+    description: 'Optional description for the document',
+    example: 'A detailed report of the first quarter financials.',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  description?: string
+
+  @ApiPropertyOptional({
+    description:
+      "Unique document identifier or number. If not provided, will be auto-generated based on the journal's format configuration (e.g., {prefix}-{year}-{sequence})",
+    example: 'FIN-2024-Q1-001',
+    maxLength: 100,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  documentNumber?: string
+
+  @ApiPropertyOptional({
+    description: 'Status of the document',
+    enum: DocumentStatus,
+    default: DocumentStatus.DRAFT,
+    example: DocumentStatus.DRAFT,
+  })
+  @IsOptional()
+  @IsEnum(DocumentStatus)
+  status?: DocumentStatus
+
+  @ApiProperty({
+    description: 'ID of the document type',
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  })
+  @IsUUID()
+  documentTypeId: string
+
+  @ApiProperty({
+    description: 'ID of the journal',
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  })
+  @IsUUID()
+  journalId: string
+
+  @ApiPropertyOptional({
+    description: 'Array of attachment IDs to associate with the document',
+    type: [String],
+    example: [
+      '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      '4fa85f64-5717-4562-b3fc-2c963f66afa7',
+    ],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(0)
+  @ArrayMaxSize(10)
+  @IsUUID('4', { each: true })
+  attachments: string[]
+
+  @ApiPropertyOptional({
+    description: 'ID of the document template to use (optional)',
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  templateId?: string
+
+  @ApiPropertyOptional({
+    description:
+      'Tags object for template placeholders (required if templateId is provided)',
+    example: {
+      employeeName: 'John Doe',
+      position: 'Software Engineer',
+      startDate: '2024-01-01',
+      salary: '75000',
+    },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  tags?: Record<string, any>
+}

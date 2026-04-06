@@ -1,0 +1,5 @@
+export * from './workflow-template.module'
+export * from './workflow-template.service'
+export * from './workflow-template.controller'
+export * from './dtos'
+export * from './interfaces'

@@ -1,0 +1,67 @@
+{
+  "departments": [
+    {
+      "name": "IT Bo'limi",
+      "code": "IT",
+      "description": "Axborot texnologiyalari bo'limi. Tashkilotning barcha texnik infratuzilmasini boshqaradi",
+      "location": "1-qavat, 101-xona",
+      "parentName": null
+    },
+    {
+      "name": "Moliya Bo'limi",
+      "code": "FIN",
+      "description": "Moliya va buxgalteriya bo'limi. Tashkilotning moliyaviy faoliyatini boshqaradi",
+      "location": "2-qavat, 201-xona",
+      "parentName": null
+    },
+    {
+      "name": "Kadrlar Bo'limi",
+      "code": "HR",
+      "description": "Kadrlar boshqaruvi bo'limi. Xodimlar bilan ishlash va kadrlar siyosatini yuritadi",
+      "location": "2-qavat, 205-xona",
+      "parentName": null
+    },
+    {
+      "name": "Arxiv Bo'limi",
+      "code": "ARC",
+      "description": "Arxiv va hujjatlar bo'limi. Barcha hujjatlarni saqlash va arxivlash bilan shug'ullanadi",
+      "location": "Yerto'la, A-01",
+      "parentName": null
+    },
+    {
+      "name": "Bosh Direktor",
+      "code": "CEO",
+      "description": "Bosh direksiya. Tashkilotning strategik boshqaruvi",
+      "location": "3-qavat, 301-xona",
+      "parentName": null
+    },
+    {
+      "name": "Dasturlash Sektori",
+      "code": "IT-DEV",
+      "description": "Dasturlash va ishlab chiqish sektori. Dasturiy ta'minot ishlab chiqish",
+      "location": "1-qavat, 102-xona",
+      "parentName": "IT Bo'limi"
+    },
+    {
+      "name": "Texnik Qo'llab-quvvatlash",
+      "code": "IT-SUP",
+      "description": "Texnik yordam va qo'llab-quvvatlash. Foydalanuvchilarga texnik yordam ko'rsatish",
+      "location": "1-qavat, 103-xona",
+      "parentName": "IT Bo'limi"
+    },
+    {
+      "name": "Buxgalteriya",
+      "code": "FIN-ACC",
+      "description": "Buxgalteriya va hisobot sektori. Moliyaviy hisoblarni yuritish va hisobotlar tayyorlash",
+      "location": "2-qavat, 202-xona",
+      "parentName": "Moliya Bo'limi"
+    },
+    {
+      "name": "Xazina",
+      "code": "FIN-TRS",
+      "description": "Xazina va moliyaviy operatsiyalar. Naqd pul va moliyaviy oqimlarni boshqarish",
+      "location": "2-qavat, 203-xona",
+      "parentName": "Moliya Bo'limi"
+    }
+  ]
+}

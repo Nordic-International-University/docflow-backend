@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES2022",
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "@auth": ["./auth"],
+      "@config": ["./config"],
+      "@common": ["./common"],
+      "@prisma": ["./prisma"],
+      "@guards": ["./guards"],
+      "@modules": ["./modules"],
+      "@actions": ["./actions"],
+      "@filters": ["./filters"],
+      "@constants": ["./constants"],
+      "@clients": ["./clients"],
+      "@decorators": ["./decorators"],
+      "@interceptors": ["./interceptors"],
+    },
+    "allowJs": true,
+    "declaration": true,
+    "baseUrl": "src",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strictNullChecks": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "eslint.config.js"]
+}

@@ -1,0 +1,954 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common'
+import { PrismaService } from '@prisma'
+import {
+  WorkflowCreateDto,
+  WorkflowUpdateDto,
+  WorkflowDeleteDto,
+  WorkflowRetrieveAllDto,
+  WorkflowListResponseDto,
+  WorkflowResponseDto,
+} from './dtos'
+import { WorkflowStatus, WorkflowType, DocumentStatus } from '@prisma/client'
+import { ROLE_NAMES, WORKFLOW_STEP_STATUS } from '@constants'
+import { NotificationService } from '../notification/notification.service'
+import { NotificationGateway } from '../notification/notification.gateway'
+import { TelegramService } from '../telegram/telegram.service'
+import { AuditLogService } from '../audit-log/audit-log.service'
+import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
+import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
+
+@Injectable()
+export class WorkflowService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+    private readonly notificationGateway: NotificationGateway,
+    private readonly telegramService: TelegramService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
+
+  async workflowRetrieveAll(
+    payload: WorkflowRetrieveAllDto & { userId?: string; roleName?: string },
+  ): Promise<WorkflowListResponseDto> {
+    const {
+      documentId,
+      status,
+      type,
+      page = 1,
+      limit = 10,
+      userId,
+      roleName,
+    } = payload
+
+    const isAdmin =
+      roleName === ROLE_NAMES.ADMIN || roleName === ROLE_NAMES.SUPER_ADMIN
+
+    const skip = (page - 1) * limit
+
+    const where = {
+      ...(documentId && { documentId }),
+      ...(status && { status }),
+      ...(type && { type }),
+      deletedAt: null,
+      // Filter by user access: user created document OR assigned to active workflow step
+      ...(!isAdmin &&
+        userId && {
+          OR: [
+            { document: { createdById: userId } },
+            {
+              workflowSteps: {
+                some: {
+                  assignedToUserId: userId,
+                  deletedAt: null,
+                  status: WORKFLOW_STEP_STATUS.IN_PROGRESS,
+                },
+              },
+            },
+          ],
+        }),
+    }
+
+    const [workflows, total] = await Promise.all([
+      this.prisma.workflow.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          document: {
+            include: {
+              documentType: true,
+              createdBy: {
+                select: {
+                  id: true,
+                  fullname: true,
+                  username: true,
+                },
+              },
+            },
+          },
+          workflowSteps: {
+            where: { deletedAt: null },
+            orderBy: { order: 'asc' },
+            include: {
+              assignedToUser: {
+                select: {
+                  id: true,
+                  fullname: true,
+                  username: true,
+                },
+              },
+              attachments: {
+                include: {
+                  attachment: true,
+                  uploadedBy: {
+                    select: {
+                      id: true,
+                      fullname: true,
+                      username: true,
+                    },
+                  },
+                },
+              },
+              actions: {
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                  performedBy: {
+                    select: {
+                      id: true,
+                      fullname: true,
+                      username: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.workflow.count({ where }),
+    ])
+
+    return {
+      data: workflows.map((workflow) => this.mapToResponseDto(workflow)),
+      total,
+      page,
+      limit,
+      hasNext: false,
+      hasPrevious: false,
+      totalPages: 0,
+    }
+  }
+
+  async workflowRetrieveOne(payload: {
+    id: string
+    userId?: string
+    roleName?: string
+  }): Promise<WorkflowResponseDto> {
+    const isAdmin =
+      payload.roleName === ROLE_NAMES.ADMIN ||
+      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        id: payload.id,
+        deletedAt: null,
+        // Filter by user access: user created document OR assigned to any workflow step (for viewing details)
+        ...(!isAdmin &&
+          payload.userId && {
+            OR: [
+              { document: { createdById: payload.userId } },
+              {
+                workflowSteps: {
+                  some: {
+                    assignedToUserId: payload.userId,
+                    deletedAt: null,
+                  },
+                },
+              },
+            ],
+          }),
+      },
+      include: {
+        document: {
+          include: {
+            documentType: true,
+            createdBy: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+          },
+        },
+        workflowSteps: {
+          where: { deletedAt: null },
+          orderBy: { order: 'asc' },
+          include: {
+            assignedToUser: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+            attachments: {
+              include: {
+                attachment: true,
+                uploadedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+            actions: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                performedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!workflow) {
+      throw new NotFoundException('Workflow not found')
+    }
+
+    return this.mapToResponseDto(workflow)
+  }
+
+  async workflowCreate(
+    payload: WorkflowCreateDto,
+  ): Promise<WorkflowResponseDto> {
+    const {
+      steps: providedSteps,
+      workflowTemplateId,
+      ...workflowData
+    } = payload
+
+    // Validate document exists
+    const document = await this.prisma.document.findFirst({
+      where: {
+        id: payload.documentId,
+        deletedAt: null,
+      },
+    })
+
+    if (!document) {
+      throw new NotFoundException('Document not found')
+    }
+
+    // Check for existing workflow
+    const existingWorkflow = await this.prisma.workflow.findFirst({
+      where: {
+        documentId: payload.documentId,
+        deletedAt: null,
+      },
+    })
+
+    if (existingWorkflow) {
+      throw new ConflictException('Workflow already exists for this document')
+    }
+
+    // Determine steps - either from template or from provided steps
+    let steps: Array<{
+      order: number
+      actionType: any
+      assignedToUserId?: string | null
+      dueDate?: Date | null
+      isRejected?: boolean
+    }> = []
+    let workflowType = workflowData.type || WorkflowType.CONSECUTIVE
+
+    if (workflowTemplateId) {
+      // Fetch workflow template with steps
+      const template = await this.prisma.workflowTemplate.findFirst({
+        where: {
+          id: workflowTemplateId,
+          deletedAt: null,
+          isActive: true,
+        },
+        include: {
+          steps: {
+            where: { deletedAt: null },
+            orderBy: { order: 'asc' },
+          },
+        },
+      })
+
+      if (!template) {
+        throw new NotFoundException(
+          'Workflow template not found or is inactive',
+        )
+      }
+
+      if (!template.steps || template.steps.length === 0) {
+        throw new BadRequestException('Workflow template has no steps defined')
+      }
+
+      if (!workflowData.type) {
+        workflowType = template.type
+      }
+
+      // Convert template steps to workflow steps
+      steps = template.steps.map((templateStep) => {
+        // Calculate due date based on dueInDays if set
+        let dueDate: Date | null = null
+        if (templateStep.dueInDays) {
+          dueDate = new Date()
+          dueDate.setDate(dueDate.getDate() + templateStep.dueInDays)
+        }
+
+        return {
+          order: templateStep.order,
+          actionType: templateStep.actionType,
+          assignedToUserId: templateStep.assignedToUserId || null,
+          dueDate,
+          isRejected: false,
+        }
+      })
+    } else if (providedSteps && providedSteps.length > 0) {
+      // Use provided steps
+      steps = providedSteps.map((step) => ({
+        order: step.order,
+        actionType: step.actionType,
+        assignedToUserId: step.assignedToUserId || null,
+        dueDate: step.dueDate ? new Date(step.dueDate) : null,
+        isRejected: step.isRejected ?? false,
+      }))
+    } else {
+      throw new BadRequestException(
+        'Either workflowTemplateId or steps must be provided',
+      )
+    }
+
+    // Validate step orders are unique and sequential
+    const stepOrders = steps.map((step) => step.order)
+    const uniqueOrders = new Set(stepOrders)
+    if (stepOrders.length !== uniqueOrders.size) {
+      throw new BadRequestException('Step orders must be unique')
+    }
+
+    // Validate assigned users exist (if provided)
+    const userIds = steps
+      .filter((step) => step.assignedToUserId)
+      .map((step) => step.assignedToUserId!)
+
+    if (userIds.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: {
+          id: { in: userIds },
+          deletedAt: null,
+        },
+        select: { id: true },
+      })
+
+      if (users.length !== userIds.length) {
+        throw new NotFoundException('One or more assigned users not found')
+      }
+    }
+
+    const workflow = await this.prisma.$transaction(async (tx) => {
+      // Determine the first step order (minimum order from provided steps)
+      const firstStepOrder = Math.min(...steps.map((s) => s.order))
+
+      const createdWorkflow = await tx.workflow.create({
+        data: {
+          documentId: workflowData.documentId,
+          currentStepOrder:
+            workflowData.currentStepOrder ??
+            (workflowType === WorkflowType.CONSECUTIVE ? firstStepOrder : 1),
+          status: workflowData.status || WorkflowStatus.ACTIVE,
+          type: workflowType,
+          deadline: workflowData.deadline
+            ? new Date(workflowData.deadline)
+            : null,
+        },
+      })
+
+      // Create creator step with order -1 (skipped order, accessible anytime for rejection)
+      await tx.workflowStep.create({
+        data: {
+          workflowId: createdWorkflow.id,
+          order: -1,
+          actionType: 'REVIEW',
+          assignedToUserId: document.createdById,
+          isRejected: false,
+          status: WORKFLOW_STEP_STATUS.COMPLETED,
+          startedAt: new Date(),
+          completedAt: new Date(),
+          isCreator: true,
+        },
+      })
+
+      await tx.workflowStep.createMany({
+        data: steps.map((step) => ({
+          workflowId: createdWorkflow.id,
+          order: step.order,
+          actionType: step.actionType,
+          assignedToUserId: step.assignedToUserId || null,
+          dueDate: step.dueDate || null,
+          isRejected: step.isRejected ?? false,
+          status:
+            workflowType === WorkflowType.PARALLEL ||
+            (workflowType === WorkflowType.CONSECUTIVE &&
+              step.order === firstStepOrder)
+              ? WORKFLOW_STEP_STATUS.IN_PROGRESS
+              : WORKFLOW_STEP_STATUS.NOT_STARTED,
+          startedAt:
+            workflowType === WorkflowType.PARALLEL ||
+            (workflowType === WorkflowType.CONSECUTIVE &&
+              step.order === firstStepOrder)
+              ? new Date()
+              : null,
+          isCreator: false,
+        })),
+      })
+
+      await tx.document.update({
+        where: { id: workflowData.documentId },
+        data: { status: DocumentStatus.PENDING },
+      })
+
+      return await tx.workflow.findUnique({
+        where: { id: createdWorkflow.id },
+        include: {
+          document: {
+            include: {
+              documentType: true,
+              createdBy: {
+                select: {
+                  id: true,
+                  fullname: true,
+                  username: true,
+                },
+              },
+            },
+          },
+          workflowSteps: {
+            where: { deletedAt: null },
+            orderBy: { order: 'asc' },
+            include: {
+              assignedToUser: {
+                select: {
+                  id: true,
+                  fullname: true,
+                  username: true,
+                },
+              },
+              actions: {
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                  performedBy: {
+                    select: {
+                      id: true,
+                      fullname: true,
+                      username: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+    })
+
+    // Send notifications to assigned users based on workflow type
+    if (workflow.workflowSteps && workflow.workflowSteps.length > 0) {
+      if (workflow.type === 'CONSECUTIVE') {
+        // For CONSECUTIVE workflows: notify only the first step user (exclude creator step)
+        const nonCreatorSteps = workflow.workflowSteps.filter(
+          (step) => !step.isCreator && step.order >= 0,
+        )
+        const firstStep = nonCreatorSteps.reduce((prev, current) =>
+          prev.order < current.order ? prev : current,
+        )
+
+        if (firstStep.assignedToUserId) {
+          await this.notificationService.createWorkflowStepAssignedNotification(
+            firstStep.assignedToUserId,
+            firstStep.id,
+            firstStep,
+          )
+
+          // Update workflow count for the assigned user
+          await this.notificationGateway.notifyWorkflowCountUpdate(
+            firstStep.assignedToUserId,
+          )
+
+          // Send Telegram notification
+          const documentNumber =
+            workflow.document?.documentNumber || "Noma'lum raqam"
+          const actionTypeUz = translateActionTypeToUzbek(firstStep.actionType)
+          const deadline = formatDateToUzbek(firstStep.dueDate)
+          await this.telegramService.sendWorkflowNotification(
+            firstStep.assignedToUserId,
+            `📋 <b>Yangi Ish Jarayoni Bosqichi</b>\n\n` +
+              `Sizga yangi ish jarayoni bosqichi tayinlandi.\n` +
+              `Bosqich turi: ${actionTypeUz}\n` +
+              `Hujjat: ${documentNumber} raqamli hujjat\n` +
+              `⏰ Muddat: ${deadline}`,
+            firstStep.id,
+          )
+        }
+      } else if (workflow.type === 'PARALLEL') {
+        // For PARALLEL workflows: notify ALL assigned users (exclude creator step)
+        const nonCreatorSteps = workflow.workflowSteps.filter(
+          (step) => !step.isCreator && step.order >= 0,
+        )
+        for (const step of nonCreatorSteps) {
+          if (step.assignedToUserId) {
+            await this.notificationService.createWorkflowStepAssignedNotification(
+              step.assignedToUserId,
+              step.id,
+              step,
+            )
+
+            // Update workflow count for each assigned user
+            await this.notificationGateway.notifyWorkflowCountUpdate(
+              step.assignedToUserId,
+            )
+
+            // Send Telegram notification
+            const documentNumber =
+              workflow.document?.documentNumber || "Noma'lum raqam"
+            const actionTypeUz = translateActionTypeToUzbek(step.actionType)
+            const deadline = formatDateToUzbek(step.dueDate)
+            await this.telegramService.sendWorkflowNotification(
+              step.assignedToUserId,
+              `📋 <b>Yangi Ish Jarayoni Bosqichi</b>\n\n` +
+                `Sizga yangi ish jarayoni bosqichi tayinlandi.\n` +
+                `Bosqich turi: ${actionTypeUz}\n` +
+                `Hujjat: ${documentNumber} raqamli hujjat\n` +
+                `⏰ Muddat: ${deadline}`,
+              step.id,
+            )
+          }
+        }
+      }
+    }
+
+    // Log workflow creation
+    await this.auditLogService.logAction(
+      'Workflow',
+      workflow.id,
+      AuditAction.CREATE,
+      document.createdById, // Using document creator as performer
+      {
+        newValues: {
+          documentId: workflow.documentId,
+          type: workflow.type,
+          status: workflow.status,
+          stepsCount: workflow.workflowSteps?.length || 0,
+        },
+      },
+    )
+
+    return this.mapToResponseDto(workflow)
+  }
+
+  async workflowUpdate(
+    payload: WorkflowUpdateDto & { id: string },
+  ): Promise<WorkflowResponseDto> {
+    const { id, ...updateData } = payload
+
+    // Verify workflow exists
+    const existingWorkflow = await this.prisma.workflow.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    })
+
+    if (!existingWorkflow) {
+      throw new NotFoundException('Workflow not found')
+    }
+
+    // If updating currentStepOrder, verify the step exists
+    if (updateData.currentStepOrder !== undefined) {
+      const stepExists = await this.prisma.workflowStep.findFirst({
+        where: {
+          workflowId: id,
+          order: updateData.currentStepOrder,
+          deletedAt: null,
+        },
+      })
+
+      if (!stepExists) {
+        throw new BadRequestException(
+          'Step with the specified order does not exist',
+        )
+      }
+    }
+
+    const workflow = await this.prisma.workflow.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(updateData.deadline !== undefined && {
+          deadline: updateData.deadline ? new Date(updateData.deadline) : null,
+        }),
+      },
+      include: {
+        document: {
+          include: {
+            documentType: true,
+            createdBy: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+          },
+        },
+        workflowSteps: {
+          where: { deletedAt: null },
+          orderBy: { order: 'asc' },
+          include: {
+            assignedToUser: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+            attachments: {
+              include: {
+                attachment: true,
+                uploadedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+            actions: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                performedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    // Log workflow update
+    const changes: Record<string, any> = {}
+    if (updateData.status && updateData.status !== existingWorkflow.status) {
+      changes.status = { old: existingWorkflow.status, new: updateData.status }
+    }
+    if (
+      updateData.currentStepOrder !== undefined &&
+      updateData.currentStepOrder !== existingWorkflow.currentStepOrder
+    ) {
+      changes.currentStepOrder = {
+        old: existingWorkflow.currentStepOrder,
+        new: updateData.currentStepOrder,
+      }
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await this.auditLogService.logAction(
+        'Workflow',
+        id,
+        AuditAction.UPDATE,
+        workflow.document.createdById,
+        { changes },
+      )
+    }
+
+    return this.mapToResponseDto(workflow)
+  }
+
+  async workflowDelete(
+    payload: WorkflowDeleteDto,
+  ): Promise<{ message: string }> {
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        id: payload.id,
+        deletedAt: null,
+      },
+    })
+
+    if (!workflow) {
+      throw new NotFoundException('Workflow not found')
+    }
+
+    // Use transaction to soft delete workflow and its steps
+    await this.prisma.$transaction(async (tx) => {
+      // Soft delete workflow steps
+      await tx.workflowStep.updateMany({
+        where: { workflowId: payload.id },
+        data: { deletedAt: new Date() },
+      })
+
+      // Soft delete workflow
+      await tx.workflow.update({
+        where: { id: payload.id },
+        data: { deletedAt: new Date() },
+      })
+
+      // Reset document status to DRAFT when workflow is deleted
+      await tx.document.update({
+        where: { id: workflow.documentId },
+        data: { status: DocumentStatus.DRAFT },
+      })
+    })
+
+    // Log workflow deletion
+    const document = await this.prisma.document.findUnique({
+      where: { id: workflow.documentId },
+      select: { createdById: true },
+    })
+
+    if (document) {
+      await this.auditLogService.logAction(
+        'Workflow',
+        payload.id,
+        AuditAction.DELETE,
+        document.createdById,
+        {
+          oldValues: {
+            documentId: workflow.documentId,
+            type: workflow.type,
+            status: workflow.status,
+          },
+        },
+      )
+    }
+
+    return { message: 'Workflow deleted successfully' }
+  }
+
+  // Additional business logic methods
+  async getWorkflowByDocumentId(
+    documentId: string,
+  ): Promise<WorkflowResponseDto> {
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        documentId,
+        deletedAt: null,
+      },
+      include: {
+        document: {
+          include: {
+            documentType: true,
+            createdBy: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+          },
+        },
+        workflowSteps: {
+          where: { deletedAt: null },
+          orderBy: { order: 'asc' },
+          include: {
+            assignedToUser: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+              },
+            },
+            attachments: {
+              include: {
+                attachment: true,
+                uploadedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+            actions: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              include: {
+                performedBy: {
+                  select: {
+                    id: true,
+                    fullname: true,
+                    username: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!workflow) {
+      throw new NotFoundException('Workflow not found for this document')
+    }
+
+    return this.mapToResponseDto(workflow)
+  }
+
+  async advanceWorkflowStep(workflowId: string): Promise<WorkflowResponseDto> {
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        id: workflowId,
+        deletedAt: null,
+      },
+      include: {
+        workflowSteps: {
+          where: { deletedAt: null },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    if (!workflow) {
+      throw new NotFoundException('Workflow not found')
+    }
+
+    const nextStepOrder = workflow.currentStepOrder + 1
+    const nextStep = workflow.workflowSteps.find(
+      (step) => step.order === nextStepOrder,
+    )
+
+    if (!nextStep) {
+      // No more steps, mark workflow as completed
+      return await this.workflowUpdate({
+        id: workflowId,
+        status: WorkflowStatus.COMPLETED,
+      })
+    }
+
+    // Update current step and activate the next step
+    await this.prisma.workflowStep.update({
+      where: { id: nextStep.id },
+      data: {
+        status: WORKFLOW_STEP_STATUS.IN_PROGRESS,
+        startedAt: new Date(),
+      },
+    })
+
+    return await this.workflowUpdate({
+      id: workflowId,
+      currentStepOrder: nextStepOrder,
+    })
+  }
+
+  private mapToResponseDto(workflow: any): WorkflowResponseDto {
+    return {
+      id: workflow.id,
+      documentId: workflow.documentId,
+      currentStepOrder: workflow.currentStepOrder,
+      document: workflow.document,
+      status: workflow.status,
+      type: workflow.type,
+      deadline: workflow.deadline?.toISOString(),
+      workflowSteps: workflow.workflowSteps.map((step: any) => ({
+        id: step.id,
+        order: step.order,
+        status: step.status,
+        actionType: step.actionType,
+        workflowId: step.workflowId,
+        assignedToUserId: step.assignedToUserId,
+        assignedToUser: step.assignedToUser
+          ? {
+              id: step.assignedToUser.id,
+              fullname: step.assignedToUser.fullname,
+              username: step.assignedToUser.username,
+            }
+          : null,
+        startedAt: step.startedAt?.toISOString(),
+        completedAt: step.completedAt?.toISOString(),
+        dueDate: step.dueDate?.toISOString(),
+        isRejected: step.isRejected,
+        rejectionReason: step.rejectionReason,
+        isCreator: step.isCreator ?? false,
+        rejectedAt: step.rejectedAt?.toISOString(),
+        attachments: step.attachments
+          ? step.attachments.map((att: any) => ({
+              id: att.id,
+              workflowStepId: att.workflowStepId,
+              attachmentId: att.attachmentId,
+              comment: att.comment,
+              uploadedByUserId: att.uploadedByUserId,
+              uploadedBy: att.uploadedBy
+                ? {
+                    id: att.uploadedBy.id,
+                    fullname: att.uploadedBy.fullname,
+                    username: att.uploadedBy.username,
+                  }
+                : null,
+              attachment: att.attachment
+                ? {
+                    id: att.attachment.id,
+                    fileName: att.attachment.fileName,
+                    fileUrl: att.attachment.fileUrl,
+                    fileSize: att.attachment.fileSize,
+                    mimeType: att.attachment.mimeType,
+                  }
+                : null,
+              createdAt: att.createdAt?.toISOString(),
+              updatedAt: att.updatedAt?.toISOString(),
+            }))
+          : [],
+        actions: step.actions
+          ? step.actions.map((action: any) => ({
+              id: action.id,
+              workflowStepId: action.workflowStepId,
+              actionType: action.actionType,
+              performedByUserId: action.performedByUserId,
+              performedBy: action.performedBy,
+              comment: action.comment,
+              metadata: action.metadata,
+              createdAt: action.createdAt?.toISOString(),
+              updatedAt: action.updatedAt?.toISOString(),
+            }))
+          : [],
+        createdAt: step.createdAt?.toISOString(),
+        updatedAt: step.updatedAt?.toISOString(),
+      })),
+      createdAt: workflow.createdAt?.toISOString(),
+      updatedAt: workflow.updatedAt?.toISOString(),
+      deletedAt: workflow.deletedAt?.toISOString(),
+    }
+  }
+}

@@ -1,0 +1,6 @@
+export * from './journal.interface'
+export * from './journal-create.interface'
+export * from './journal-update.interface'
+export * from './journal-delete.interface'
+export * from './journal-retrieve-one.interface'
+export * from './journal-retrieve-all.interface'

@@ -1,0 +1,5 @@
+export * from './document-type-create.interface'
+export * from './document-type-update.interface'
+export * from './document-type-delete.interface'
+export * from './document-type-retrieve-all.interface'
+export * from './document-type-retrieve-one.interface'

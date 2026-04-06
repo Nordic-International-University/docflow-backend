@@ -1,0 +1,5 @@
+export * from './task-score-config.module'
+export * from './task-score-config.service'
+export * from './task-score-config.controller'
+export * from './dtos'
+export * from './interfaces'

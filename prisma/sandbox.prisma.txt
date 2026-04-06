@@ -1,0 +1,1050 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  PAUSED
+}
+
+enum ActionType {
+  CREATED
+  UPDATED
+  APPROVED
+  REJECTED
+  ASSIGNED
+  COMMENTED
+}
+
+enum WorkflowStepActionType {
+  STARTED
+  APPROVED
+  REJECTED
+  REASSIGNED
+  COMMENTED
+  DELEGATED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  BLOCKED
+  CANCELLED
+  OVERDUE
+}
+
+enum WorkflowType {
+  CONSECUTIVE
+  PARALLEL
+}
+
+enum StepActionType {
+  APPROVAL
+  SIGN
+  REVIEW
+  ACKNOWLEDGE
+  VERIFICATION
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum ProjectMemberRole {
+  OWNER
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+model User {
+  id                  String                     @map("id")                        @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  fullname            String                     @map("fullname")                  @db.VarChar(255)
+  username            String                     @map("username")                  @db.VarChar(255)    @unique
+  password            String                     @map("password")                  @db.VarChar(255)
+  roleId              String?                    @map("role_id")                   @db.Uuid
+  departmentId        String?                    @map("department_id")             @db.Uuid
+  avatarUrl           String?                    @map("avatar_url")                @db.VarChar(255)
+  isActive            Boolean                    @map("is_active")                 @db.Boolean         @default(true)
+  lastLogin           DateTime?                  @map("last_login")                @db.Timestamp
+  telegramId          String?                    @map("telegram_id")               @db.VarChar(100)    @unique
+
+  role                  Role?                      @relation(fields: [roleId], references: [id])
+  department            Department?                @relation(fields: [departmentId], references: [id])
+  directorOfDepartment  Department?                @relation("DepartmentDirector")
+  workflowStepActions      WorkflowStepAction[]       @relation("WorkflowStepActionPerformer")
+  workflowStepAttachments  WorkflowStepAttachment[]   @relation("WorkflowStepAttachmentUploader")
+  templateSteps            WorkflowTemplateStep[]     @relation("WorkflowTemplateStepUser")
+
+  JournalsResponsible   Journal[]
+  attachments           Attachment[]
+  assignedWorkflowSteps WorkflowStep[]
+  wopiAccessTokens      WopiAccessToken[]
+
+  createdDocuments    Document[]       @relation("DocumentCreator")
+  updatedDocuments    Document[]       @relation("DocumentModifier")
+  auditLogs           AuditLog[]       @relation("AuditLogPerformedBy")
+  refreshTokens       RefreshToken[]
+
+  projectMembers                ProjectMember[]
+  assignedTasksLegacy           Task[]                          @relation("TaskAssigneeLegacy")  // TEMPORARY - for data migration
+  taskAssignees                 TaskAssignee[]                  @relation("TaskAssigneeUser")
+  createdTasks                  Task[]                          @relation("TaskCreator")
+  taskComments                  TaskComment[]                   @relation("TaskCommentUser")
+  taskCommentMentions           TaskCommentMention[]            @relation("TaskCommentMentionedUser")
+  taskCommentReactions          TaskCommentReaction[]           @relation("TaskCommentReactionUser")
+  uploadedTaskAttachments       TaskAttachment[]                @relation("TaskAttachmentUploader")
+  uploadedCommentAttachments    TaskCommentAttachment[]         @relation("TaskCommentAttachmentUploader")
+  taskWatchers                  TaskWatcher[]                   @relation("TaskWatcherUser")
+  completedChecklistItems       TaskChecklistItem[]             @relation("TaskChecklistItemCompleter")
+  taskActivities                TaskActivity[]                  @relation("TaskActivityUser")
+  taskTimeEntries               TaskTimeEntry[]                 @relation("TaskTimeEntryUser")
+
+  createdAt           DateTime                   @map("created_at")     @db.Timestamp       @default(now())
+  updatedAt           DateTime                   @map("updated_at")     @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                  @map("deleted_at")     @db.Timestamp
+
+  @@id([ id ])
+  @@map("user")
+}
+
+model Role {
+  id                  String                      @map("id")            @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String                      @map("name")          @db.VarChar(255)    @unique
+  description         String?                     @map("description")   @db.VarChar(255)
+
+  users               User[]
+  permissions         RolePermission[]
+  templateSteps       WorkflowTemplateStep[]      @relation("WorkflowTemplateStepRole")
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("role")
+}
+
+model Permission {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  key                 String                      @map("permission_key")  @db.VarChar(125)    @unique
+  name                String                      @map("name")            @db.VarChar(125)
+  module              String                      @map("module")          @db.VarChar(125)
+  description         String?                     @map("description")     @db.VarChar(255)
+
+  roles               RolePermission[]
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId              String                      @map("role_id")        @db.Uuid 
+  permissionId        String                      @map("permission_id")  @db.Uuid 
+
+  role                Role                        @relation(fields: [roleId], references: [id])
+  permission          Permission                  @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model Department {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String                      @map("name")            @db.VarChar(255)
+  code                String?                     @map("code")            @db.VarChar(50)     @unique
+  description         String                      @map("description")     @db.VarChar(255)
+  parentId            String?                     @map("parent_id")       @db.Uuid
+  directorId          String?                     @map("director_id")     @db.Uuid   @unique
+  location            String?                     @map("location")        @db.VarChar(255)
+
+  parent              Department?                 @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children            Department[]                @relation("DepartmentHierarchy")
+  director            User?                       @relation("DepartmentDirector",fields: [directorId], references: [id])
+
+  users               User[]
+  journals            Journal[]
+  templateSteps       WorkflowTemplateStep[]      @relation("WorkflowTemplateStepDepartment")
+  projects            Project[]
+
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")      @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")      @db.Timestamp
+
+  @@id([ id ])
+  @@map("department")
+}
+
+model Document {
+  id                  String                      @map("id")                 @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  title               String                      @map("title")              @db.VarChar(255)
+  description         String?                     @map("description")        @db.VarChar(500)
+  documentNumber      String?                     @map("document_number")    @db.VarChar(100)    @unique
+  status              DocumentStatus              @map("status")             @default(DRAFT)
+  documentTypeId      String                      @map("document_type_id")   @db.Uuid
+  journalId           String                      @map("journal_id")         @db.Uuid
+  createdById         String                      @map("created_by_id")      @db.Uuid
+  updatedById         String?                     @map("updated_by_id")      @db.Uuid
+  templateId          String?                     @map("template_id")        @db.Uuid
+  pdfUrl              String?                     @map("pdf_url")            @db.VarChar(500)
+  xfdfUrl             String?                     @map("xfdf_url")           @db.Text
+
+  documentType        DocumentType      @relation(fields: [documentTypeId], references: [id])
+  journal             Journal           @relation(fields: [journalId], references: [id])
+  createdBy           User              @relation("DocumentCreator", fields: [createdById], references: [id])
+  updatedBy           User?             @relation("DocumentModifier", fields: [updatedById], references: [id])
+  template            DocumentTemplate? @relation(fields: [templateId], references: [id])
+  attachments         Attachment[]
+  workflow            Workflow[]
+  projectDocuments    ProjectDocument[] @relation("ProjectDocumentLink")
+  taskDocuments       TaskDocument[]    @relation("TaskDocumentLink")
+
+  createdAt           DateTime         @default(now()) @db.Timestamp
+  updatedAt           DateTime         @updatedAt @db.Timestamp
+  deletedAt           DateTime?        @db.Timestamp
+
+  @@id([id])
+  @@map("documents")
+}
+
+
+model Attachment {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  fileName            String                      @map("file_name")       @db.VarChar(255)
+  fileUrl             String                      @map("file_url")        @db.VarChar(255)
+  fileSize            Int                         @map("file_size")       @db.Integer
+  mimeType            String                      @map("mime_type")       @db.VarChar(100)
+  documentId          String?                     @map("document_id")     @db.Uuid
+  uploadedById        String?                     @map("uploaded_by_id")  @db.Uuid
+  isAutoGenerated     Boolean                     @map("is_auto_generated") @db.Boolean       @default(false)
+
+  uploadedBy          User?                       @relation(fields: [uploadedById], references: [id])
+  document            Document?                   @relation(fields: [documentId], references: [id])
+
+  templates               DocumentTemplate[]
+  wopiAccessTokens        WopiAccessToken[]
+  workflowStepAttachments WorkflowStepAttachment[]
+  taskAttachments         TaskAttachment[]        @relation("TaskAttachmentFile")
+  commentAttachments      TaskCommentAttachment[] @relation("TaskCommentAttachmentFile")
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("attachment")
+}
+
+model WopiAccessToken {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  token               String                      @map("token")           @db.VarChar(255)    @unique
+  userId              String                      @map("user_id")         @db.Uuid
+  fileId              String                      @map("file_id")         @db.Uuid
+  permissions         Json                        @map("permissions")     @db.Json
+  expiresAt           DateTime                    @map("expires_at")      @db.Timestamp
+
+  user                User                        @relation(fields: [userId], references: [id])
+  file                Attachment                  @relation(fields: [fileId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")      @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")      @db.Timestamp
+
+  @@id([ id ])
+  @@index([token])
+  @@index([userId])
+  @@index([fileId])
+  @@index([expiresAt])
+  @@map("wopi_access_token")
+}
+
+model DocumentType {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))  
+  name                String                      @map("name")            @db.VarChar(100)    @unique
+  description         String                      @map("description")     @db.VarChar(255)
+  isActive            Boolean                     @map("is_active")       @db.Boolean         @default(true)
+
+  documents           Document[]
+  templates           DocumentTemplate[]
+  workflowTemplates   WorkflowTemplate[]
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("document_type")
+}
+
+
+model DocumentTemplate {
+  id                  String      @map("id")               @db.Uuid           @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String      @map("name")             @db.VarChar(255)
+  description         String?     @map("description")      @db.Text
+  templateFileId      String      @map("template_file_id") @db.Uuid
+  documentTypeId      String      @map("document_type_id") @db.Uuid
+  requiredTags        Json?       @map("required_tags")    @db.Json
+  isActive            Boolean     @map("is_active")        @db.Boolean        @default(true)
+  isPublic            Boolean     @map("is_public")        @db.Boolean        @default(true)
+
+  documentType        DocumentType? @relation(fields: [documentTypeId], references: [id])
+  templateFile        Attachment    @relation(fields: [templateFileId], references: [id])
+
+  documents           Document[]
+
+  createdAt           DateTime    @map("created_at")   @db.Timestamp @default(now())
+  updatedAt           DateTime    @map("updated_at")   @db.Timestamp @updatedAt
+  deletedAt           DateTime?   @map("deleted_at")   @db.Timestamp
+
+  @@id([id])
+  @@map("document_template")
+}
+
+model Journal {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))  
+  name                String                      @map("name")                @db.VarChar(255)
+  prefix              String                      @map("prefix")              @db.VarChar(255)
+  format              String                      @map("format")              @db.VarChar(100)
+  departmentId        String?                     @map("department_id")       @db.Uuid
+  responsibleUserId   String?                     @map("responsible_user_id") @db.Uuid
+
+  department          Department?      @relation(fields: [departmentId], references: [id])
+  responsibleUser     User?            @relation(fields: [responsibleUserId], references: [id])
+
+  document Document[]
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("journal")
+}
+
+model Workflow {
+  id                  String                      @map("id")                 @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  documentId          String                      @map("document_id")        @db.Uuid
+  currentStepOrder    Int                         @map("current_step_order") @db.Integer
+  type                WorkflowType                @map("type")               @default(CONSECUTIVE)
+  status              WorkflowStatus              @map("status")             @default(ACTIVE)
+  deadline            DateTime?                   @map("deadline")           @db.Timestamp
+
+  document            Document                    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  workflowSteps       WorkflowStep[]
+  task                Task?
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("workflow")
+}
+
+model WorkflowStep {
+  id                  String                      @map("id")                   @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  order               Int                         @map("order")                @db.Integer
+  status              String                      @map("status")               @db.VarChar(50)     @default("NOT_STARTED")
+  actionType          StepActionType              @map("action_type")
+  workflowId          String                      @map("workflow_id")          @db.Uuid
+  assignedToUserId    String?                     @map("assigned_to_user_id")  @db.Uuid
+  startedAt           DateTime?                   @map("started_at")           @db.Timestamp
+  completedAt         DateTime?                   @map("completed_at")         @db.Timestamp
+  dueDate             DateTime?                   @map("due_date")             @db.Timestamp
+  isCreator           Boolean?                    @map("is_creator")           @db.Boolean
+
+  isRejected          Boolean
+  rejectionReason     String?
+  rejectedAt          DateTime?
+
+  workflow            Workflow                    @relation(fields: [workflowId], references: [id])
+  assignedToUser      User?                       @relation(fields: [assignedToUserId], references: [id])
+  actions             WorkflowStepAction[]
+  attachments         WorkflowStepAttachment[]
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@unique([ workflowId, order ])
+  @@map("workflow_step")
+}
+
+model WorkflowStepAction {
+  id                  String                      @map("id")                @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  workflowStepId      String                      @map("workflow_step_id")  @db.Uuid
+  actionType          WorkflowStepActionType      @map("action_type")
+  performedByUserId   String                      @map("performed_by_user_id") @db.Uuid
+  comment             String?                     @map("comment")           @db.Text
+  metadata            Json?                       @map("metadata")          @db.Json
+
+  workflowStep        WorkflowStep                @relation(fields: [workflowStepId], references: [id], onDelete: Cascade)
+  performedBy         User                        @relation("WorkflowStepActionPerformer", fields: [performedByUserId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")        @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")        @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")        @db.Timestamp
+
+  @@id([ id ])
+  @@map("workflow_step_action")
+}
+
+model WorkflowStepAttachment {
+  id                  String                      @map("id")                    @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  workflowStepId      String                      @map("workflow_step_id")      @db.Uuid
+  attachmentId        String                      @map("attachment_id")         @db.Uuid
+  comment             String?                     @map("comment")               @db.Text
+  uploadedByUserId    String                      @map("uploaded_by_user_id")   @db.Uuid
+
+  workflowStep        WorkflowStep                @relation(fields: [workflowStepId], references: [id], onDelete: Cascade)
+  attachment          Attachment                  @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  uploadedBy          User                        @relation("WorkflowStepAttachmentUploader", fields: [uploadedByUserId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")            @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")            @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")            @db.Timestamp
+
+  @@id([ id ])
+  @@unique([ workflowStepId, attachmentId ])
+  @@map("workflow_step_attachment")
+}
+
+model Comment {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))  
+  documentId          String                      @map("document_id")     @db.Uuid
+  userId              String                      @map("user_id")         @db.Uuid
+  content             String                      @map("content")         @db.Text
+
+  createdAt           DateTime                    @map("created_at")    @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")    @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")    @db.Timestamp
+
+  @@id([ id ])
+  @@map("comment")
+}
+
+model AuditLog {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  entity              String                      @map("entity")          @db.VarChar(255)
+  entityId            String                      @map("entity_id")       @db.Uuid
+  action              AuditAction                 @map("action")          @default(OTHER)
+  changes             Json?                       @map("changes")
+  oldValues           Json?                       @map("old_values")
+  newValues           Json?                       @map("new_values")
+  ipAddress           String?                     @map("ip_address")      @db.VarChar(45)
+  userAgent           String?                     @map("user_agent")      @db.Text
+  performedByUserId   String                      @map("performed_by_user_id") @db.Uuid
+  performedAt         DateTime                    @map("performed_at")    @db.Timestamp       @default(now())
+
+  performedBy         User                        @relation("AuditLogPerformedBy", fields: [performedByUserId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")      @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")      @db.Timestamp
+
+  @@id([ id ])
+  @@index([entity, entityId])
+  @@index([performedByUserId])
+  @@index([performedAt])
+  @@map("audit_log")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  ARCHIVE
+  OTHER
+
+  @@map("audit_action")
+}
+
+model RefreshToken {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  token               String                      @map("token")           @db.Text            @unique
+  userId              String                      @map("user_id")         @db.Uuid
+  expiresAt           DateTime                    @map("expires_at")      @db.Timestamp
+  isRevoked           Boolean                     @map("is_revoked")      @db.Boolean         @default(false)
+  revokedAt           DateTime?                   @map("revoked_at")      @db.Timestamp
+  ipAddress           String?                     @map("ip_address")      @db.VarChar(45)
+  userAgent           String?                     @map("user_agent")      @db.Text
+
+  user                User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")      @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")      @db.Timestamp
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@id([ id ])
+  @@map("refresh_token")
+}
+
+model TokenBlacklist {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  token               String                      @map("token")           @db.Text            @unique
+  tokenType           TokenType                   @map("token_type")      @default(ACCESS)
+  expiresAt           DateTime                    @map("expires_at")      @db.Timestamp
+  reason              String?                     @map("reason")          @db.VarChar(255)
+
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+  @@id([ id ])
+  @@map("token_blacklist")
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+
+  @@map("token_type")
+}
+
+model Notification {
+  id                  String                      @map("id")              @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  userId              String                      @map("user_id")         @db.Uuid
+  type                String                      @map("type")            @db.VarChar(50)
+  title               String                      @map("title")           @db.VarChar(255)
+  message             String                      @map("message")         @db.Text
+  metadata            Json?                       @map("metadata")        @db.JsonB
+  isRead              Boolean                     @map("is_read")         @db.Boolean         @default(false)
+  readAt              DateTime?                   @map("read_at")         @db.Timestamp
+  createdAt           DateTime                    @map("created_at")      @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")      @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")      @db.Timestamp
+
+  @@id([ id ])
+  @@index([userId, isRead])
+  @@map("notification")
+}
+
+model WorkflowTemplate {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String                      @map("name")                @db.VarChar(255)
+  description         String?                     @map("description")         @db.Text
+  documentTypeId      String?                     @map("document_type_id")    @db.Uuid
+  type                WorkflowType                @map("type")                @default(CONSECUTIVE)
+  isActive            Boolean                     @map("is_active")           @db.Boolean         @default(true)
+  isPublic            Boolean                     @map("is_public")           @db.Boolean         @default(true)
+
+  documentType        DocumentType?               @relation(fields: [documentTypeId], references: [id])
+  steps               WorkflowTemplateStep[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@map("workflow_template")
+}
+
+model WorkflowTemplateStep {
+  id                  String                      @map("id")                      @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  workflowTemplateId  String                      @map("workflow_template_id")    @db.Uuid
+  order               Int                         @map("order")                   @db.Integer
+  actionType          StepActionType              @map("action_type")
+  assignedToUserId    String?                     @map("assigned_to_user_id")     @db.Uuid
+  assignedToRoleId    String?                     @map("assigned_to_role_id")     @db.Uuid
+  assignedToDepartmentId String?                  @map("assigned_to_department_id") @db.Uuid
+  dueInDays           Int?                        @map("due_in_days")             @db.Integer
+  description         String?                     @map("description")             @db.Text
+  isRequired          Boolean                     @map("is_required")             @db.Boolean         @default(true)
+
+  workflowTemplate    WorkflowTemplate            @relation(fields: [workflowTemplateId], references: [id], onDelete: Cascade)
+  assignedToUser      User?                       @relation("WorkflowTemplateStepUser", fields: [assignedToUserId], references: [id])
+  assignedToRole      Role?                       @relation("WorkflowTemplateStepRole", fields: [assignedToRoleId], references: [id])
+  assignedToDepartment Department?                @relation("WorkflowTemplateStepDepartment", fields: [assignedToDepartmentId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")              @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")              @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")              @db.Timestamp
+
+  @@id([ id ])
+  @@unique([ workflowTemplateId, order ])
+  @@map("workflow_template_step")
+}
+
+model Project {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String                      @map("name")                @db.VarChar(255)
+  description         String?                     @map("description")         @db.Text
+  key                 String                      @map("key")                 @db.VarChar(10)     @unique
+  status              ProjectStatus               @map("status")              @default(PLANNING)
+  departmentId        String?                     @map("department_id")       @db.Uuid
+  startDate           DateTime?                   @map("start_date")          @db.Date
+  endDate             DateTime?                   @map("end_date")            @db.Date
+  budget              Decimal?                    @map("budget")              @db.Decimal(15, 2)
+  color               String?                     @map("color")               @db.VarChar(7)
+  icon                String?                     @map("icon")                @db.VarChar(50)
+  isArchived          Boolean                     @map("is_archived")         @db.Boolean         @default(false)
+  archivedAt          DateTime?                   @map("archived_at")         @db.Timestamp
+
+  department          Department?                 @relation(fields: [departmentId], references: [id])
+  members             ProjectMember[]
+  tasks               Task[]
+  labels              ProjectLabel[]
+  documents           ProjectDocument[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([departmentId])
+  @@index([status])
+  @@map("project")
+}
+
+model ProjectMember {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  projectId           String                      @map("project_id")          @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+  role                ProjectMemberRole           @map("role")                @default(MEMBER)
+  joinedAt            DateTime                    @map("joined_at")           @db.Timestamp       @default(now())
+
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user                User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_member")
+}
+
+model ProjectLabel {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  projectId           String                      @map("project_id")          @db.Uuid
+  name                String                      @map("name")                @db.VarChar(100)
+  color               String                      @map("color")               @db.VarChar(7)
+  description         String?                     @map("description")         @db.VarChar(255)
+
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskLabels          TaskLabel[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("project_label")
+}
+
+model TaskCategory {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  name                String                      @map("name")                @db.VarChar(100)    @unique
+  description         String?                     @map("description")         @db.VarChar(255)
+  color               String?                     @map("color")               @db.VarChar(7)
+  icon                String?                     @map("icon")                @db.VarChar(50)
+  isActive            Boolean                     @map("is_active")           @db.Boolean         @default(true)
+
+  tasks               Task[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@map("task_category")
+}
+
+model Task {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  title               String                      @map("title")               @db.VarChar(500)
+  description         String?                     @map("description")         @db.Text
+  projectId           String                      @map("project_id")          @db.Uuid
+  categoryId          String?                     @map("category_id")         @db.Uuid
+  status              TaskStatus                  @map("status")              @default(NOT_STARTED)
+  priority            TaskPriority                @map("priority")            @default(MEDIUM)
+  assignedToUserId    String?                     @map("assigned_to_user_id") @db.Uuid            // TEMPORARY - will be removed after data migration
+  createdById         String                      @map("created_by_id")       @db.Uuid
+  parentTaskId        String?                     @map("parent_task_id")      @db.Uuid
+  workflowId          String?                     @map("workflow_id")         @db.Uuid            @unique
+  startDate           DateTime?                   @map("start_date")          @db.Date
+  dueDate             DateTime?                   @map("due_date")            @db.Date
+  completedAt         DateTime?                   @map("completed_at")        @db.Timestamp
+  estimatedHours      Decimal?                    @map("estimated_hours")     @db.Decimal(8, 2)
+  actualHours         Decimal?                    @map("actual_hours")        @db.Decimal(8, 2)
+  position            Int                         @map("position")            @db.Integer         @default(0)
+  isArchived          Boolean                     @map("is_archived")         @db.Boolean         @default(false)
+  archivedAt          DateTime?                   @map("archived_at")         @db.Timestamp
+
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category            TaskCategory?               @relation(fields: [categoryId], references: [id])
+  assignedTo          User?                       @relation("TaskAssigneeLegacy", fields: [assignedToUserId], references: [id])  // TEMPORARY
+  createdBy           User                        @relation("TaskCreator", fields: [createdById], references: [id])
+  parentTask          Task?                       @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
+  subtasks            Task[]                      @relation("TaskSubtasks")
+  workflow            Workflow?                   @relation(fields: [workflowId], references: [id])
+  assignees           TaskAssignee[]
+  labels              TaskLabel[]
+  comments            TaskComment[]
+  attachments         TaskAttachment[]
+  watchers            TaskWatcher[]
+  checklists          TaskChecklist[]
+  dependsOn           TaskDependency[]            @relation("DependentTask")
+  blockedBy           TaskDependency[]            @relation("BlockingTask")
+  activities          TaskActivity[]
+  timeEntries         TaskTimeEntry[]
+  documents           TaskDocument[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([projectId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToUserId])
+  @@index([createdById])
+  @@index([parentTaskId])
+  @@index([dueDate])
+  @@map("task")
+}
+
+model TaskLabel {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  labelId             String                      @map("label_id")            @db.Uuid
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label               ProjectLabel                @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([taskId, labelId])
+  @@index([taskId])
+  @@index([labelId])
+  @@map("task_label")
+}
+
+model TaskComment {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+  content             String                      @map("content")             @db.Text
+  parentCommentId     String?                     @map("parent_comment_id")   @db.Uuid
+  isEdited            Boolean                     @map("is_edited")           @db.Boolean         @default(false)
+  editedAt            DateTime?                   @map("edited_at")           @db.Timestamp
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskCommentUser", fields: [userId], references: [id])
+  parentComment       TaskComment?                @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies             TaskComment[]               @relation("CommentReplies")
+  mentions            TaskCommentMention[]
+  reactions           TaskCommentReaction[]
+  attachments         TaskCommentAttachment[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([taskId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@map("task_comment")
+}
+
+model TaskCommentMention {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  commentId           String                      @map("comment_id")          @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+
+  comment             TaskComment                 @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskCommentMentionedUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+  @@map("task_comment_mention")
+}
+
+model TaskCommentReaction {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  commentId           String                      @map("comment_id")          @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+  emoji               String                      @map("emoji")               @db.VarChar(10)
+
+  comment             TaskComment                 @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskCommentReactionUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@index([userId])
+  @@map("task_comment_reaction")
+}
+
+model TaskAttachment {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  attachmentId        String                      @map("attachment_id")       @db.Uuid
+  uploadedById        String                      @map("uploaded_by_id")      @db.Uuid
+  description         String?                     @map("description")         @db.VarChar(500)
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  attachment          Attachment                  @relation("TaskAttachmentFile", fields: [attachmentId], references: [id], onDelete: Cascade)
+  uploadedBy          User                        @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@unique([taskId, attachmentId])
+  @@index([taskId])
+  @@index([attachmentId])
+  @@index([uploadedById])
+  @@map("task_attachment")
+}
+
+model TaskCommentAttachment {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  commentId           String                      @map("comment_id")          @db.Uuid
+  attachmentId        String                      @map("attachment_id")       @db.Uuid
+  uploadedById        String                      @map("uploaded_by_id")      @db.Uuid
+
+  comment             TaskComment                 @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  attachment          Attachment                  @relation("TaskCommentAttachmentFile", fields: [attachmentId], references: [id], onDelete: Cascade)
+  uploadedBy          User                        @relation("TaskCommentAttachmentUploader", fields: [uploadedById], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([commentId, attachmentId])
+  @@index([commentId])
+  @@index([attachmentId])
+  @@map("task_comment_attachment")
+}
+
+model TaskWatcher {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskWatcherUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_watcher")
+}
+
+model TaskAssignee {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskAssigneeUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_assignee")
+}
+
+model TaskChecklist {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  title               String                      @map("title")               @db.VarChar(255)
+  position            Int                         @map("position")            @db.Integer         @default(0)
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  items               TaskChecklistItem[]
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([taskId])
+  @@map("task_checklist")
+}
+
+model TaskChecklistItem {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  checklistId         String                      @map("checklist_id")        @db.Uuid
+  title               String                      @map("title")               @db.VarChar(500)
+  isCompleted         Boolean                     @map("is_completed")        @db.Boolean         @default(false)
+  completedById       String?                     @map("completed_by_id")     @db.Uuid
+  completedAt         DateTime?                   @map("completed_at")        @db.Timestamp
+  position            Int                         @map("position")            @db.Integer         @default(0)
+
+  checklist           TaskChecklist               @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  completedBy         User?                       @relation("TaskChecklistItemCompleter", fields: [completedById], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([checklistId])
+  @@map("task_checklist_item")
+}
+
+model TaskDependency {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  dependsOnTaskId     String                      @map("depends_on_task_id")  @db.Uuid
+
+  task                Task                        @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask       Task                        @relation("BlockingTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@unique([taskId, dependsOnTaskId])
+  @@index([taskId])
+  @@index([dependsOnTaskId])
+  @@map("task_dependency")
+}
+
+model TaskActivity {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+  action              String                      @map("action")              @db.VarChar(100)
+  changes             Json?                       @map("changes")             @db.JsonB
+  metadata            Json?                       @map("metadata")            @db.JsonB
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskActivityUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+
+  @@id([ id ])
+  @@index([taskId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("task_activity")
+}
+
+model TaskTimeEntry {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  userId              String                      @map("user_id")             @db.Uuid
+  description         String?                     @map("description")         @db.Text
+  hours               Decimal                     @map("hours")               @db.Decimal(8, 2)
+  date                DateTime                    @map("date")                @db.Date
+  isBillable          Boolean                     @map("is_billable")         @db.Boolean         @default(true)
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                User                        @relation("TaskTimeEntryUser", fields: [userId], references: [id])
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@index([taskId])
+  @@index([userId])
+  @@index([date])
+  @@map("task_time_entry")
+}
+
+model ProjectDocument {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  projectId           String                      @map("project_id")          @db.Uuid
+  documentId          String                      @map("document_id")         @db.Uuid
+  description         String?                     @map("description")         @db.VarChar(500)
+
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  document            Document                    @relation("ProjectDocumentLink", fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@unique([projectId, documentId])
+  @@index([projectId])
+  @@index([documentId])
+  @@map("project_document")
+}
+
+model TaskDocument {
+  id                  String                      @map("id")                  @db.Uuid            @default(dbgenerated("GEN_RANDOM_UUID()"))
+  taskId              String                      @map("task_id")             @db.Uuid
+  documentId          String                      @map("document_id")         @db.Uuid
+  description         String?                     @map("description")         @db.VarChar(500)
+
+  task                Task                        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  document            Document                    @relation("TaskDocumentLink", fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime                    @map("created_at")          @db.Timestamp       @default(now())
+  updatedAt           DateTime                    @map("updated_at")          @db.Timestamp       @updatedAt
+  deletedAt           DateTime?                   @map("deleted_at")          @db.Timestamp
+
+  @@id([ id ])
+  @@unique([taskId, documentId])
+  @@index([taskId])
+  @@index([documentId])
+  @@map("task_document")
+}

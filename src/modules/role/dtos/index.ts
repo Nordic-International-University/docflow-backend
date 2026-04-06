@@ -1,0 +1,5 @@
+export * from './role-retrieve-all.dtos'
+export * from './role-retrieve-one.dtos'
+export * from './role-create.dtos'
+export * from './role-update.dtos'
+export * from './role-delete.dtos'

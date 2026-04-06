@@ -1,0 +1,5 @@
+export * from './task-time-entry-create.interface'
+export * from './task-time-entry-update.interface'
+export * from './task-time-entry-retrieve-all.interface'
+export * from './task-time-entry-retrieve-one.interface'
+export * from './task-time-entry-delete.interface'

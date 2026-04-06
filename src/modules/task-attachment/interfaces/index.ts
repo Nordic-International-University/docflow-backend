@@ -1,0 +1,5 @@
+export * from './task-attachment-create.interface'
+export * from './task-attachment-update.interface'
+export * from './task-attachment-retrieve-all.interface'
+export * from './task-attachment-retrieve-one.interface'
+export * from './task-attachment-delete.interface'

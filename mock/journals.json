@@ -1,0 +1,74 @@
+{
+  "journals": [
+    {
+      "name": "Kiruvchi hujjatlar jurnali",
+      "prefix": "KH",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:5}",
+      "departmentName": "Arxiv Bo'limi",
+      "responsibleUsername": "sardor.arxiv"
+    },
+    {
+      "name": "Chiquvchi hujjatlar jurnali",
+      "prefix": "CH",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:5}",
+      "departmentName": "Arxiv Bo'limi",
+      "responsibleUsername": "sardor.arxiv"
+    },
+    {
+      "name": "Ichki buyruqlar jurnali",
+      "prefix": "IB",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:4}",
+      "departmentName": "Bosh Direktor",
+      "responsibleUsername": null
+    },
+    {
+      "name": "Shartnomalar jurnali",
+      "prefix": "SH",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:5}",
+      "departmentName": "Moliya Bo'limi",
+      "responsibleUsername": "nodira.direktor"
+    },
+    {
+      "name": "Moliyaviy hujjatlar jurnali",
+      "prefix": "MH",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:5}",
+      "departmentName": "Moliya Bo'limi",
+      "responsibleUsername": "dilnoza.menejer"
+    },
+    {
+      "name": "Kadrlar buyruqlari jurnali",
+      "prefix": "KB",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:4}",
+      "departmentName": "Kadrlar Bo'limi",
+      "responsibleUsername": "zilola.hr"
+    },
+    {
+      "name": "Texnik hujjatlar jurnali",
+      "prefix": "TH",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:4}",
+      "departmentName": "IT Bo'limi",
+      "responsibleUsername": "asror.direktor"
+    },
+    {
+      "name": "Ma'lumotnomalar jurnali",
+      "prefix": "ML",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:5}",
+      "departmentName": "Arxiv Bo'limi",
+      "responsibleUsername": "sardor.arxiv"
+    },
+    {
+      "name": "Hisobotlar jurnali",
+      "prefix": "HB",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:4}",
+      "departmentName": "Moliya Bo'limi",
+      "responsibleUsername": "dilnoza.menejer"
+    },
+    {
+      "name": "Uchrashuvlar bayonnomasi jurnali",
+      "prefix": "UB",
+      "format": "{PREFIX}-{YEAR}-{NUMBER:4}",
+      "departmentName": "Bosh Direktor",
+      "responsibleUsername": null
+    }
+  ]
+}
