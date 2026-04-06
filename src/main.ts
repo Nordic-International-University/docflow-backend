@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { App } from './app'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { HttpExceptionFilter } from './filters/http-exception.filter'
+import { ResponseInterceptor } from '@common'
 
 setImmediate(async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(App)
@@ -51,7 +52,7 @@ setImmediate(async (): Promise<void> => {
     type: VersioningType.URI,
   })
 
-  // app.useGlobalInterceptors(new PassIpInterceptor())
+  app.useGlobalInterceptors(new ResponseInterceptor())
 
   const document = SwaggerModule.createDocument(app, config)
 

@@ -27,7 +27,6 @@ export class DocumentTypeService {
   }
 
   async documentTypeCreate(payload: DocumentTypeCreateRequest): Promise<void> {
-    // Check if document type name already exists
     const existingDocumentType = await this.#_prisma.documentType.findFirst({
       where: {
         name: payload.name,
