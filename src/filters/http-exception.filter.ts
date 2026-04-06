@@ -232,10 +232,8 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
 
   // ==================== PERMISSION (qo'shimcha) ====================
   'Permission key already used by another permission': "Bu ruxsat kaliti boshqa ruxsat tomonidan ishlatilgan",
-
-  // ==================== ROLE (qo'shimcha) ====================
-  'Role not found': "Rol topilmadi",
 }
+
 
 const STATUS_TRANSLATIONS: Record<number, string> = {
   [HttpStatus.BAD_REQUEST]: "Noto'g'ri so'rov",
@@ -244,7 +242,6 @@ const STATUS_TRANSLATIONS: Record<number, string> = {
   [HttpStatus.NOT_FOUND]: 'Topilmadi',
   [HttpStatus.CONFLICT]: 'Ziddiyat yuz berdi',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Ichki server xatosi',
-
   [HttpStatus.UNPROCESSABLE_ENTITY]: "Ma'lumotlar noto'g'ri",
   [HttpStatus.TOO_MANY_REQUESTS]: "So'rovlar soni limitdan oshdi",
 }
