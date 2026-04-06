@@ -9,25 +9,17 @@ export interface DocumentNumberFormat {
 export class DocumentNumberGenerator {
   /**
    * Generate a unique document number based on journal format
-   * Supports the following placeholders:
+   * Supports placeholders (case-insensitive):
    * - {prefix}: Journal prefix
-   * - {year}: 4-digit year (e.g., 2024)
-   * - {yy}: 2-digit year (e.g., 24)
-   * - {month}: 2-digit month (01-12)
-   * - {day}: 2-digit day (01-31)
+   * - {year}: 4-digit year
+   * - {yy}: 2-digit year
+   * - {month}: 2-digit month
+   * - {day}: 2-digit day
    * - {date}: Full date YYYYMMDD
-   * - {sequence}: Auto-incrementing sequence number (padded to 4 digits)
-   * - {seq}: Auto-incrementing sequence number (padded to 3 digits)
-   *
-   * Examples:
-   * - "{prefix}-{year}-{sequence}" -> "INV-2024-0001"
-   * - "{prefix}/{yy}/{month}/{seq}" -> "DOC/24/12/001"
-   * - "{prefix}-{date}-{sequence}" -> "RPT-20241216-0001"
-   *
-   * @param prisma PrismaService instance
-   * @param journalId Journal ID to get prefix and format
-   * @param customDate Optional custom date (defaults to current date)
-   * @returns Generated unique document number
+   * - {sequence}: Auto-incrementing (4 digits)
+   * - {seq}: Auto-incrementing (3 digits)
+   * - {NUMBER:N}: Auto-incrementing (N digits)
+   * - {NUMBER}: Auto-incrementing (4 digits)
    */
   static async generate(
     prisma: PrismaService,
@@ -35,10 +27,7 @@ export class DocumentNumberGenerator {
     customDate?: Date,
   ): Promise<string> {
     const journal = await prisma.journal.findFirst({
-      where: {
-        id: journalId,
-        deletedAt: null,
-      },
+      where: { id: journalId, deletedAt: null },
     })
 
     if (!journal) {
@@ -47,63 +36,53 @@ export class DocumentNumberGenerator {
 
     return this.generateFromFormat(
       prisma,
-      {
-        prefix: journal.prefix,
-        format: journal.format,
-        journalId: journalId,
-      },
+      { prefix: journal.prefix, format: journal.format, journalId },
       customDate,
     )
   }
 
-  /**
-   * Generate document number from a specific format configuration
-   */
   static async generateFromFormat(
     prisma: PrismaService,
     config: DocumentNumberFormat,
     customDate?: Date,
   ): Promise<string> {
     const date = customDate || new Date()
-    const hasSequence =
-      config.format.includes('{sequence}') || config.format.includes('{seq}') || /{NUMBER(:\d+)?}/i.test(config.format)
 
-    // Generate base number without sequence first
-    let baseNumber = this.replacePlaceholders(config, date, 0)
+    // Check if format has any sequence placeholder
+    const hasSequence = this.hasSequencePlaceholder(config.format)
 
     if (!hasSequence) {
-      // If no sequence placeholder, check if it's unique
+      const result = this.buildNumber(config, date, 0)
       const existing = await prisma.document.findFirst({
-        where: {
-          documentNumber: baseNumber,
-          deletedAt: null,
-        },
+        where: { documentNumber: result, deletedAt: null },
       })
-
       if (existing) {
         throw new Error(
-          `Document number "${baseNumber}" already exists. Consider adding {sequence} placeholder to your journal format.`,
+          `Document number "${result}" already exists. Add {NUMBER:N} placeholder to your journal format.`,
         )
       }
-
-      return baseNumber
+      return result
     }
 
-    // Find the next available sequence number
-    const sequenceNumber = await this.getNextSequenceNumber(
-      prisma,
-      config,
-      date,
-    )
+    // Find next sequence number
+    const nextSeq = await this.getNextSequence(prisma, config, date)
+    return this.buildNumber(config, date, nextSeq)
+  }
 
-    // Generate final number with sequence
-    return this.replacePlaceholders(config, date, sequenceNumber)
+  private static hasSequencePlaceholder(format: string): boolean {
+    const lower = format.toLowerCase()
+    return (
+      lower.includes('{sequence}') ||
+      lower.includes('{seq}') ||
+      lower.includes('{number}') ||
+      /{number:\d+}/i.test(format)
+    )
   }
 
   /**
-   * Replace all placeholders in the format string
+   * Build the document number by replacing all placeholders
    */
-  private static replacePlaceholders(
+  private static buildNumber(
     config: DocumentNumberFormat,
     date: Date,
     sequence: number,
@@ -115,178 +94,101 @@ export class DocumentNumberGenerator {
     const dateStr = `${year}${month}${day}`
 
     let result = config.format
-      .replace(/{prefix}/gi, config.prefix)
-      .replace(/{year}/gi, String(year))
-      .replace(/{yy}/gi, yy)
-      .replace(/{month}/gi, month)
-      .replace(/{day}/gi, day)
-      .replace(/{date}/gi, dateStr)
+    // Replace date/prefix placeholders (case-insensitive)
+    result = result.replace(/{prefix}/gi, config.prefix)
+    result = result.replace(/{year}/gi, String(year))
+    result = result.replace(/{yy}/gi, yy)
+    result = result.replace(/{month}/gi, month)
+    result = result.replace(/{day}/gi, day)
+    result = result.replace(/{date}/gi, dateStr)
 
-    // Handle sequence placeholders: {sequence}, {seq}, {NUMBER:N}
-    if (result.includes('{sequence}')) {
-      result = result.replace(/{sequence}/g, String(sequence).padStart(4, '0'))
-    }
-    if (result.includes('{seq}')) {
-      result = result.replace(/{seq}/g, String(sequence).padStart(3, '0'))
-    }
-    // Support {NUMBER:N} format (e.g., {NUMBER:5} = 5 digit padding)
-    const numberMatch = result.match(/{NUMBER:(\d+)}/i)
-    if (numberMatch) {
-      const padding = parseInt(numberMatch[1], 10)
-      result = result.replace(/{NUMBER:\d+}/gi, String(sequence).padStart(padding, '0'))
-    }
-    // Support {NUMBER} without padding (default 4)
-    if (/{NUMBER}/i.test(result)) {
-      result = result.replace(/{NUMBER}/gi, String(sequence).padStart(4, '0'))
-    }
+    // Replace sequence placeholders
+    result = result.replace(/{sequence}/gi, String(sequence).padStart(4, '0'))
+    result = result.replace(/{seq}/gi, String(sequence).padStart(3, '0'))
+
+    // {NUMBER:N} — N digit padding
+    result = result.replace(/{NUMBER:(\d+)}/gi, (_, digits) =>
+      String(sequence).padStart(parseInt(digits, 10), '0'),
+    )
+    // {NUMBER} without padding spec — default 4
+    result = result.replace(/{NUMBER}/gi, String(sequence).padStart(4, '0'))
 
     return result
   }
 
   /**
-   * Find the next available sequence number for a given format and date
-   * This method looks at existing document numbers matching the pattern
-   * and returns the next available sequence
+   * Get the prefix part of the document number (everything before the sequence)
    */
-  private static async getNextSequenceNumber(
-    prisma: PrismaService,
-    config: DocumentNumberFormat,
-    date: Date,
-  ): Promise<number> {
-    // Extract the prefix part BEFORE replacing placeholders
-    // Split by {sequence} or {seq} to get everything before the sequence
-    let prefixFormat = config.format
-    if (config.format.includes('{sequence}')) {
-      prefixFormat = config.format.split('{sequence}')[0]
-    } else if (config.format.includes('{seq}')) {
-      prefixFormat = config.format.split('{seq}')[0]
-    } else if (/{NUMBER(:\d+)?}/i.test(config.format)) {
-      prefixFormat = config.format.split(/{NUMBER(:\d+)?}/i)[0]
+  private static buildPrefix(config: DocumentNumberFormat, date: Date): string {
+    const format = config.format.toLowerCase()
+    let prefixPart = config.format
+
+    // Split at the sequence placeholder
+    if (format.includes('{sequence}')) {
+      prefixPart = config.format.substring(0, format.indexOf('{sequence}'))
+    } else if (format.includes('{seq}')) {
+      prefixPart = config.format.substring(0, format.indexOf('{seq}'))
+    } else {
+      // {NUMBER:N} or {NUMBER}
+      const match = config.format.match(/{number(:\d+)?}/i)
+      if (match) {
+        prefixPart = config.format.substring(0, config.format.indexOf(match[0]))
+      }
     }
 
-    // Now replace date placeholders in the prefix part only
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const yy = String(year).slice(-2)
     const dateStr = `${year}${month}${day}`
 
-    const prefixBeforeSequence = prefixFormat
+    return prefixPart
       .replace(/{prefix}/gi, config.prefix)
       .replace(/{year}/gi, String(year))
       .replace(/{yy}/gi, yy)
       .replace(/{month}/gi, month)
       .replace(/{day}/gi, day)
       .replace(/{date}/gi, dateStr)
+  }
 
-    // Get all documents from this journal that start with the prefix
+  private static async getNextSequence(
+    prisma: PrismaService,
+    config: DocumentNumberFormat,
+    date: Date,
+  ): Promise<number> {
+    const prefix = this.buildPrefix(config, date)
+
     const whereClause: any = {
-      documentNumber: {
-        startsWith: prefixBeforeSequence,
-      },
+      documentNumber: { startsWith: prefix },
     }
-
-    // Filter by journalId if provided
     if (config.journalId) {
       whereClause.journalId = config.journalId
     }
 
-    const existingDocuments = await prisma.document.findMany({
+    const existingDocs = await prisma.document.findMany({
       where: whereClause,
-      select: {
-        documentNumber: true,
-      },
-      orderBy: {
-        documentNumber: 'desc',
-      },
+      select: { documentNumber: true },
+      orderBy: { documentNumber: 'desc' },
     })
 
-    if (existingDocuments.length === 0) {
-      return 1
-    }
+    if (existingDocs.length === 0) return 1
 
-    // Extract sequence numbers from existing documents
+    // Extract sequence numbers: take everything after the prefix and parse as int
     const sequences: number[] = []
-
-    for (const doc of existingDocuments) {
+    for (const doc of existingDocs) {
       if (!doc.documentNumber) continue
-
-      const sequence = this.extractSequenceNumber(
-        doc.documentNumber,
-        config,
-        date,
-      )
-      if (sequence !== null) {
-        sequences.push(sequence)
+      const suffix = doc.documentNumber.substring(prefix.length)
+      const num = parseInt(suffix, 10)
+      if (!isNaN(num) && num > 0) {
+        sequences.push(num)
       }
     }
 
-    if (sequences.length === 0) {
-      return 1
-    }
-
-    // Return the highest sequence + 1
+    if (sequences.length === 0) return 1
     return Math.max(...sequences) + 1
   }
 
-  /**
-   * Extract sequence number from a document number
-   * given the format configuration
-   */
-  private static extractSequenceNumber(
-    documentNumber: string,
-    config: DocumentNumberFormat,
-    date: Date,
-  ): number | null {
-    // Create a regex pattern from the format
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const yy = String(year).slice(-2)
-    const dateStr = `${year}${month}${day}`
-
-    // Escape special regex characters in the format
-    let pattern = config.format
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      .replace(
-        /\\{prefix\\}/gi,
-        config.prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-      )
-      .replace(/\\{year\\}/gi, String(year))
-      .replace(/\\{yy\\}/gi, yy)
-      .replace(/\\{month\\}/gi, month)
-      .replace(/\\{day\\}/gi, day)
-      .replace(/\\{date\\}/gi, dateStr)
-
-    // Replace sequence placeholders with capturing groups
-    if (pattern.includes('\\{sequence\\}')) {
-      pattern = pattern.replace(/\\{sequence\\}/g, '(\\d+)')
-    } else if (pattern.includes('\\{seq\\}')) {
-      pattern = pattern.replace(/\\{seq\\}/g, '(\\d+)')
-    } else if (/\\{NUMBER(:\\d+)?\\}/i.test(pattern)) {
-      pattern = pattern.replace(/\\{NUMBER(:\\d+)?\\}/gi, '(\\d+)')
-    } else {
-      return null
-    }
-
-    const regex = new RegExp(`^${pattern}$`)
-    const match = documentNumber.match(regex)
-
-    if (!match || !match[1]) {
-      return null
-    }
-
-    return parseInt(match[1], 10)
-  }
-
-  /**
-   * Validate a journal format string
-   * Returns validation result with any errors
-   */
-  static validateFormat(format: string): {
-    valid: boolean
-    errors: string[]
-  } {
+  static validateFormat(format: string): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 
     if (!format || format.trim() === '') {
@@ -294,50 +196,19 @@ export class DocumentNumberGenerator {
       return { valid: false, errors }
     }
 
-    // Check for at least one placeholder
     const hasPlaceholder =
-      /{prefix}|{year}|{yy}|{month}|{day}|{date}|{sequence}|{seq}/.test(format)
-
-    if (!hasPlaceholder) {
-      errors.push(
-        'Format must contain at least one placeholder: {prefix}, {year}, {yy}, {month}, {day}, {date}, {sequence}, or {seq}',
+      /{prefix}|{year}|{yy}|{month}|{day}|{date}|{sequence}|{seq}|{number}/i.test(
+        format,
       )
+    if (!hasPlaceholder) {
+      errors.push('Format must contain at least one placeholder')
     }
 
-    // Warn if no sequence placeholder (not an error, but might cause issues)
-    const hasSequence = /{sequence}|{seq}/.test(format)
+    const hasSequence = this.hasSequencePlaceholder(format)
     if (!hasSequence) {
       errors.push(
-        'Warning: Format does not include {sequence} or {seq}. Document numbers may not be unique if multiple documents are created on the same date.',
+        'Warning: No sequence placeholder. Documents may not be unique.',
       )
-    }
-
-    // Check for both sequence placeholders (not allowed)
-    if (format.includes('{sequence}') && format.includes('{seq}')) {
-      errors.push(
-        'Format cannot contain both {sequence} and {seq} placeholders',
-      )
-    }
-
-    // Check for invalid placeholders
-    const validPlaceholders = [
-      'prefix',
-      'year',
-      'yy',
-      'month',
-      'day',
-      'date',
-      'sequence',
-      'seq',
-    ]
-    const placeholderPattern = /{([^}]+)}/g
-    let match: RegExpExecArray | null
-
-    while ((match = placeholderPattern.exec(format)) !== null) {
-      const placeholder = match[1]
-      if (!validPlaceholders.includes(placeholder)) {
-        errors.push(`Invalid placeholder: {${placeholder}}`)
-      }
     }
 
     return {
