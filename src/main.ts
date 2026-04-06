@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { App } from './app'
 import { NestExpressApplication } from '@nestjs/platform-express'
+import { HttpExceptionFilter } from './filters/http-exception.filter'
 
 setImmediate(async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(App)
@@ -23,6 +24,7 @@ setImmediate(async (): Promise<void> => {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   })
 
+  app.useGlobalFilters(new HttpExceptionFilter())
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
