@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -315,7 +316,7 @@ export class AttachmentService {
     payload: AttachmentCreateRequest,
   ): Promise<AttachmentCreateResponse> {
     if (!payload.file) {
-      throw new Error(
+      throw new BadRequestException(
         'No file provided. Make sure the request is multipart/form-data with field name "file"',
       )
     }

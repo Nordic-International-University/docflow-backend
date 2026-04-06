@@ -1,0 +1,115 @@
+================================================================
+TASK MANAGER — REAL-TIME WEBSOCKET YANGILANISHLARI
+================================================================
+
+WEBSOCKET ULANISH:
+  const taskSocket = io('https://api.docverse.uz/tasks', {
+    auth: { token: accessToken },
+    transports: ['websocket', 'polling'],
+  })
+
+
+LOYIHA BOARD SAHIFASI OCHILGANDA:
+  taskSocket.emit('project:join', { projectId: currentProjectId })
+
+SAHIFA YOPILGANDA:
+  taskSocket.emit('project:leave', { projectId: currentProjectId })
+
+
+TINGLANADIGAN EVENTLAR (on):
+================================================================
+
+1. task:created — Yangi task yaratildi
+   { task, createdBy, timestamp }
+   -> Boardga yangi task kartochka qo'shish
+
+2. task:updated — Task yangilandi (title, priority, description va h.k.)
+   { task, updatedBy, timestamp }
+   -> Task kartochkani yangi ma'lumotlar bilan yangilash
+
+3. task:deleted — Task o'chirildi
+   { taskId, deletedBy, timestamp }
+   -> Task kartochkani boarddan olib tashlash
+
+4. task:moved — Task boshqa ustun'ga ko'chirildi
+   { taskId, fromColumnId, toColumnId, movedBy, timestamp }
+   -> Task kartochkani eski ustundan yangi ustun'ga ko'chirish
+
+5. task:assignee-changed — Assignee o'zgardi
+   { taskId, assignees[], changedBy, timestamp }
+   -> Task kartochkadagi assignee avatarlarni yangilash
+
+6. task:comment-added — Yangi comment qo'shildi
+   { taskId, comment, timestamp }
+   -> Comment counter yoki comment listni yangilash
+
+7. task:checklist-updated — Checklist o'zgardi
+   { taskId, checklists[], timestamp }
+   -> Checklist progress barni yangilash
+
+8. task:label-changed — Label o'zgardi
+   { taskId, labels[], timestamp }
+   -> Task kartochkadagi labellarni yangilash
+
+9. board:columns-updated — Board ustunlari o'zgardi
+   { columns[], timestamp }
+   -> Ustunlarni qayta render qilish
+
+
+FRONTEND KOD MISOLI:
+================================================================
+
+// hooks/useTaskSocket.ts
+import { useEffect } from 'react'
+import { io, Socket } from 'socket.io-client'
+
+let taskSocket: Socket | null = null
+
+export function useTaskSocket(projectId: string, token: string) {
+  useEffect(() => {
+    taskSocket = io('https://api.docverse.uz/tasks', {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    })
+
+    taskSocket.emit('project:join', { projectId })
+
+    taskSocket.on('task:created', ({ task }) => {
+      // store'ga yangi task qo'shish
+    })
+
+    taskSocket.on('task:updated', ({ task }) => {
+      // store'dagi taskni yangilash
+    })
+
+    taskSocket.on('task:moved', ({ taskId, toColumnId }) => {
+      // taskni boshqa columnId ga ko'chirish
+    })
+
+    taskSocket.on('task:deleted', ({ taskId }) => {
+      // store'dan taskni olib tashlash
+    })
+
+    taskSocket.on('task:comment-added', ({ taskId, comment }) => {
+      // comment countni oshirish
+    })
+
+    taskSocket.on('task:checklist-updated', ({ taskId, checklists }) => {
+      // checklist progressni yangilash
+    })
+
+    return () => {
+      taskSocket?.emit('project:leave', { projectId })
+      taskSocket?.disconnect()
+    }
+  }, [projectId, token])
+}
+
+
+MUHIM ESLATMALAR:
+================================================================
+- project:join qilmasangiz hech qanday event kelmaydi
+- Faqat shu loyihadagi o'zgarishlar keladi
+- O'z o'zgarishlaringiz ham keladi — updatedBy/createdBy
+  tekshirib, o'zingiz qilgan o'zgarishni ignore qilishingiz mumkin
+- Token muddati tugasa socket avtomatik uziladi

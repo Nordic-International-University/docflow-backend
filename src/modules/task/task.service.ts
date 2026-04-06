@@ -154,7 +154,11 @@ export class TaskService {
     )
 
     // Real-time broadcast: task created
-    this.#_taskGateway.emitTaskCreated(task.projectId, task, payload.createdById)
+    this.#_taskGateway.emitTaskCreated(
+      task.projectId,
+      task,
+      payload.createdById,
+    )
 
     // Notify assignees (skip creator — they already know)
     if (payload.assigneeIds?.length) {
@@ -207,6 +211,8 @@ export class TaskService {
       }),
       ...(payload.createdById && { createdById: payload.createdById }),
       ...(payload.categoryId && { categoryId: payload.categoryId }),
+      ...(payload.parentTaskId && { parentTaskId: payload.parentTaskId }),
+      ...(payload.boardColumnId && { boardColumnId: payload.boardColumnId }),
     }
 
     const taskList = await this.#_prisma.task.findMany({
@@ -660,14 +666,21 @@ export class TaskService {
     const updatedTask = await this.#_prisma.task.findFirst({
       where: { id },
       include: {
-        assignees: { include: { user: { select: { id: true, fullname: true, username: true } } } },
+        assignees: {
+          include: {
+            user: { select: { id: true, fullname: true, username: true } },
+          },
+        },
         category: { select: { id: true, name: true, color: true } },
         boardColumn: { select: { id: true, name: true } },
       },
     })
     if (updatedTask) {
       // Board move emit
-      if (updateData.boardColumnId && updateData.boardColumnId !== existingTask.boardColumnId) {
+      if (
+        updateData.boardColumnId &&
+        updateData.boardColumnId !== existingTask.boardColumnId
+      ) {
         this.#_taskGateway.emitTaskMoved(
           existingTask.projectId,
           id,
@@ -676,7 +689,11 @@ export class TaskService {
           updatedBy,
         )
       }
-      this.#_taskGateway.emitTaskUpdated(existingTask.projectId, updatedTask, updatedBy)
+      this.#_taskGateway.emitTaskUpdated(
+        existingTask.projectId,
+        updatedTask,
+        updatedBy,
+      )
     }
   }
 
@@ -708,6 +725,10 @@ export class TaskService {
     )
 
     // Real-time broadcast: task deleted
-    this.#_taskGateway.emitTaskDeleted(existingTask.projectId, payload.id, payload.deletedBy)
+    this.#_taskGateway.emitTaskDeleted(
+      existingTask.projectId,
+      payload.id,
+      payload.deletedBy,
+    )
   }
 }

@@ -35,4 +35,12 @@ export class TaskRetrieveQueryDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string
+
+  @IsOptional()
+  @IsUUID()
+  parentTaskId?: string
+
+  @IsOptional()
+  @IsUUID()
+  boardColumnId?: string
 }
