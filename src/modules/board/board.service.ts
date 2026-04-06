@@ -6,16 +6,19 @@ import {
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
+import { TaskService } from '../task/task.service'
 import { BoardMoveDto } from './dtos'
 
 @Injectable()
 export class BoardService {
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
+  readonly #_taskService: TaskService
 
-  constructor(prisma: PrismaService, auditLogService: AuditLogService) {
+  constructor(prisma: PrismaService, auditLogService: AuditLogService, taskService: TaskService) {
     this.#_prisma = prisma
     this.#_auditLogService = auditLogService
+    this.#_taskService = taskService
   }
 
   async boardRetrieve(projectId: string) {
@@ -232,81 +235,23 @@ export class BoardService {
         })
       }
 
-      // KPI scoring when task completes
-      if (isCompleting) {
-        const penaltyPerDay = task.project?.penaltyPerDay ?? 5
-        const allScorable = [
-          {
-            id: taskId,
-            score: task.score,
-            dueDate: task.dueDate,
-            assignees: task.assignees,
-          },
-          ...task.subtasks.map((s) => ({
-            id: s.id,
-            score: s.score,
-            dueDate: s.dueDate,
-            assignees: s.assignees,
-          })),
-        ]
-
-        for (const t of allScorable) {
-          if (t.score == null || t.assignees.length === 0) continue
-
-          const daysLate = t.dueDate
-            ? Math.max(
-                0,
-                Math.floor((now.getTime() - t.dueDate.getTime()) / 86_400_000),
-              )
-            : 0
-          const penalty = daysLate > 0 ? daysLate * penaltyPerDay : 0
-          const earnedScore = Math.max(0, t.score - penalty)
-
-          for (const assignee of t.assignees) {
-            // upsert — idempotent if task was somehow scored before
-            await tx.taskKpiScore.upsert({
-              where: {
-                taskId_userId: { taskId: t.id, userId: assignee.userId },
-              },
-              create: {
-                taskId: t.id,
-                userId: assignee.userId,
-                baseScore: t.score,
-                earnedScore,
-                penaltyApplied: penalty,
-                dueDate: t.dueDate ?? now,
-                completedDate: now,
-                daysLate,
-                periodYear: now.getFullYear(),
-                periodMonth: now.getMonth() + 1,
-                breakdown: {
-                  baseScore: t.score,
-                  daysLate,
-                  penaltyPerDay,
-                  totalPenalty: penalty,
-                  earned: earnedScore,
-                },
-              },
-              update: {
-                earnedScore,
-                penaltyApplied: penalty,
-                completedDate: now,
-                daysLate,
-                periodYear: now.getFullYear(),
-                periodMonth: now.getMonth() + 1,
-                breakdown: {
-                  baseScore: t.score,
-                  daysLate,
-                  penaltyPerDay,
-                  totalPenalty: penalty,
-                  earned: earnedScore,
-                },
-              },
-            })
-          }
-        }
-      }
     })
+
+    // KPI: delegate to TaskService (idempotent, auto-scores from priority)
+    if (isCompleting) {
+      try {
+        await this.#_taskService.taskComplete({ id: taskId, completedBy: movedBy })
+      } catch {
+        // Task may already be completed — ignore
+      }
+    }
+    if (isReopening) {
+      try {
+        await this.#_taskService.taskUncomplete({ id: taskId, reopenedBy: movedBy })
+      } catch {
+        // Task may already be open — ignore
+      }
+    }
 
     // Activity log
     await this.#_prisma.taskActivity.create({

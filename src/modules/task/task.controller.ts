@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common'
 import { TaskService } from './task.service'
 import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
@@ -60,6 +60,20 @@ export class TaskController {
       ...payload,
       updatedBy: req.user.userId,
     })
+  }
+
+  @Post(':id/complete')
+  @Permissions(PERMISSIONS.TASK.COMPLETE)
+  @ApiOperation({ summary: "Topshiriqni yakunlash — KPI hisoblanadi" })
+  async taskComplete(@Param('id') id: string, @Req() req: any) {
+    return await this.taskService.taskComplete({ id, completedBy: req.user.userId })
+  }
+
+  @Post(':id/uncomplete')
+  @Permissions(PERMISSIONS.TASK.COMPLETE)
+  @ApiOperation({ summary: "Topshiriqni qayta ochish — KPI bekor qilinadi" })
+  async taskUncomplete(@Param('id') id: string, @Req() req: any) {
+    return await this.taskService.taskUncomplete({ id, reopenedBy: req.user.userId })
   }
 
   @Delete(':id')

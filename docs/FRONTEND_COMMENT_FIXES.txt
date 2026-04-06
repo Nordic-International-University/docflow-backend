@@ -1,0 +1,306 @@
+================================================================
+TASK COMMENT — FRONTEND TUZATISHLARI
+================================================================
+
+
+MUAMMO 1: TARTIB NOTO'G'RI
+================================================================
+Hozir: reply ota izoh tagiga qo'shilyapti
+Kerak: BARCHA izohlar (reply ham) har doim pastda — Telegram'dek
+
+SABAB: Frontend reply kelganda uni parent comment yoniga/tagiga
+qo'shyapti. Bu noto'g'ri.
+
+TUZATISH: Backend'dan kelgan tartibni o'zgartirmang.
+Yangi comment (reply bo'lsa ham) har doim arrayning OXIRIGA qo'shiladi.
+
+  // API dan yuklash — tartibni O'ZGARTIRMANG
+  const { data } = await axios.get('/api/v1/task-comment?taskId=xxx&pageSize=100')
+  setComments(data.data)  // backend allaqachon createdAt asc tartibda qaytaradi
+
+  // Real-time — har doim OXIRIGA push
+  socket.on('task:comment-added', ({ comment }) => {
+    setComments(prev => [...prev, comment])
+    scrollToBottom()
+  })
+
+  // QILMANG:
+  // ❌ comments.sort(...)
+  // ❌ comments.reverse()
+  // ❌ if (comment.replyTo) insertAfterParent(comment)
+  // ❌ if (comment.parentCommentId) groupByParent(comment)
+
+
+MUAMMO 2: NESTED REPLY QO'SHILMAYAPTI
+================================================================
+Hozir: birinchi reply ishlaydi, reply'ga reply qo'shilmaydi
+Kerak: har qanday chuqurlikdagi reply ishlashi kerak
+
+SABAB: Frontend faqat parentCommentId === null bo'lmaganlarni
+handle qilyapti yoki faqat 1-level depth qo'llab-quvvatlaydi.
+
+TUZATISH: parentCommentId ga UMUMAN qaramang render uchun.
+Barcha commentlar bitta flat list. replyTo faqat ko'rsatish uchun.
+
+  // BITTA FLAT LIST — hech qanday guruhlash yo'q
+  {comments.map(comment => (
+    <div key={comment.id} id={comment.id}>
+
+      {/* Reply preview — faqat ko'rsatish */}
+      {comment.replyTo && (
+        <ReplyPreview
+          replyTo={comment.replyTo}
+          onClick={() => scrollToComment(comment.replyTo.id)}
+        />
+      )}
+
+      {/* Comment content */}
+      <CommentBubble comment={comment} />
+    </div>
+  ))}
+
+
+MUAMMO 3: REPLY PREVIEW VA SCROLL
+================================================================
+
+ReplyPreview componenti:
+
+  function ReplyPreview({ replyTo, onClick }) {
+    // Matn aniqlash
+    let previewText = replyTo.content
+    if (!previewText) {
+      if (replyTo.attachmentType?.startsWith('audio/'))
+        previewText = '🎤 Ovozli xabar'
+      else if (replyTo.attachmentType?.startsWith('image/'))
+        previewText = '📷 Rasm'
+      else if (replyTo.attachmentType?.startsWith('video/'))
+        previewText = '🎬 Video'
+      else if (replyTo.attachmentType)
+        previewText = '📎 ' + replyTo.attachmentName
+      else
+        previewText = '...'
+    }
+
+    return (
+      <div onClick={onClick} className="reply-preview">
+        <span className="reply-user">{replyTo.user.fullname}</span>
+        <span className="reply-text">{previewText}</span>
+      </div>
+    )
+  }
+
+ScrollToComment funksiyasi:
+
+  function scrollToComment(commentId) {
+    const el = document.getElementById(commentId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Highlight qilish (ixtiyoriy)
+      el.classList.add('highlight')
+      setTimeout(() => el.classList.remove('highlight'), 2000)
+    }
+  }
+
+
+MUAMMO 4: REAL-TIME EVENTLAR
+================================================================
+
+  const taskSocket = io('https://api.docverse.uz/tasks', {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+  })
+
+  // Sahifa ochilganda
+  taskSocket.emit('project:join', { projectId })
+
+  // Yangi comment/reply — OXIRIGA qo'shish
+  taskSocket.on('task:comment-added', ({ taskId, comment }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => [...prev, comment])
+    scrollToBottom()
+  })
+
+  // Comment tahrirlandi
+  taskSocket.on('task:comment-updated', ({ taskId, comment }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => prev.map(c => c.id === comment.id ? { ...c, ...comment } : c))
+  })
+
+  // Comment o'chirildi
+  taskSocket.on('task:comment-deleted', ({ taskId, commentId }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => prev.filter(c => c.id !== commentId))
+  })
+
+  // Sahifa yopilganda
+  taskSocket.emit('project:leave', { projectId })
+
+
+MUAMMO 5: SCROLL TO BOTTOM
+================================================================
+
+  const chatEndRef = useRef(null)
+
+  function scrollToBottom() {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // Birinchi yuklashda va yangi comment kelganda
+  useEffect(() => {
+    scrollToBottom()
+  }, [comments.length])
+
+  // JSX oxirida:
+  <div ref={chatEndRef} />
+
+
+TO'LIQ COMPONENT MISOLI:
+================================================================
+
+function TaskChat({ taskId, projectId, currentUserId, token }) {
+  const [comments, setComments] = useState([])
+  const [replyTo, setReplyTo] = useState(null)
+  const chatEndRef = useRef(null)
+
+  // 1. API dan yuklash
+  useEffect(() => {
+    axios.get(`/api/v1/task-comment?taskId=${taskId}&pageSize=200`)
+      .then(res => {
+        setComments(res.data.data)
+        setTimeout(scrollToBottom, 100)
+      })
+  }, [taskId])
+
+  // 2. WebSocket real-time
+  useEffect(() => {
+    const socket = io('https://api.docverse.uz/tasks', {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    })
+    socket.emit('project:join', { projectId })
+
+    socket.on('task:comment-added', ({ taskId: tid, comment }) => {
+      if (tid !== taskId) return
+      setComments(prev => [...prev, comment])
+      scrollToBottom()
+    })
+
+    socket.on('task:comment-updated', ({ taskId: tid, comment }) => {
+      if (tid !== taskId) return
+      setComments(prev => prev.map(c => c.id === comment.id ? { ...c, ...comment } : c))
+    })
+
+    socket.on('task:comment-deleted', ({ taskId: tid, commentId }) => {
+      if (tid !== taskId) return
+      setComments(prev => prev.filter(c => c.id !== commentId))
+    })
+
+    return () => {
+      socket.emit('project:leave', { projectId })
+      socket.disconnect()
+    }
+  }, [taskId, projectId])
+
+  // 3. Xabar yuborish
+  async function sendComment(content, attachmentIds = []) {
+    await axios.post('/api/v1/task-comment', {
+      taskId,
+      content,
+      attachmentIds,
+      parentCommentId: replyTo?.id || undefined,
+    })
+    setReplyTo(null)
+  }
+
+  function scrollToBottom() {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function scrollToComment(id) {
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('highlight')
+      setTimeout(() => el.classList.remove('highlight'), 2000)
+    }
+  }
+
+  // 4. Render
+  return (
+    <div className="chat-container">
+      <div className="chat-messages">
+        {comments.map(comment => (
+          <div key={comment.id} id={comment.id} className="chat-message">
+
+            {/* Reply preview */}
+            {comment.replyTo && (
+              <div
+                className="reply-preview"
+                onClick={() => scrollToComment(comment.replyTo.id)}
+              >
+                <strong>{comment.replyTo.user.fullname}</strong>
+                <span>
+                  {comment.replyTo.content
+                    || (comment.replyTo.attachmentType?.startsWith('audio/') ? '🎤 Ovozli xabar'
+                    : comment.replyTo.attachmentType?.startsWith('image/') ? '📷 Rasm'
+                    : comment.replyTo.attachmentType?.startsWith('video/') ? '🎬 Video'
+                    : comment.replyTo.attachmentType ? '📎 Fayl'
+                    : '...')}
+                </span>
+              </div>
+            )}
+
+            {/* User info */}
+            <div className="message-header">
+              <strong>{comment.user.fullname}</strong>
+              <span>{formatTime(comment.createdAt)}</span>
+            </div>
+
+            {/* Matn */}
+            {comment.content && <p>{comment.content}</p>}
+
+            {/* Attachment */}
+            {comment.attachments?.map(att => (
+              <div key={att.id}>
+                {att.attachment.mimeType.startsWith('image/')
+                  ? <img src={att.attachment.fileUrl} alt={att.attachment.fileName} />
+                  : att.attachment.mimeType.startsWith('audio/')
+                  ? <audio src={att.attachment.fileUrl} controls />
+                  : att.attachment.mimeType.startsWith('video/')
+                  ? <video src={att.attachment.fileUrl} controls />
+                  : <a href={att.attachment.fileUrl}>{att.attachment.fileName}</a>
+                }
+              </div>
+            ))}
+
+            {/* Reply tugmasi */}
+            <button onClick={() => setReplyTo(comment)}>Javob</button>
+          </div>
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Reply preview — input ustida */}
+      {replyTo && (
+        <div className="reply-bar">
+          <span>Javob: {replyTo.user.fullname}</span>
+          <button onClick={() => setReplyTo(null)}>✕</button>
+        </div>
+      )}
+
+      {/* Input */}
+      <ChatInput onSend={sendComment} />
+    </div>
+  )
+}
+
+
+XULOSA — ASOSIY QOIDALAR:
+================================================================
+1. Barcha commentlar BITTA FLAT LIST — guruhlash YO'Q
+2. Tartib: ESKI → YANGI (backend kelgan tartibda)
+3. Yangi comment (reply ham): har doim LIST OXIRIGA
+4. replyTo: faqat PREVIEW uchun (Telegram'dagi kichik ko'k panel)
+5. Preview bosilganda: SCROLL to original comment
+6. parentCommentId: faqat POST so'rovda ishlatiladi, render uchun EMAS
+7. Real-time: push to end, scroll to bottom

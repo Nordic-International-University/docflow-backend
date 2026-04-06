@@ -1,0 +1,160 @@
+================================================================
+TASK COMMENT — FRONTEND TUZATISHLARI
+================================================================
+
+
+MUAMMO 1: TARTIB NOTO'G'RI
+================================================================
+Hozir: reply ota izoh tagiga qo'shilyapti
+Kerak: BARCHA izohlar (reply ham) har doim pastda — Telegram'dek
+
+SABAB: Frontend reply kelganda uni parent comment yoniga/tagiga
+qo'shyapti. Bu noto'g'ri.
+
+TUZATISH: Backend'dan kelgan tartibni o'zgartirmang.
+Yangi comment (reply bo'lsa ham) har doim arrayning OXIRIGA qo'shiladi.
+
+  // API dan yuklash — tartibni O'ZGARTIRMANG
+  const { data } = await axios.get('/api/v1/task-comment?taskId=xxx&pageSize=100')
+  setComments(data.data)  // backend allaqachon createdAt asc tartibda qaytaradi
+
+  // Real-time — har doim OXIRIGA push
+  socket.on('task:comment-added', ({ comment }) => {
+    setComments(prev => [...prev, comment])
+    scrollToBottom()
+  })
+
+  // QILMANG:
+  // ❌ comments.sort(...)
+  // ❌ comments.reverse()
+  // ❌ if (comment.replyTo) insertAfterParent(comment)
+  // ❌ if (comment.parentCommentId) groupByParent(comment)
+
+
+MUAMMO 2: NESTED REPLY QO'SHILMAYAPTI
+================================================================
+Hozir: birinchi reply ishlaydi, reply'ga reply qo'shilmaydi
+Kerak: har qanday chuqurlikdagi reply ishlashi kerak
+
+SABAB: Frontend faqat parentCommentId === null bo'lmaganlarni
+handle qilyapti yoki faqat 1-level depth qo'llab-quvvatlaydi.
+
+TUZATISH: parentCommentId ga UMUMAN qaramang render uchun.
+Barcha commentlar bitta flat list. replyTo faqat ko'rsatish uchun.
+
+  // BITTA FLAT LIST — hech qanday guruhlash yo'q
+  {comments.map(comment => (
+    <div key={comment.id} id={comment.id}>
+
+      {/* Reply preview — faqat ko'rsatish */}
+      {comment.replyTo && (
+        <ReplyPreview
+          replyTo={comment.replyTo}
+          onClick={() => scrollToComment(comment.replyTo.id)}
+        />
+      )}
+
+      {/* Comment content */}
+      <CommentBubble comment={comment} />
+    </div>
+  ))}
+
+
+MUAMMO 3: REPLY PREVIEW VA SCROLL
+================================================================
+
+ReplyPreview componenti:
+
+  function ReplyPreview({ replyTo, onClick }) {
+    let previewText = replyTo.content
+    if (!previewText) {
+      if (replyTo.attachmentType?.startsWith('audio/'))
+        previewText = '🎤 Ovozli xabar'
+      else if (replyTo.attachmentType?.startsWith('image/'))
+        previewText = '📷 Rasm'
+      else if (replyTo.attachmentType?.startsWith('video/'))
+        previewText = '🎬 Video'
+      else if (replyTo.attachmentType)
+        previewText = '📎 ' + replyTo.attachmentName
+      else
+        previewText = '...'
+    }
+
+    return (
+      <div onClick={onClick} className="reply-preview">
+        <span className="reply-user">{replyTo.user.fullname}</span>
+        <span className="reply-text">{previewText}</span>
+      </div>
+    )
+  }
+
+ScrollToComment funksiyasi:
+
+  function scrollToComment(commentId) {
+    const el = document.getElementById(commentId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('highlight')
+      setTimeout(() => el.classList.remove('highlight'), 2000)
+    }
+  }
+
+
+MUAMMO 4: REAL-TIME EVENTLAR
+================================================================
+
+  const taskSocket = io('https://api.docverse.uz/tasks', {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+  })
+
+  taskSocket.emit('project:join', { projectId })
+
+  // Yangi comment/reply — OXIRIGA qo'shish
+  taskSocket.on('task:comment-added', ({ taskId, comment }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => [...prev, comment])
+    scrollToBottom()
+  })
+
+  // Comment tahrirlandi
+  taskSocket.on('task:comment-updated', ({ taskId, comment }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => prev.map(c => c.id === comment.id ? { ...c, ...comment } : c))
+  })
+
+  // Comment o'chirildi
+  taskSocket.on('task:comment-deleted', ({ taskId, commentId }) => {
+    if (taskId !== currentTaskId) return
+    setComments(prev => prev.filter(c => c.id !== commentId))
+  })
+
+  taskSocket.emit('project:leave', { projectId })
+
+
+MUAMMO 5: SCROLL TO BOTTOM
+================================================================
+
+  const chatEndRef = useRef(null)
+
+  function scrollToBottom() {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [comments.length])
+
+  // JSX oxirida:
+  <div ref={chatEndRef} />
+
+
+XULOSA — ASOSIY QOIDALAR:
+================================================================
+1. Barcha commentlar BITTA FLAT LIST — guruhlash YO'Q
+2. Tartib: ESKI → YANGI (backend kelgan tartibda)
+3. Yangi comment (reply ham): har doim LIST OXIRIGA
+4. replyTo: faqat PREVIEW uchun (Telegram'dagi kichik panel)
+5. Preview bosilganda: SCROLL to original comment
+6. parentCommentId: faqat POST so'rovda ishlatiladi, render uchun EMAS
+7. Real-time: push to end, scroll to bottom
