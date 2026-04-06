@@ -179,6 +179,8 @@ export class TaskCommentService {
             id: created.parentComment.id,
             content: created.parentComment.content?.substring(0, 100) || '',
             user: created.parentComment.user,
+            attachmentType: created.parentComment.attachments?.[0]?.attachment?.mimeType || null,
+            attachmentName: created.parentComment.attachments?.[0]?.attachment?.fileName || null,
           }
         : null,
       parentComment: undefined,
@@ -242,6 +244,17 @@ export class TaskCommentService {
                 username: true,
               },
             },
+            attachments: {
+              select: {
+                attachment: {
+                  select: {
+                    mimeType: true,
+                    fileName: true,
+                  },
+                },
+              },
+              take: 1,
+            },
           },
         },
         _count: {
@@ -272,6 +285,8 @@ export class TaskCommentService {
             id: comment.parentComment.id,
             content: comment.parentComment.content?.substring(0, 100) || '',
             user: comment.parentComment.user,
+            attachmentType: comment.parentComment.attachments?.[0]?.attachment?.mimeType || null,
+            attachmentName: comment.parentComment.attachments?.[0]?.attachment?.fileName || null,
           }
         : null,
       reactions: comment.reactions,
@@ -325,6 +340,8 @@ export class TaskCommentService {
             id: comment.parentComment.id,
             content: comment.parentComment.content?.substring(0, 100) || '',
             user: comment.parentComment.user,
+            attachmentType: comment.parentComment.attachments?.[0]?.attachment?.mimeType || null,
+            attachmentName: comment.parentComment.attachments?.[0]?.attachment?.fileName || null,
           }
         : null,
       parentComment: undefined,
