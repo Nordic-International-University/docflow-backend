@@ -39,6 +39,16 @@ export class WorkflowService {
       documentId,
       status,
       type,
+      search,
+      documentTypeId,
+      assignedToUserId,
+      createdById,
+      stepActionType,
+      dateFrom,
+      dateTo,
+      overdue,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
       page = 1,
       limit = 10,
       userId,
@@ -50,35 +60,101 @@ export class WorkflowService {
 
     const skip = (page - 1) * limit
 
-    const where = {
-      ...(documentId && { documentId }),
-      ...(status && { status }),
-      ...(type && { type }),
-      deletedAt: null,
-      // Filter by user access: user created document OR assigned to active workflow step
-      ...(!isAdmin &&
-        userId && {
+    const andConditions: any[] = [{ deletedAt: null }]
+
+    // Basic filters
+    if (documentId) andConditions.push({ documentId })
+    if (status) andConditions.push({ status })
+    if (type) andConditions.push({ type })
+
+    // Search by document title, number, or description
+    if (search) {
+      andConditions.push({
+        document: {
           OR: [
-            { document: { createdById: userId } },
-            {
-              workflowSteps: {
-                some: {
-                  assignedToUserId: userId,
-                  deletedAt: null,
-                  status: WORKFLOW_STEP_STATUS.IN_PROGRESS,
-                },
+            { title: { contains: search, mode: 'insensitive' } },
+            { documentNumber: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      })
+    }
+
+    // Filter by document type
+    if (documentTypeId) {
+      andConditions.push({ document: { documentTypeId } })
+    }
+
+    // Filter by document creator
+    if (createdById) {
+      andConditions.push({ document: { createdById } })
+    }
+
+    // Filter by assigned user (any step)
+    if (assignedToUserId) {
+      andConditions.push({
+        workflowSteps: {
+          some: { assignedToUserId, deletedAt: null },
+        },
+      })
+    }
+
+    // Filter by step action type
+    if (stepActionType) {
+      andConditions.push({
+        workflowSteps: {
+          some: { actionType: stepActionType, deletedAt: null },
+        },
+      })
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const dateFilter: any = {}
+      if (dateFrom) dateFilter.gte = new Date(dateFrom)
+      if (dateTo) dateFilter.lte = new Date(dateTo + 'T23:59:59.999Z')
+      andConditions.push({ createdAt: dateFilter })
+    }
+
+    // Overdue filter: deadline passed but still active
+    if (overdue) {
+      andConditions.push({
+        status: 'ACTIVE',
+        deadline: { lt: new Date() },
+      })
+    }
+
+    // User access filter (non-admin)
+    if (!isAdmin && userId) {
+      andConditions.push({
+        OR: [
+          { document: { createdById: userId } },
+          {
+            workflowSteps: {
+              some: {
+                assignedToUserId: userId,
+                deletedAt: null,
+                status: WORKFLOW_STEP_STATUS.IN_PROGRESS,
               },
             },
-          ],
-        }),
+          },
+        ],
+      })
     }
+
+    const where = { AND: andConditions }
+
+    // Sort
+    const allowedSorts = ['createdAt', 'updatedAt', 'deadline', 'status']
+    const orderField = allowedSorts.includes(sortBy) ? sortBy : 'createdAt'
+    const orderDir = sortOrder === 'asc' ? 'asc' : 'desc'
 
     const [workflows, total] = await Promise.all([
       this.prisma.workflow.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [orderField]: orderDir },
         include: {
           document: {
             include: {

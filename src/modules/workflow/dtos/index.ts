@@ -182,7 +182,15 @@ export class WorkflowUpdateDto {
 
 export class WorkflowRetrieveAllDto {
   @ApiPropertyOptional({
-    description: 'Filter by document ID',
+    description: "Qidiruv: hujjat nomi, raqami yoki tavsifi bo'yicha",
+    example: 'buyruq',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string
+
+  @ApiPropertyOptional({
+    description: 'Hujjat ID bo\'yicha filtrlash',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsOptional()
@@ -191,7 +199,7 @@ export class WorkflowRetrieveAllDto {
   documentId?: string
 
   @ApiPropertyOptional({
-    description: 'Filter by workflow status',
+    description: 'Ish jarayoni holati bo\'yicha filtrlash',
     enum: WorkflowStatus,
     example: WorkflowStatus.ACTIVE,
   })
@@ -200,7 +208,7 @@ export class WorkflowRetrieveAllDto {
   status?: WorkflowStatus
 
   @ApiPropertyOptional({
-    description: 'Filter by workflow type',
+    description: 'Ish jarayoni turi bo\'yicha filtrlash',
     enum: WorkflowType,
     example: WorkflowType.CONSECUTIVE,
   })
@@ -209,7 +217,79 @@ export class WorkflowRetrieveAllDto {
   type?: WorkflowType
 
   @ApiPropertyOptional({
-    description: 'Page number for pagination',
+    description: 'Hujjat turi ID bo\'yicha filtrlash',
+  })
+  @IsOptional()
+  @IsUUID()
+  documentTypeId?: string
+
+  @ApiPropertyOptional({
+    description: 'Tayinlangan foydalanuvchi ID bo\'yicha filtrlash',
+  })
+  @IsOptional()
+  @IsUUID()
+  assignedToUserId?: string
+
+  @ApiPropertyOptional({
+    description: 'Hujjat yaratuvchisi ID bo\'yicha filtrlash',
+  })
+  @IsOptional()
+  @IsUUID()
+  createdById?: string
+
+  @ApiPropertyOptional({
+    description: 'Bosqich harakatining turi bo\'yicha filtrlash',
+    enum: StepActionType,
+  })
+  @IsOptional()
+  @IsEnum(StepActionType)
+  stepActionType?: StepActionType
+
+  @ApiPropertyOptional({
+    description: 'Boshlanish sanasi (dan)',
+    example: '2026-01-01',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateFrom?: string
+
+  @ApiPropertyOptional({
+    description: 'Tugash sanasi (gacha)',
+    example: '2026-12-31',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateTo?: string
+
+  @ApiPropertyOptional({
+    description: 'Muddati o\'tganlarni ko\'rsatish (deadline < now va status ACTIVE)',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  overdue?: boolean
+
+  @ApiPropertyOptional({
+    description: 'Saralash maydoni',
+    example: 'createdAt',
+    enum: ['createdAt', 'updatedAt', 'deadline', 'status'],
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: string
+
+  @ApiPropertyOptional({
+    description: 'Saralash tartibi',
+    example: 'desc',
+    enum: ['asc', 'desc'],
+  })
+  @IsOptional()
+  @IsString()
+  sortOrder?: 'asc' | 'desc'
+
+  @ApiPropertyOptional({
+    description: 'Sahifa raqami',
     example: 1,
     minimum: 1,
   })
@@ -220,7 +300,7 @@ export class WorkflowRetrieveAllDto {
   page?: number = 1
 
   @ApiPropertyOptional({
-    description: 'Number of items per page',
+    description: 'Sahifadagi elementlar soni',
     example: 10,
     minimum: 1,
     maximum: 100,
