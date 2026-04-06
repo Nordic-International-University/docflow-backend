@@ -24,6 +24,8 @@ interface AuthenticatedSocket extends Socket {
   cors: {
     origin: [
       'http://localhost:3000',
+      'https://docverse.uz',
+      'https://www.docverse.uz',
       'https://e-hujjat.nordicuniversity.org',
       process.env.CLIENT_URL,
     ].filter(Boolean),
