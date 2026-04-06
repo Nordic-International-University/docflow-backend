@@ -25,75 +25,52 @@ export class WorkflowPermissionService {
     userId: string,
     fileId: string,
   ): Promise<WorkflowPermissions> {
-    // Super Admin always has full access
     const currentUser = await this.#_prisma.user.findFirst({
       where: { id: userId, deletedAt: null },
       select: { role: { select: { name: true } } },
     })
-    if (currentUser?.role?.name === 'Super Administrator') {
-      return {
-        UserCanWrite: true,
-        UserCanRead: true,
-        ReadOnly: false,
-        WebEditingDisabled: false,
-      }
-    }
+    const isSuperAdmin = currentUser?.role?.name === 'Super Administrator'
 
     const attachment = await this.#_prisma.attachment.findFirst({
-      where: {
-        id: fileId,
-        deletedAt: null,
-      },
-      select: {
-        documentId: true,
-        uploadedById: true,
-      },
+      where: { id: fileId, deletedAt: null },
+      select: { documentId: true, uploadedById: true },
     })
 
     if (!attachment || !attachment.documentId) {
-      this.logger.log(
-        `No document associated with file ${fileId}, granting full access`,
-      )
-      return {
-        UserCanWrite: true,
-        UserCanRead: true,
-        ReadOnly: false,
-        WebEditingDisabled: false,
-      }
+      this.logger.log(`No document associated with file ${fileId}, granting full access`)
+      return { UserCanWrite: true, UserCanRead: true, ReadOnly: false, WebEditingDisabled: false }
     }
 
-    // Check if workflow is completed - if so, make document read-only for everyone
+    // TASDIQLANGAN HUJJAT — hamma uchun (Super Admin ham) faqat READ
+    const document = await this.#_prisma.document.findFirst({
+      where: { id: attachment.documentId, deletedAt: null },
+      select: { status: true },
+    })
+
+    if (document?.status === 'APPROVED' || document?.status === 'ARCHIVED') {
+      this.logger.log(`Document ${attachment.documentId} is ${document.status}, enforcing read-only for everyone`)
+      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+    }
+
+    // Workflow COMPLETED — ham read-only
     const completedWorkflow = await this.#_prisma.workflow.findFirst({
-      where: {
-        documentId: attachment.documentId,
-        status: 'COMPLETED',
-        deletedAt: null,
-      },
+      where: { documentId: attachment.documentId, status: 'COMPLETED', deletedAt: null },
     })
 
     if (completedWorkflow) {
-      this.logger.log(
-        `Workflow for document ${attachment.documentId} is completed, enforcing read-only access`,
-      )
-      return {
-        UserCanWrite: false,
-        UserCanRead: true,
-        ReadOnly: true,
-        WebEditingDisabled: true,
-      }
+      this.logger.log(`Workflow for document ${attachment.documentId} is completed, enforcing read-only`)
+      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
     }
 
-    // Check if the user is the owner of the file
+    // Super Admin — full access (faqat APPROVED/COMPLETED bo'lmasa)
+    if (isSuperAdmin) {
+      return { UserCanWrite: true, UserCanRead: true, ReadOnly: false, WebEditingDisabled: false }
+    }
+
+    // File owner — full access
     if (attachment.uploadedById === userId) {
-      this.logger.log(
-        `User ${userId} is the owner of file ${fileId}, granting full access`,
-      )
-      return {
-        UserCanWrite: true,
-        UserCanRead: true,
-        ReadOnly: false,
-        WebEditingDisabled: false,
-      }
+      this.logger.log(`User ${userId} is owner of file ${fileId}, granting full access`)
+      return { UserCanWrite: true, UserCanRead: true, ReadOnly: false, WebEditingDisabled: false }
     }
 
     const workflow = await this.#_prisma.workflow.findFirst({

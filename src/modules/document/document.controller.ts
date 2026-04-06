@@ -165,6 +165,30 @@ export class DocumentController {
     })
   }
 
+  @Post('create-with-office')
+  @Permissions(PERMISSIONS.DOCUMENT.CREATE)
+  @ApiOperation({
+    summary: 'Hujjat yaratish va Collabora Office da ochish',
+    description:
+      'Bo\'sh Office hujjat yaratadi (docx/xlsx/pptx), attachment sifatida saqlaydi, document yaratadi va Collabora editor URL qaytaradi.',
+  })
+  async documentCreateWithOffice(
+    @Body()
+    body: {
+      title: string
+      description?: string
+      documentTypeId: string
+      journalId: string
+      fileType?: 'docx' | 'xlsx' | 'pptx'
+    },
+    @Req() req: any,
+  ) {
+    return await this.documentService.documentCreateWithOffice({
+      ...body,
+      userId: req.user.userId,
+    })
+  }
+
   @Get(':id/pdf-url')
   @Permissions(PERMISSIONS.DOCUMENT.READ)
   @ApiOperation({ summary: 'Get PDF URL and XFDF content for a document' })
