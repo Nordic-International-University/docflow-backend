@@ -99,6 +99,7 @@ export class AuthService {
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      sessionId: tokens.sessionId,
       user: {
         id: user.id,
         username: user.username,
@@ -311,7 +312,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + this.refreshExpiresIn * 1000)
 
     // Store refresh token in database
-    await this.prisma.refreshToken.create({
+    const stored = await this.prisma.refreshToken.create({
       data: {
         token: refreshToken,
         userId: payload.userId,
@@ -319,9 +320,10 @@ export class AuthService {
         ipAddress,
         userAgent,
       },
+      select: { id: true },
     })
 
-    return { accessToken, refreshToken }
+    return { accessToken, refreshToken, sessionId: stored.id }
   }
 
   async isTokenBlacklisted(token: string): Promise<boolean> {

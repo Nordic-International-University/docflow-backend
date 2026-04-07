@@ -1,0 +1,391 @@
+================================================================
+DOCFLOW BACKEND — SO'NGGI O'ZGARISHLAR (FRONTEND UCHUN)
+================================================================
+Sana: 2026-04-07
+
+
+1. SESSIYALAR — YANGI FIELDLAR + REAL-TIME
+================================================================
+
+ENDPOINT: GET /api/v1/sessions
+
+RESPONSE:
+{
+  "count": 3,
+  "pageNumber": 1,
+  "pageSize": 10,
+  "pageCount": 1,
+  "data": [
+    {
+      "id": "uuid",
+      "ipAddress": "192.168.1.100",
+      "userAgent": "Mozilla/5.0 (Macintosh...) Chrome/146...",
+      "browser": "Chrome",
+      "os": "macOS",
+      "device": "Desktop",
+      "isCurrent": true,
+      "createdAt": "2026-04-07T05:00:00.000Z",
+      "expiresAt": "2026-04-14T05:00:00.000Z"
+    }
+  ]
+}
+
+YANGI FIELDLAR:
+- browser: "Chrome" | "Firefox" | "Safari" | "Edge" | "Opera"
+- os: "Windows" | "macOS" | "Linux" | "Android" | "iOS"
+- device: "Desktop" | "Mobile" | "Tablet"
+- isCurrent: boolean (hozirgi sessiyami)
+
+REAL-TIME EVENTLAR (WebSocket /notifications):
+
+1. session:revoked — bitta sessiya chiqarildi
+   {
+     "sessionId": "uuid",
+     "message": "Sizning sessiyangiz boshqa qurilmadan chiqarib yuborildi",
+     "timestamp": "..."
+   }
+
+   Frontend logikasi:
+     socket.on('session:revoked', ({ sessionId }) => {
+       if (sessionId === myCurrentSessionId) {
+         logout()
+         router.push('/login')
+       }
+     })
+
+2. session:revoked-all — barcha sessiyalar chiqarildi
+   {
+     "exceptSessionId": "uuid",
+     "message": "Barcha boshqa sessiyalar chiqarib yuborildi",
+     "timestamp": "..."
+   }
+
+UI TAVSIYALARI:
+- Browser/OS/device uchun iconka ko'rsatish
+- isCurrent: true bo'lsa "💚 Hozirgi qurilma" badge
+- "Chiqarish" tugmasi har bir sessiyada (isCurrent dan tashqari)
+- "Barchasidan chiqish" tugmasi
+
+
+2. NOTIFICATIONS — KORPORATIV FORMAT
+================================================================
+
+Backend endi to'liq professional notification message yaratadi.
+Frontend hech narsa qilishi shart emas — message va title to'liq keladi.
+
+RESPONSE:
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "type": "WORKFLOW_STEP_ASSIGNED",
+  "title": "Yangi vazifa: Imzolash",
+  "message": "Hurmatli foydalanuvchi, sizga buyruq bo'yicha \"Yangi xodim qabul qilish\" (IB-2026-0005) hujjatining 2-bosqichida \"Imzolash\" amali yuklatildi. Yuboruvchi: Asror Abdullayev. Muddat: 15-aprel 2026.",
+  "metadata": {
+    "workflowStepId": "uuid",
+    "workflowId": "uuid",
+    "documentId": "uuid",
+    "actionType": "SIGN",
+    "order": 2
+  },
+  "isRead": false,
+  "createdAt": "..."
+}
+
+NOTIFICATION TURLARI:
+- WORKFLOW_STEP_ASSIGNED   — Yangi vazifa: {actionType}
+- WORKFLOW_STEP_COMPLETED  — Bosqich bajarildi
+- WORKFLOW_STEP_REJECTED   — Bosqich rad etildi
+- WORKFLOW_STEP_REASSIGNED — Bosqich qayta tayinlandi
+- WORKFLOW_STEP_COMMENT    — Yangi izoh
+- WORKFLOW_COMPLETED       — Hujjat tasdiqlandi
+- TASK_ASSIGNED            — Yangi topshiriq
+
+NAVIGATSIYA (metadata bo'yicha):
+- workflowId bor    → /dashboard/workflow/{workflowId}
+- documentId bor    → /dashboard/document/{documentId}
+- taskId bor        → /dashboard/task/{taskId}
+- projectId bor     → /dashboard/project/{projectId}
+
+
+3. TELEGRAM BOT — BARCHA NOTIFICATIONLAR AVTOMATIK
+================================================================
+
+Bot: @docflow_bot (token .env da)
+
+Foydalanuvchi Telegram'ga ulanish:
+1. Bot'ga /start buyrug'i
+2. /link {userId} buyrug'i (yoki deep link)
+3. Endi barcha notification'lar Telegram'ga keladi
+
+Telegram message format:
+- HTML formatlangan
+- Hujjat ma'lumotlari to'liq
+- Inline tugma "Saytda ko'rish"
+- Sana va vaqt
+
+Frontend hech narsa qilishi shart emas — backend avtomatik yuboradi.
+
+
+4. TASK MANAGER — COMPLETE/UNCOMPLETE
+================================================================
+
+YANGI ENDPOINTLAR:
+
+A) Topshiriqni yakunlash:
+   POST /api/v1/task/:id/complete
+   Response: { message, taskId, score, completedAt }
+
+B) Topshiriqni qayta ochish:
+   POST /api/v1/task/:id/uncomplete
+   Response: { message, taskId }
+
+MUHIM:
+- Board column bilan complete bog'lanmagan
+- Faqat tugma orqali complete bo'ladi
+- Complete bo'lganda KPI hisoblanadi
+- Reopen bo'lganda KPI bekor qilinadi
+
+UI:
+  {task.completedAt ? (
+    <button onClick={() => uncompleteTask(task.id)}>↩ Qayta ochish</button>
+  ) : (
+    <button onClick={() => completeTask(task.id)}>✅ Yakunlash</button>
+  )}
+
+
+5. TASK SCORE — DROPDOWN'DAN TANLASH
+================================================================
+
+GET /api/v1/task-score-config
+Response: [
+  { "id": "uuid", "priorityCode": "№1",  "baseScore": 50, "description": "Eng muhim, strategik" },
+  { "id": "uuid", "priorityCode": "№2",  "baseScore": 45, "description": "Universitet darajasidagi" },
+  ...
+  { "id": "uuid", "priorityCode": "№10", "baseScore": 5,  "description": "Oddiy, 1-2 soat" }
+]
+
+Task yaratish/yangilashda:
+  POST /api/v1/task
+  {
+    "title": "...",
+    "projectId": "...",
+    "priority": "HIGH",
+    "scoreConfigId": "config-uuid",  // dropdown'dan tanlangan
+    ...
+  }
+
+Score qo'lda kiritish SHART EMAS — backend config'dan hisoblaydi.
+
+
+6. TASK FILTERS — YANGI QUERY PARAMS
+================================================================
+
+GET /api/v1/task?parentTaskId=uuid       — subtasklar
+GET /api/v1/task?boardColumnId=uuid      — column tasklari
+GET /api/v1/task?projectId=uuid&search=text
+
+
+7. DOCUMENT — pdfUrl + ATTACHMENTS
+================================================================
+
+GET /api/v1/document/:id
+
+RESPONSE:
+{
+  "id": "uuid",
+  "title": "...",
+  "documentNumber": "IB-2026-0005",
+  "status": "DRAFT",
+  "pdfUrl": "https://cdn.../latest-version.pdf",
+  "xfdfUrl": "...",
+  "attachments": [
+    {
+      "id": "uuid",
+      "fileName": "buyruq (v3).pdf",   // ENG OXIRGI VERSIYA
+      "fileUrl": "https://...",
+      "mimeType": "application/pdf",
+      "isAutoGenerated": true,
+      "createdAt": "..."
+    },
+    {
+      "id": "uuid",
+      "fileName": "buyruq (v2).pdf",   // eski versiya
+      ...
+    }
+  ]
+}
+
+MUHIM:
+- attachments: createdAt DESC tartibda — eng yangi birinchi
+- pdfUrl: har doim eng oxirgi versiya
+- Versiyalar: (v1), (v2), (v3) — har save'da yangilanadi
+
+
+8. DOCUMENT — OFFICE'DA YARATISH (Collabora)
+================================================================
+
+POST /api/v1/document/create-with-office
+{
+  "title": "Yangi buyruq",
+  "description": "...",
+  "documentTypeId": "uuid",
+  "journalId": "uuid",
+  "fileType": "docx"   // docx | xlsx | pptx
+}
+
+RESPONSE:
+{
+  "document": {
+    "id": "uuid",
+    "title": "...",
+    "documentNumber": "IB-2026-0006",
+    "status": "DRAFT"
+  },
+  "attachment": {
+    "id": "uuid",
+    "fileName": "yangi-buyruq.docx",
+    "fileUrl": "https://..."
+  },
+  "collaboraUrl": "https://office.docverse.uz/browser/dist/cool.html?WOPISrc=...",
+  "wopiSrc": "https://api.docverse.uz/api/v1/wopi/files/{attachmentId}",
+  "fileType": "docx"
+}
+
+FRONTEND USAGE:
+1. POST /api/v1/document/create-with-office → response oladi
+2. POST /api/v1/wopi/token { fileId: response.attachment.id } → access_token
+3. iframe src = `${collaboraUrl}&access_token={token}`
+
+Foydalanuvchi Office'da yozib save qilsa:
+- DOCX MinIO'ga yangilanadi
+- Avtomatik PDF generate bo'ladi
+- document.pdfUrl yangilanadi
+- Yangi attachment (v1, v2...) qo'shiladi
+
+
+9. APPROVED HUJJATLAR — READ-ONLY
+================================================================
+
+Hujjat status:
+- DRAFT, PENDING, IN_REVIEW → edit mumkin (workflow ruxsati bo'yicha)
+- APPROVED, ARCHIVED → READ-ONLY hamma uchun (Super Admin ham)
+
+WOPI checkFileInfo response:
+- UserCanWrite: false
+- ReadOnly: true
+- WebEditingDisabled: true
+
+Collabora avtomatik read-only mode ko'rsatadi.
+Frontend qo'shimcha tekshiruv shart emas.
+
+
+10. TASK COMMENTS — TELEGRAM-STYLE + REAL-TIME
+================================================================
+
+GET /api/v1/task-comment?taskId=uuid
+
+RESPONSE:
+{
+  "data": [
+    {
+      "id": "uuid",
+      "content": "Salom",
+      "user": { "id", "fullname", "username", "avatarUrl" },
+      "replyTo": null,
+      "attachments": [...],
+      "reactions": [...],
+      "mentions": [...],
+      "createdAt": "..."
+    },
+    {
+      "id": "uuid",
+      "content": "Ha ko'rdim",
+      "replyTo": {
+        "id": "parent-uuid",
+        "content": "Salom",
+        "user": { "fullname", "username" },
+        "attachmentType": null,
+        "attachmentName": null
+      },
+      "attachments": [],
+      ...
+    }
+  ]
+}
+
+Tartib: createdAt ASC (eski → yangi, Telegram-style)
+Format: flat list, replies har doim oxirida
+
+POST /api/v1/task-comment
+{
+  "taskId": "uuid",
+  "content": "...",            // ixtiyoriy (fayl bilan bo'sh bo'lishi mumkin)
+  "parentCommentId": "uuid",   // reply uchun
+  "attachmentIds": ["uuid"]    // rasm/video/voice
+}
+
+REAL-TIME (TaskGateway /tasks):
+  task:comment-added    — { taskId, comment }
+  task:comment-updated  — { taskId, comment }
+  task:comment-deleted  — { taskId, commentId }
+
+
+11. WORKFLOW LIST — YANGI FILTERS
+================================================================
+
+GET /api/v1/workflow ga yangi parametrlar:
+  search           string  Hujjat nomi/raqami/tavsifi
+  status           enum    ACTIVE | COMPLETED | CANCELLED | PAUSED
+  type             enum    CONSECUTIVE | PARALLEL
+  documentTypeId   uuid
+  assignedToUserId uuid
+  createdById      uuid
+  stepActionType   enum    APPROVAL | SIGN | REVIEW | ACKNOWLEDGE | VERIFICATION
+  dateFrom         date    2026-01-01
+  dateTo           date    2026-12-31
+  overdue          boolean Muddati o'tgan
+  sortBy           string  createdAt | updatedAt | deadline | status
+  sortOrder        string  asc | desc
+
+
+12. ERROR XABARLARI — O'ZBEKCHA
+================================================================
+
+Backend barcha error message'larni o'zbekcha qaytaradi.
+Frontend translateError funksiyasini OLIB TASHLANG.
+
+Format:
+  { "statusCode": 404, "message": "Hujjat topilmadi", "error": "Topilmadi" }
+  { "statusCode": 400, "message": ["content should not be empty"], "error": "Noto'g'ri so'rov" }
+
+Validation xatolarda message — array bo'lishi mumkin.
+
+
+13. SUCCESS RESPONSES — AVTO MESSAGE
+================================================================
+
+Oldin: POST/PATCH/DELETE'lar bo'sh response qaytardi
+Endi:  { "statusCode": 201, "message": "Muvaffaqiyatli yaratildi" }
+
+  POST   → "Muvaffaqiyatli yaratildi"
+  PATCH  → "Muvaffaqiyatli yangilandi"
+  DELETE → "Muvaffaqiyatli o'chirildi"
+
+GET endpoint'lar o'zgarmadi (data qaytaradi).
+
+
+================================================================
+XULOSA — FRONTEND CHECKLIST
+================================================================
+
+[ ] Sessions: browser/os/device fieldlarini ko'rsatish + isCurrent badge
+[ ] Sessions: WebSocket session:revoked listener (auto logout)
+[ ] Telegram link tugmasi profil sozlamalarida
+[ ] Task complete/uncomplete tugmalari
+[ ] Task score dropdown (TaskScoreConfig)
+[ ] Document detail: pdfUrl ko'rsatish, attachments versiyalari
+[ ] Office'da yaratish tugmasi: POST /document/create-with-office
+[ ] Comment: replyTo + attachments (rasm/video/voice)
+[ ] Workflow: yangi filterlar (search, date, overdue)
+[ ] showError'dan tarjima logikasini olib tashlash
+[ ] Success message'larni toast'da ko'rsatish
