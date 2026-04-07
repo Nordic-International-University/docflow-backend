@@ -8,6 +8,7 @@ export interface AuthLoginRequest {
 export interface AuthLoginResponse {
   accessToken: string
   refreshToken: string
+  sessionId: string
   user: {
     id: string
     username: string
