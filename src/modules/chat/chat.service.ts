@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -9,6 +11,7 @@ import { PrismaService } from '@prisma'
 import { MinioService, RedisService } from '@clients'
 import { TelegramService } from '../telegram/telegram.service'
 import { ChatEncryptionService } from './chat-encryption'
+import { ChatGateway } from './chat.gateway'
 import {
   AddMembersDto,
   AddReactionDto,
@@ -40,6 +43,8 @@ export class ChatService {
     private readonly redis: RedisService,
     private readonly crypto: ChatEncryptionService,
     private readonly telegram: TelegramService,
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly gateway: ChatGateway,
   ) {}
 
   /**
@@ -68,7 +73,9 @@ export class ChatService {
     )
     const onlineSet = new Set(onlineIds)
     for (const uid of userIds) {
-      const isOnline = onlineSet.has(uid) && !hiddenOnline.has(uid)
+      // /chat namespace'dagi live ulanish yoki /notifications'dagi ulanish
+      const rawOnline = this.gateway.isUserConnected(uid) || onlineSet.has(uid)
+      const isOnline = rawOnline && !hiddenOnline.has(uid)
       const lastSeen = hiddenLastSeen.has(uid) ? null : lastSeenMap.get(uid) || null
       map.set(uid, { isOnline, lastSeen })
     }

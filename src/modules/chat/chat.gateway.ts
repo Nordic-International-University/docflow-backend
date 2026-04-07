@@ -20,6 +20,7 @@ import {
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
+import { RedisService } from '@clients'
 import { ChatService } from './chat.service'
 
 interface AuthSocket extends Socket {
@@ -74,13 +75,52 @@ export class ChatGateway
   private readonly logger = new Logger(ChatGateway.name)
   private callExpiryInterval: NodeJS.Timeout | null = null
 
+  // userId → Set<socketId> (multi-tab/device uchun)
+  private readonly connectedUsers = new Map<string, Set<string>>()
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
   ) {}
+
+  /**
+   * Foydalanuvchi hozir /chat namespace'ga ulanganmi — boshqa modullar
+   * (ChatService) buni isOnline hisobida ishlatadi.
+   */
+  isUserConnected(userId: string): boolean {
+    return (this.connectedUsers.get(userId)?.size || 0) > 0
+  }
+
+  /**
+   * Presence broadcast — showOnlineStatus=false bo'lmasa barcha /chat
+   * socket'lariga yuboriladi. Frontend o'zida tegishli userni filtrlaydi.
+   */
+  private async broadcastPresence(
+    userId: string,
+    isOnline: boolean,
+    lastSeen: Date | null,
+  ) {
+    try {
+      const settings = await this.prisma.userChatSettings.findFirst({
+        where: { userId },
+        select: { showOnlineStatus: true, showLastSeen: true },
+      })
+      if (settings?.showOnlineStatus === false) return // yashirin
+
+      this.server.emit('presence:update', {
+        userId,
+        isOnline,
+        lastSeen:
+          settings?.showLastSeen === false ? null : lastSeen?.toISOString() || null,
+      })
+    } catch (err: any) {
+      this.logger.error(`broadcastPresence failed: ${err.message}`)
+    }
+  }
 
   onModuleInit() {
     // Har 15 soniyada stale RINGING qo'ng'iroqlarni MISSED ga o'tkazish
@@ -135,7 +175,32 @@ export class ChatGateway
       client.username = user.username
       client.join(`user:${user.id}`)
 
-      this.logger.log(`Chat connected: ${client.id} user=${user.username}`)
+      // Multi-tab tracking
+      let sockets = this.connectedUsers.get(user.id)
+      if (!sockets) {
+        sockets = new Set()
+        this.connectedUsers.set(user.id, sockets)
+      }
+      const wasFirst = sockets.size === 0
+      sockets.add(client.id)
+
+      // Auto-join barcha chatlarga — keyingi xabarlar va typing darhol kelishi uchun
+      const memberships = await this.prisma.chatMember.findMany({
+        where: { userId: user.id, leftAt: null },
+        select: { chatId: true },
+      })
+      for (const m of memberships) {
+        client.join(`chat:${m.chatId}`)
+      }
+
+      this.logger.log(
+        `Chat connected: ${client.id} user=${user.username} (sockets: ${sockets.size})`,
+      )
+
+      if (wasFirst) {
+        // Birinchi ulanish — online broadcast
+        await this.broadcastPresence(user.id, true, null)
+      }
     } catch (err: any) {
       this.logger.warn(`Chat auth failed: ${err.message}`)
       client.emit('error', { message: 'Authentication failed' })
@@ -143,9 +208,23 @@ export class ChatGateway
     }
   }
 
-  handleDisconnect(client: AuthSocket) {
-    if (client.userId) {
-      this.logger.log(`Chat disconnected: ${client.id} user=${client.username}`)
+  async handleDisconnect(client: AuthSocket) {
+    if (!client.userId) return
+    const sockets = this.connectedUsers.get(client.userId)
+    if (!sockets) return
+
+    sockets.delete(client.id)
+    this.logger.log(
+      `Chat disconnected: ${client.id} user=${client.username} (remaining: ${sockets.size})`,
+    )
+
+    if (sockets.size === 0) {
+      this.connectedUsers.delete(client.userId)
+      const lastSeen = new Date()
+      // Redis'ga so'nggi faollik yozish
+      await this.redis.setLastSeen(client.userId, lastSeen).catch(() => {})
+      // Offline broadcast
+      await this.broadcastPresence(client.userId, false, lastSeen)
     }
   }
 
@@ -176,15 +255,38 @@ export class ChatGateway
   @SubscribeMessage('chat:typing')
   async onTyping(
     @ConnectedSocket() client: AuthSocket,
-    @MessageBody() body: { chatId: string; isTyping: boolean },
+    @MessageBody()
+    body: {
+      chatId: string
+      isTyping: boolean
+      // 'typing' | 'recording' | 'uploading_file' | 'uploading_photo' | 'uploading_video' | 'uploading_voice'
+      action?: string
+    },
   ) {
     if (!client.userId || !body?.chatId) return
-    this.server.to(`chat:${body.chatId}`).except(`user:${client.userId}`).emit('chat:typing', {
+
+    // A'zolikni tekshirish — tashqaridan typing event yuborib bo'lmasligi uchun
+    const member = await this.prisma.chatMember.findFirst({
+      where: { chatId: body.chatId, userId: client.userId, leftAt: null },
+      select: { id: true },
+    })
+    if (!member) return
+
+    const payload = {
       chatId: body.chatId,
       userId: client.userId,
       username: client.username,
       isTyping: !!body.isTyping,
-    })
+      action: body.action || 'typing',
+    }
+
+    // Chat a'zolari user room'lariga yuborish (sender'ni chiqarib tashlab)
+    // Bu `chat:join` qilishni shart qilmaydi — faqat chat socketga ulangan bo'lsa bas
+    const memberIds = await this.chatService.getChatMemberIds(body.chatId)
+    for (const uid of memberIds) {
+      if (uid === client.userId) continue
+      this.server.to(`user:${uid}`).emit('chat:typing', payload)
+    }
   }
 
   /**
