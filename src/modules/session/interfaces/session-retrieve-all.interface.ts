@@ -7,6 +7,10 @@ export interface SessionItem {
   id: string
   ipAddress: string | null
   userAgent: string | null
+  browser: string
+  os: string
+  device: string
+  isCurrent: boolean
   createdAt: Date
   expiresAt: Date
 }

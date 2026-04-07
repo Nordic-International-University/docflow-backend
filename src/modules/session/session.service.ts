@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
+import { parseUserAgent } from '@common'
+import { NotificationGateway } from '../notification/notification.gateway'
 import {
   SessionRetrieveAllRequest,
   SessionRetrieveAllResponse,
@@ -9,14 +11,35 @@ import {
 @Injectable()
 export class SessionService {
   readonly #_prisma: PrismaService
+  readonly #_gateway: NotificationGateway
 
-  constructor(prisma: PrismaService) {
+  constructor(prisma: PrismaService, gateway: NotificationGateway) {
     this.#_prisma = prisma
+    this.#_gateway = gateway
+  }
+
+  private mapSession(
+    session: any,
+    currentSessionId?: string,
+  ): SessionItem {
+    const parsed = parseUserAgent(session.userAgent)
+    return {
+      id: session.id,
+      ipAddress: session.ipAddress,
+      userAgent: session.userAgent,
+      browser: parsed.browser,
+      os: parsed.os,
+      device: parsed.device,
+      isCurrent: session.id === currentSessionId,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+    }
   }
 
   async sessionRetrieveAll(
     payload: SessionRetrieveAllRequest,
     userId: string,
+    currentSessionId?: string,
   ): Promise<SessionRetrieveAllResponse> {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
@@ -46,26 +69,19 @@ export class SessionService {
       this.#_prisma.refreshToken.count({ where }),
     ])
 
-    const data: SessionItem[] = sessions.map((session) => ({
-      id: session.id,
-      ipAddress: session.ipAddress,
-      userAgent: session.userAgent,
-      createdAt: session.createdAt,
-      expiresAt: session.expiresAt,
-    }))
-
     return {
       count,
       pageNumber,
       pageSize,
       pageCount: Math.ceil(count / pageSize),
-      data,
+      data: sessions.map((s) => this.mapSession(s, currentSessionId)),
     }
   }
 
   async sessionRetrieveOne(
     sessionId: string,
     userId: string,
+    currentSessionId?: string,
   ): Promise<SessionItem> {
     const session = await this.#_prisma.refreshToken.findFirst({
       where: {
@@ -88,13 +104,7 @@ export class SessionService {
       throw new NotFoundException('Sessiya topilmadi')
     }
 
-    return {
-      id: session.id,
-      ipAddress: session.ipAddress,
-      userAgent: session.userAgent,
-      createdAt: session.createdAt,
-      expiresAt: session.expiresAt,
-    }
+    return this.mapSession(session, currentSessionId)
   }
 
   async sessionRevoke(sessionId: string, userId: string): Promise<void> {
@@ -118,20 +128,44 @@ export class SessionService {
         revokedAt: new Date(),
       },
     })
+
+    // Real-time: chiqarilgan sessionga "force-logout" yuborish
+    try {
+      this.#_gateway.server.to(`user:${userId}`).emit('session:revoked', {
+        sessionId,
+        message: 'Sizning sessiyangiz boshqa qurilmadan chiqarib yuborildi',
+        timestamp: new Date().toISOString(),
+      })
+    } catch {}
   }
 
-  async sessionRevokeAll(userId: string): Promise<number> {
+  async sessionRevokeAll(
+    userId: string,
+    exceptSessionId?: string,
+  ): Promise<number> {
+    const where: any = {
+      userId,
+      isRevoked: false,
+      deletedAt: null,
+    }
+    if (exceptSessionId) where.id = { not: exceptSessionId }
+
     const result = await this.#_prisma.refreshToken.updateMany({
-      where: {
-        userId,
-        isRevoked: false,
-        deletedAt: null,
-      },
+      where,
       data: {
         isRevoked: true,
         revokedAt: new Date(),
       },
     })
+
+    // Real-time broadcast
+    try {
+      this.#_gateway.server.to(`user:${userId}`).emit('session:revoked-all', {
+        message: 'Barcha boshqa sessiyalar chiqarib yuborildi',
+        exceptSessionId,
+        timestamp: new Date().toISOString(),
+      })
+    } catch {}
 
     return result.count
   }
