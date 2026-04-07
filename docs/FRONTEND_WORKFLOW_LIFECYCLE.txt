@@ -1,0 +1,277 @@
+================================================================
+DMS WORKFLOW LIFECYCLE — FRONTEND O'ZGARISHLARI
+================================================================
+
+
+1. DOCUMENT LIFECYCLE — TUSHUNCHA
+================================================================
+
+  ┌──────────┐  Office edit   ┌──────────┐  Workflow   ┌──────────┐
+  │  DRAFT   │  ────────────▶ │  DRAFT   │ ──────────▶ │ PENDING  │
+  │ (yangi)  │                │ (tayyor) │             │          │
+  └──────────┘                └──────────┘             └─────┬────┘
+                                                              │
+                                  ┌───────────────────────────┤
+                                  │                           │
+                                  ▼                           ▼
+                            ┌──────────┐               ┌──────────┐
+                            │ APPROVED │               │ REJECTED │
+                            │read-only │               │  (qayta) │
+                            └──────────┘               └─────┬────┘
+                                                              │
+                                                              ▼
+                                                        ┌──────────┐
+                                                        │  DRAFT   │
+                                                        │ (qayta)  │
+                                                        └──────────┘
+
+
+2. STATUS BO'YICHA UI HOLAT
+================================================================
+
+DRAFT
+  - "Office'da ochish" tugmasi → Collabora editor (full edit)
+  - "Ish jarayonini boshlash" tugmasi
+  - Tahrirlash, o'chirish mumkin
+
+PENDING / IN_REVIEW
+  - DOCX edit YOQ — "Office'da ochish" tugmasi DISABLED
+  - "PDF ko'rish" mumkin (read-only Collabora yoki PDF viewer)
+  - Annotatsiya/imzo — workflow step bo'yicha
+  - Workflow status va keyingi bosqich ko'rsatiladi
+
+APPROVED
+  - Hammasi READ-ONLY
+  - "Yuklab olish" tugmasi (PDF)
+  - "Hujjatni tekshirish" public link
+  - Workflow tarixi ko'rinadi
+
+REJECTED
+  - Yaratuvchi uchun: yana DRAFT'dek edit qilish mumkin
+  - "Qayta workflow boshlash" tugmasi
+  - Rad etish sabablari ko'rsatiladi
+
+
+3. YANGI ENDPOINT: WORKFLOW BOSHLASH
+================================================================
+
+POST /api/v1/document/:id/start-workflow
+
+Body (2 ta variant):
+
+A) Shablondan yaratish:
+{
+  "workflowTemplateId": "uuid",
+  "deadline": "2026-12-31"
+}
+
+B) Qo'lda steplar:
+{
+  "type": "CONSECUTIVE",        // CONSECUTIVE | PARALLEL
+  "deadline": "2026-12-31",
+  "steps": [
+    {
+      "order": 1,
+      "actionType": "REVIEW",
+      "assignedToUserId": "uuid",
+      "dueDate": "2026-04-10"
+    },
+    {
+      "order": 2,
+      "actionType": "APPROVAL",
+      "assignedToUserId": "uuid",
+      "dueDate": "2026-04-12"
+    },
+    {
+      "order": 3,
+      "actionType": "SIGN",
+      "assignedToUserId": "uuid"
+    }
+  ]
+}
+
+Response:
+{
+  "message": "Ish jarayoni boshlandi. Hujjat endi tahrirlanmaydi, faqat PDF ustida ishlash mumkin.",
+  "workflowId": "uuid",
+  "documentId": "uuid",
+  "status": "PENDING"
+}
+
+Backend avtomatik bajaradi:
+  1. DOCX → PDF konvertatsiya (final freeze)
+  2. Yangi PDF attachment qo'shish
+  3. document.pdfUrl yangilash
+  4. Workflow va steplar yaratish
+  5. Status DRAFT → PENDING
+
+
+4. UI: "ISH JARAYONINI BOSHLASH" MODAL
+================================================================
+
+DRAFT statusdagi hujjatda "Workflow boshlash" tugmasi ko'rsatiladi.
+
+Modal ichida 2 ta variant:
+
+  ○ Tayyor shablondan tanlash
+    [Select: workflow templates]
+
+  ○ Qo'lda bosqichlar yaratish
+    Type: ○ Ketma-ket  ○ Parallel
+    Deadline: [date]
+
+    Bosqichlar:
+    1. [Action ▼] [User ▼] [DueDate]
+    2. [Action ▼] [User ▼] [DueDate]
+    3. [Action ▼] [User ▼] [DueDate]
+    [+ Bosqich qo'shish]
+
+  Action turlari:
+    REVIEW       — Ko'rib chiqish
+    APPROVAL     — Tasdiqlash
+    SIGN         — Imzolash
+    ACKNOWLEDGE  — Tanishish
+    VERIFICATION — Tekshirish
+
+  [Bekor qilish]  [Workflow boshlash]
+
+
+5. WOPI PERMISSION — STATUS BO'YICHA
+================================================================
+
+Frontend Collabora iframe ochishda WOPI token oladi, backend
+permission qaytaradi. Frontend bu permission'ni hurmat qilishi
+shart emas — Collabora o'zi UI ni read-only ko'rsatadi.
+
+Lekin, "Edit" tugmasini ko'rsatish/yashirish uchun:
+
+  function canEditDocument(document, currentUser) {
+    if (document.status === 'APPROVED' || document.status === 'ARCHIVED') {
+      return false
+    }
+    if (document.status === 'PENDING' || document.status === 'IN_REVIEW') {
+      return false  // Workflow active
+    }
+    if (document.status === 'DRAFT' || document.status === 'REJECTED') {
+      return document.createdById === currentUser.id || isSuperAdmin(currentUser)
+    }
+    return false
+  }
+
+
+6. UI BUTTONLAR — DOCUMENT DETAIL SAHIFA
+================================================================
+
+  // DRAFT
+  {document.status === 'DRAFT' && isCreator && (
+    <>
+      <Button onClick={openInOffice}>📝 Office'da tahrirlash</Button>
+      <Button onClick={startWorkflow} primary>
+        🚀 Ish jarayonini boshlash
+      </Button>
+      <Button onClick={deleteDocument} danger>O'chirish</Button>
+    </>
+  )}
+
+  // PENDING / IN_REVIEW
+  {(document.status === 'PENDING' || document.status === 'IN_REVIEW') && (
+    <>
+      <Button onClick={openInOffice} disabled>
+        🔒 Tahrirlash imkonsiz (workflow boshlangan)
+      </Button>
+      <Button onClick={viewPdf}>👁 PDF ko'rish</Button>
+      {hasActiveStep && (
+        <Button onClick={annotatePdf} primary>
+          ✏️ Annotatsiya/imzo qo'yish
+        </Button>
+      )}
+    </>
+  )}
+
+  // APPROVED
+  {document.status === 'APPROVED' && (
+    <>
+      <Button onClick={downloadPdf} primary>
+        ⬇ PDF yuklab olish
+      </Button>
+      <Button onClick={shareLink}>🔗 Tekshirish havolasi</Button>
+    </>
+  )}
+
+  // REJECTED
+  {document.status === 'REJECTED' && isCreator && (
+    <>
+      <Alert type="warning">
+        Hujjat rad etilgan. Sabab: {rejectionReason}
+      </Alert>
+      <Button onClick={openInOffice}>📝 Tahrirlash</Button>
+      <Button onClick={startWorkflow} primary>
+        🔄 Qayta ish jarayoni
+      </Button>
+    </>
+  )}
+
+
+7. PDF ANNOTATSIYA — XFDF API
+================================================================
+
+Workflow active vaqtida foydalanuvchi annotatsiya qo'sha oladi:
+
+  GET /api/v1/document/:id/pdf-url
+  → { pdfUrl: "...", xfdfUrl: "<xml>" }
+
+  POST /api/v1/document/:id/pdf-url
+  Body: { xfdfUrl: "<xml>annotatsiyalar</xml>" }
+  → Backend XFDF ni PDF ga merge qiladi
+  → Yangi versiya (v2, v3...) saqlanadi
+
+PDF viewer (Apryse WebViewer / PDF.js) annotatsiyalarni
+XFDF formatda export qiladi va backend'ga yuboradi.
+
+
+8. WORKFLOW STATUS BADGE
+================================================================
+
+  function StatusBadge({ status }) {
+    const config = {
+      DRAFT:     { icon: '📝', color: 'gray',   label: 'Qoralama' },
+      PENDING:   { icon: '⏳', color: 'orange', label: 'Kutilmoqda' },
+      IN_REVIEW: { icon: '👀', color: 'blue',   label: "Ko'rib chiqilmoqda" },
+      APPROVED:  { icon: '✅', color: 'green',  label: 'Tasdiqlangan' },
+      REJECTED:  { icon: '❌', color: 'red',    label: 'Rad etilgan' },
+      ARCHIVED:  { icon: '📦', color: 'gray',   label: 'Arxivlangan' },
+    }
+    const c = config[status]
+    return <Badge color={c.color}>{c.icon} {c.label}</Badge>
+  }
+
+
+9. ERROR HANDLING
+================================================================
+
+A) DRAFT bo'lmagan hujjatda workflow boshlash:
+  POST /document/:id/start-workflow
+  → 400 { message: "Faqat DRAFT holatdagi hujjatlarda ish jarayonini boshlash mumkin" }
+
+B) Boshqa odam workflow boshlamoqchi:
+  → 403 { message: "Faqat hujjat yaratuvchisi ish jarayonini boshlay oladi" }
+
+C) Workflow allaqachon mavjud:
+  → 409 { message: "Bu hujjat uchun ish jarayoni allaqachon mavjud" }
+
+D) PDF yoki Office fayl yo'q:
+  → 400 { message: "Hujjatda PDF yoki Office fayl yo'q. Avval fayl yuklang." }
+
+
+10. FRONTEND CHECKLIST
+================================================================
+
+[ ] Document detail sahifa: status bo'yicha button'lar ko'rsatish
+[ ] "Workflow boshlash" modal: shablon yoki qo'lda steplar tanlash
+[ ] Office tahrirlash tugmasi: faqat DRAFT/REJECTED + creator
+[ ] PDF annotatsiya: faqat PENDING/IN_REVIEW + active step
+[ ] Status badgelarini StatusBadge komponent bilan
+[ ] APPROVED hujjatlar: faqat yuklab olish + view
+[ ] REJECTED bo'lganda: rejection reason ko'rsatish
+[ ] Workflow detail sahifasi: barcha steplar ko'rsatish
+[ ] Workflow templates dropdown'da yuklash
