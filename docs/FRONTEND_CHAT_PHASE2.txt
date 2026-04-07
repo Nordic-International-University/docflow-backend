@@ -1,0 +1,370 @@
+================================================================
+DOCFLOW CHAT FAZA 2 — YANGI QO'SHILGAN NARSALAR
+================================================================
+
+Versiya: Faza 2
+Base URL: https://api.docverse.uz/api/v1
+WS URL:   https://api.docverse.uz/chat  (Socket.IO, namespace: /chat)
+
+Bu hujjat FAQAT Faza 2 da qo'shilgan yangiliklarni qamrab oladi.
+Faza 1 hujjati: docs/FRONTEND_CHAT.txt
+
+
+================================================================
+1. MUTE / PIN / ARCHIVE
+================================================================
+
+Chatni vaqtinchalik ovozsiz qilish, pinlash (tepaga chiqarish),
+arxivlash (ro'yxatdan yashirish) — har biri foydalanuvchi uchun
+alohida (chat_member ustunlarida saqlanadi).
+
+
+=== 1.1 MUTE CHAT ===
+
+POST /chat/:id/mute
+Permission: chat:read
+
+Body:
+{
+  "mutedUntil": "2026-04-14T00:00:00Z"   // ISO vaqt
+  // yoki:
+  "mutedUntil": null                       // unmute
+}
+
+Response:
+{ "success": true, "mutedUntil": "2026-04-14T00:00:00Z" | null }
+
+EFFEKT:
+  - Telegram push notification'lar YUBORILMAYDI
+  - WS xabarlar odatdagidek keladi (UI'da sizga ko'rsatish/qilmaslik
+    frontend qaroridir)
+  - Chatlar ro'yxatida "mutedUntil" maydoni qaytadi → icon ko'rsatish
+
+FRONTEND:
+  - Menyuda "1 soat / 8 soat / 1 kun / 1 hafta / To'xtatilgunga qadar"
+  - "To'xtatilgunga qadar" uchun uzoq vaqt yuboring (masalan 100 yil)
+
+
+=== 1.2 PIN CHAT ===
+
+POST /chat/:id/pin
+Permission: chat:read
+
+Body: { "pinned": true }    // yoki false
+
+Response: { "success": true, "isPinned": true }
+
+EFFEKT:
+  - GET /chat ro'yxatida pinned chatlar ENG TEPADA ko'rsatiladi
+  - Tartib: pinned DESC, keyin lastMessageAt DESC
+
+FRONTEND:
+  - Chat ustida long-press / right-click → "Pin"
+  - Pin iconi chat elementida ko'rinib tursin
+
+
+=== 1.3 ARCHIVE CHAT ===
+
+POST /chat/:id/archive
+Permission: chat:read
+
+Body: { "archived": true }   // yoki false
+
+Response: { "success": true, "isArchived": true }
+
+EFFEKT:
+  - Bu foydalanuvchi uchun chat "Arxiv" bo'limiga o'tadi
+  - GET /chat ro'yxatida isArchived=true maydoni qaytadi
+  - Frontend default view'da arxivlangan chatlarni yashiradi
+  - Alohida "Arxiv" sahifa/tab — faqat arxivlanganlarni ko'rsatish
+
+FRONTEND:
+  - Swipe yoki menu → "Arxivlash"
+  - Arxivlangan chatga yangi xabar kelsa → avtomatik unarchive qilish
+    (ixtiyoriy, hozir backend buni qilmaydi)
+
+
+================================================================
+2. READ-BY LIST (KIM O'QIGAN)
+================================================================
+
+Xabarni kim o'qiganligi haqidagi ro'yxat — Telegram'dagi kabi
+"Seen by ..." modalini ko'rsatish uchun.
+
+=== 2.1 XABARNI O'QIGANLAR RO'YXATI ===
+
+GET /chat/messages/:messageId/reads
+Permission: chat:read
+
+Response:
+{
+  "count": 5,
+  "reads": [
+    {
+      "userId": "uuid",
+      "readAt": "2026-04-07T17:50:23.000Z",
+      "user": {
+        "id": "uuid",
+        "fullname": "Bobur Tursunov",
+        "username": "bobur",
+        "avatarUrl": "..."
+      }
+    },
+    ...
+  ]
+}
+
+Tartib: eng yangi o'qigan birinchi.
+
+FRONTEND:
+  - Guruh xabarlari uchun "✓✓" ikonka bosilganda modal
+  - Avatar + ism + "5 daqiqa oldin o'qigan" vaqti
+  - Faqat o'z xabarlaringiz uchun ko'rsatish
+
+MUHIM:
+  - Foydalanuvchi sozlamalarida `showReadReceipts=false` bo'lsa,
+    uning o'qigani bu ro'yxatga YOZILMAYDI (boshqalar ko'rmaydi)
+
+
+================================================================
+3. XABAR QIDIRISH
+================================================================
+
+Matn, fayl nomi yoki DocFlow obyekt referentsiyalari bo'yicha
+xabarlarni qidirish. Content shifrlangani uchun qidirish oxirgi
+2000 ta xabar ichida ishlaydi (memory-level).
+
+=== 3.1 XABARLARNI QIDIRISH ===
+
+GET /chat/search/messages?q=<text>&chatId=<uuid>
+Permission: chat:read
+
+Parametrlar:
+  q       — qidiruv so'zi (2+ belgi)
+  chatId  — ixtiyoriy, faqat bitta chatda qidirish
+
+Response:
+{
+  "count": 12,
+  "messages": [
+    {
+      "id": "uuid",
+      "chatId": "uuid",
+      "chat": { "id", "type", "title" },
+      "sender": { "id", "fullname", "avatarUrl" },
+      "type": "TEXT",
+      "content": "...",          // deshifrlangan
+      "fileName": "...",
+      "createdAt": "...",
+      ...
+    }
+  ]
+}
+
+QIDIRISH DIAPAZONI:
+  - Matn content (oxirgi 2000 xabar, memory'da deshifrlab)
+  - fileName (DB ILIKE)
+  - Foydalanuvchi a'zo bo'lgan chatlar bo'yicha filterlanadi
+  - chatId berilsa — faqat shu chatdan
+  - Maks 50 ta natija
+
+FRONTEND:
+  - Global qidiruv: yuqori panel input
+  - Chat ichidagi qidiruv: chat sarlavha yonida lupa iconi
+  - Natijada chat nomi + sana + matn snippet
+  - Bosilganda xabarga scroll
+
+ESLATMA:
+  - content shifrlangan, shuning uchun SQL LIKE ishlamaydi
+  - Oxirgi 2000 xabar — ko'p chatlarda yetarli
+  - Agar kerak bo'lsa, keyinroq Elasticsearch yoki tsvector
+    bilan yangi searchable_text ustuni qo'shish mumkin
+
+
+================================================================
+4. CALL TIMEOUT (AVTO-MISSED)
+================================================================
+
+Javob bermagan qo'ng'iroqlar avtomatik ravishda MISSED ga o'tkaziladi.
+
+MEXANIZM:
+  - Backend har 15 soniyada RINGING holatidagi qo'ng'iroqlarni tekshiradi
+  - 60 soniyadan ortiq RINGING bo'lib tursa → MISSED
+  - endedAt yoziladi
+
+WS EVENT:
+  call:status { callId, chatId, action: "missed" }
+
+FRONTEND:
+  - Incoming call modalini yashirish
+  - Missed call xabarini ko'rsatish (chatda "Javob berilmagan qo'ng'iroq")
+  - Ring tovushini to'xtatish
+
+
+================================================================
+5. TELEGRAM PUSH NOTIFICATION
+================================================================
+
+Yangi xabar yuborilganda, offline yoki boshqa tab'da bo'lgan
+foydalanuvchilar Telegram bot orqali xabardor qilinadi.
+
+MANTIQ (backendda avtomatik):
+  - Yuboruvchi o'ziga notification olmaydi
+  - mutedUntil > hozir bo'lsa → skip
+  - Foydalanuvchi Telegram ID bog'lamagan bo'lsa → skip
+  - notifyPreview=false bo'lsa → content yashirilib "(yangi xabar)"
+  - HTML escape qilinadi (XSS himoya)
+
+XABAR FORMATI:
+  💬 <b>Chat nomi</b>
+  👤 Yuboruvchi nomi
+
+  [content yoki "📷 Rasm" / "🎥 Video" / "🎤 Ovozli xabar" /
+   "📎 fayl.pdf" / "📄 Hujjat: IB-2026-0001" / ...]
+
+FRONTEND:
+  - Hech narsa qilish kerak emas — backend avtomatik yuboradi
+  - Foydalanuvchi Telegram ID ni /users/me/link-telegram orqali
+    bog'lashi kerak (avvaldan bor feature)
+
+
+================================================================
+6. SHOW ONLINE STATUS — HURMAT QILISH
+================================================================
+
+Foydalanuvchi sozlamalarida `showOnlineStatus=false` bo'lsa,
+uning online/offline holati boshqalardan yashiriladi.
+
+EFFEKT (notification gateway'da):
+  1. GET /notifications/online-users ro'yxatida ko'rinmaydi
+  2. user:status WS broadcast YUBORILMAYDI
+  3. Boshqa foydalanuvchilar uni "offline" deb ko'radi
+
+BU FOYDALANUVCHINING O'ZIGA TA'SIR QILMAYDI:
+  - U xabarlarni odatdagidek oladi
+  - U boshqalarni online holatini ko'rishi mumkin
+  - Uning o'zi chat ro'yxatini odatiy ko'radi
+
+FRONTEND:
+  - Sozlamalar sahifasida "Online holatimni yashirish" toggle
+  - PATCH /chat/settings/me { "showOnlineStatus": false }
+
+
+================================================================
+7. SHOW READ RECEIPTS — HURMAT QILISH
+================================================================
+
+`showReadReceipts=false` bo'lgan foydalanuvchilar xabarni
+o'qiganda:
+  - chat_member.lastReadAt yangilanadi (unread badge uchun)
+  - AMMO chat_message_read yozuvi YARATILMAYDI
+  - Boshqalar "✓✓" ni ko'rmaydi, GET /messages/:id/reads
+    da bu foydalanuvchi ko'rinmaydi
+
+FRONTEND:
+  - Sozlamalar sahifasida "Xabar o'qilganligini yashirish" toggle
+  - PATCH /chat/settings/me { "showReadReceipts": false }
+
+
+================================================================
+8. YANGI WS EVENT'LAR (FAZA 2)
+================================================================
+
+call:status { callId, chatId?, action: "missed" }
+  → Qo'ng'iroq timeout bo'ldi (Faza 1 dagi "accepted/rejected/ended"
+    ga qo'shimcha)
+
+Boshqa barcha event'lar Faza 1 dagidek ishlaydi.
+
+
+================================================================
+9. YANGILANGAN ENDPOINT XULOSASI
+================================================================
+
+Faza 2 da qo'shilgan endpointlar:
+
+POST   /chat/:id/mute                     — Chatni ovozsiz qilish
+POST   /chat/:id/pin                      — Chatni pinlash
+POST   /chat/:id/archive                  — Chatni arxivlash
+GET    /chat/messages/:messageId/reads    — Kim o'qiganligi
+GET    /chat/search/messages              — Xabar qidirish
+
+O'zgarmagan, lekin sozlamalar endi ta'sir qiladi:
+  PATCH /chat/settings/me
+    - showOnlineStatus  → notification gateway hurmat qiladi
+    - showReadReceipts  → markChatRead hurmat qiladi
+
+
+================================================================
+10. QO'NG'IROQ HAQIDA ESLATMA
+================================================================
+
+Call infratuzilmasi Faza 1 dan beri backendda to'liq tayyor:
+  - REST: initiate / accept / reject / end
+  - WS: call:signal (WebRTC offer/answer/ICE relay)
+  - call:incoming broadcast
+  - 60s timeout → MISSED (Faza 2)
+  - Settings: allowCalls / allowVideoCalls
+
+Frontend WebRTC qo'shishi kerak — docs/FRONTEND_CHAT.txt ning
+4-bo'limida flow va code namunasi bor.
+
+STUN:  stun:stun.l.google.com:19302  (bepul, default)
+TURN:  kerak bo'lsa alohida o'rnatiladi (ko'pchilik holatda kerak emas)
+
+Audio-only uchun STUN'ning o'zi yetarli — trafik kichik (50-80 kbps),
+NAT hole-punching har doim ishlaydi.
+
+
+================================================================
+11. FAZA 2 TEKSHIRISH CHECKLIST
+================================================================
+
+[ ] Chatni mute qilish — Telegram push kelmasligi
+[ ] Chatni pin qilish — ro'yxatda tepaga chiqishi
+[ ] Chatni arxivlash — default view'dan yo'qolishi
+[ ] Arxivni ochish — qaytarib ko'rinishi
+[ ] Xabarni o'qiganlar ro'yxati (read-by modal)
+[ ] showReadReceipts=false — ro'yxatda paydo bo'lmasligi
+[ ] Xabar qidirish (global + chat ichida)
+[ ] Fayl nomi bo'yicha qidiruv
+[ ] RINGING 60s timeout → call:status missed event
+[ ] Missed UI (chatda "javob berilmagan")
+[ ] Telegram push kelishi (boshqa foydalanuvchi offline bo'lganda)
+[ ] notifyPreview=false — content yashirilishi
+[ ] showOnlineStatus=false — boshqalar online ko'rmasligi
+[ ] Online ro'yxatida yashirin foydalanuvchi yo'qligi
+
+
+================================================================
+12. BACKEND IMPLEMENTATSIYA O'ZGARISHLARI (REFERENCE)
+================================================================
+
+Agar backendda nima o'zgarganini bilish kerak bo'lsa:
+
+Fayllar:
+  src/modules/chat/chat.service.ts
+    - muteChat, pinChat, archiveChat metodlari
+    - getMessageReads
+    - searchMessages (encrypted content uchun hybrid qidiruv)
+    - expireStaleCalls (har 15s scheduler)
+    - pushTelegramNotification (async, non-blocking)
+    - sendMessage — Telegram push hook qo'shildi
+    - markChatRead — showReadReceipts hurmat qilish
+
+  src/modules/chat/chat.controller.ts
+    - 5 ta yangi endpoint
+
+  src/modules/chat/chat.gateway.ts
+    - onModuleInit — call expiry interval
+    - onModuleDestroy — interval cleanup
+
+  src/modules/chat/chat.module.ts
+    - TelegramModule forwardRef import
+
+  src/modules/chat/dtos/index.ts
+    - MuteChatDto, PinChatDto, ArchiveChatDto, SearchMessagesDto
+
+  src/modules/notification/notification.gateway.ts
+    - getOnlineUsersWithDetails — chatSettings.showOnlineStatus filter
+    - broadcastUserOnlineStatus — skip agar yashirin bo'lsa
