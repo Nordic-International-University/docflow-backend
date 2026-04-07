@@ -42,11 +42,9 @@ export class NotificationService {
       this.mapToResponseDto(notification),
     )
 
-    // Telegram bildirishnomasi
+    // Telegram bildirishnomasi — button bilan
     try {
-      const telegramMessage =
-        `<b>${data.title}</b>\n\n${data.message}`
-      await this.telegramService.sendWorkflowNotification(data.userId, telegramMessage)
+      await this.sendRichTelegramNotification(data.userId, data)
     } catch (err) {
       this.logger.warn(`Telegram notification failed for user ${data.userId}: ${err.message}`)
     }
@@ -56,6 +54,135 @@ export class NotificationService {
     )
 
     return this.mapToResponseDto(notification)
+  }
+
+  /**
+   * Telegram'ga to'liq formatlangan, button bilan xabar yuborish
+   */
+  private async sendRichTelegramNotification(
+    userId: string,
+    data: CreateNotificationDto,
+  ): Promise<void> {
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'https://docverse.uz'
+    const meta: any = data.metadata || {}
+
+    // Type emoji
+    const typeIcons: Record<string, string> = {
+      WORKFLOW_STEP_ASSIGNED: '📋',
+      WORKFLOW_STEP_COMPLETED: '✅',
+      WORKFLOW_STEP_REJECTED: '❌',
+      WORKFLOW_STEP_REASSIGNED: '🔄',
+      WORKFLOW_COMPLETED: '🎉',
+      TASK_ASSIGNED: '📌',
+      TASK_COMPLETED: '✅',
+      TASK_COMMENT: '💬',
+      KPI: '📊',
+      SYSTEM: '⚙️',
+    }
+    const icon = typeIcons[data.type] || '🔔'
+
+    // Build action URL based on type
+    let actionUrl: string | null = null
+    let buttonText = "🔗 Saytda ko'rish"
+
+    if (meta.workflowId) {
+      actionUrl = `${FRONTEND_URL}/dashboard/workflow/${meta.workflowId}`
+      buttonText = "📋 Ish jarayonini ochish"
+    } else if (meta.documentId) {
+      actionUrl = `${FRONTEND_URL}/dashboard/document/${meta.documentId}`
+      buttonText = "📄 Hujjatni ochish"
+    } else if (meta.taskId) {
+      actionUrl = `${FRONTEND_URL}/dashboard/task/${meta.taskId}`
+      buttonText = "📌 Topshiriqni ochish"
+    } else if (meta.projectId) {
+      actionUrl = `${FRONTEND_URL}/dashboard/project/${meta.projectId}`
+      buttonText = "🚀 Loyihani ochish"
+    }
+
+    // Fetch additional context
+    let extraInfo = ''
+
+    if (meta.workflowStepId) {
+      const step = await this.prisma.workflowStep.findFirst({
+        where: { id: meta.workflowStepId },
+        include: {
+          workflow: {
+            include: {
+              document: {
+                include: {
+                  documentType: { select: { name: true } },
+                  createdBy: { select: { fullname: true, username: true } },
+                },
+              },
+            },
+          },
+          assignedToUser: { select: { fullname: true } },
+        },
+      })
+
+      if (step?.workflow?.document) {
+        const doc = step.workflow.document
+        extraInfo = '\n\n<b>📑 Hujjat ma\'lumotlari:</b>'
+        extraInfo += `\n• <b>Sarlavha:</b> ${this.escapeHtml(doc.title)}`
+        extraInfo += `\n• <b>Raqam:</b> <code>${doc.documentNumber || '—'}</code>`
+        if (doc.documentType?.name) extraInfo += `\n• <b>Turi:</b> ${doc.documentType.name}`
+        if (doc.createdBy) extraInfo += `\n• <b>Yaratuvchi:</b> ${doc.createdBy.fullname}`
+        extraInfo += `\n• <b>Bosqich tartibi:</b> ${step.order}`
+        if (step.dueDate) {
+          extraInfo += `\n• <b>Muddat:</b> ${formatDateToUzbek(step.dueDate)}`
+        }
+      }
+    } else if (meta.taskId) {
+      const task = await this.prisma.task.findFirst({
+        where: { id: meta.taskId },
+        include: {
+          project: { select: { name: true, key: true } },
+          createdBy: { select: { fullname: true } },
+          category: { select: { name: true } },
+        },
+      })
+      if (task) {
+        extraInfo = '\n\n<b>📌 Topshiriq ma\'lumotlari:</b>'
+        extraInfo += `\n• <b>Nomi:</b> ${this.escapeHtml(task.title)}`
+        extraInfo += `\n• <b>Loyiha:</b> ${task.project?.name || '—'}`
+        if (task.project?.key) extraInfo += ` (<code>${task.project.key}-${task.taskNumber}</code>)`
+        if (task.priority) extraInfo += `\n• <b>Ustuvorlik:</b> ${task.priority}`
+        if (task.category?.name) extraInfo += `\n• <b>Kategoriya:</b> ${task.category.name}`
+        if (task.createdBy) extraInfo += `\n• <b>Yaratuvchi:</b> ${task.createdBy.fullname}`
+        if (task.dueDate) extraInfo += `\n• <b>Muddat:</b> ${formatDateToUzbek(task.dueDate)}`
+        if (task.score) extraInfo += `\n• <b>Ball:</b> ${task.score}`
+      }
+    }
+
+    // Recipient info
+    const recipient = await this.prisma.user.findFirst({
+      where: { id: userId },
+      select: { telegramId: true, fullname: true },
+    })
+    if (!recipient?.telegramId) return
+
+    // Compose message
+    const now = new Date().toLocaleString('uz-UZ', {
+      timeZone: 'Asia/Tashkent',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
+
+    const text =
+      `${icon} <b>${this.escapeHtml(data.title)}</b>\n\n` +
+      `${this.escapeHtml(data.message)}` +
+      extraInfo +
+      `\n\n🕐 <i>${now}</i>`
+
+    await this.telegramService.sendTelegramMessage(recipient.telegramId, text, actionUrl, buttonText)
+  }
+
+  private escapeHtml(text: string): string {
+    if (!text) return ''
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   // Workflow Step Assigned Notification

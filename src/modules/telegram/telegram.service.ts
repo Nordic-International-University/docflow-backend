@@ -337,6 +337,37 @@ export class TelegramService implements OnModuleInit {
   }
 
   /**
+   * Send a rich Telegram message with optional inline button
+   */
+  async sendTelegramMessage(
+    chatId: string,
+    text: string,
+    actionUrl?: string | null,
+    buttonText?: string,
+  ): Promise<boolean> {
+    if (!this.bot) {
+      this.logger.warn('Telegram bot is not initialized')
+      return false
+    }
+    try {
+      const options: any = {
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }
+      if (actionUrl) {
+        options.reply_markup = {
+          inline_keyboard: [[{ text: buttonText || "🔗 Ochish", url: actionUrl }]],
+        }
+      }
+      await this.bot.telegram.sendMessage(chatId, text, options)
+      return true
+    } catch (error) {
+      this.logger.error(`Failed to send Telegram message to ${chatId}:`, error)
+      return false
+    }
+  }
+
+  /**
    * Send a workflow notification to a user via Telegram
    */
   async sendWorkflowNotification(
