@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, Logger, forwardRef, Inject } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { NotificationGateway } from './notification.gateway'
+import { TelegramService } from '../telegram/telegram.service'
 import {
   CreateNotificationDto,
   NotificationResponseDto,
@@ -16,6 +17,8 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationGateway: NotificationGateway,
+    @Inject(forwardRef(() => TelegramService))
+    private readonly telegramService: TelegramService,
   ) {}
 
   async createNotification(
@@ -33,11 +36,20 @@ export class NotificationService {
       },
     })
 
-    // Try to send real-time notification if user is online
+    // Real-time WebSocket
     await this.notificationGateway.sendNotificationToUser(
       data.userId,
       this.mapToResponseDto(notification),
     )
+
+    // Telegram bildirishnomasi
+    try {
+      const telegramMessage =
+        `<b>${data.title}</b>\n\n${data.message}`
+      await this.telegramService.sendWorkflowNotification(data.userId, telegramMessage)
+    } catch (err) {
+      this.logger.warn(`Telegram notification failed for user ${data.userId}: ${err.message}`)
+    }
 
     this.logger.log(
       `Created notification for user ${data.userId}: ${data.title}`,
