@@ -1366,3 +1366,20 @@ model KpiAchievement {
 }
 
 // ============ END KPI SYSTEM ============
+
+// ============ AI CHATBOT ============
+
+model AiMessage {
+  id           String    @map("id")           @db.Uuid       @default(dbgenerated("GEN_RANDOM_UUID()"))
+  userId       String    @map("user_id")      @db.Uuid
+  role         String    @map("role")         @db.VarChar(20)  // user | assistant | tool
+  content      String    @map("content")      @db.Text
+  toolCalls    Json?     @map("tool_calls")   @db.JsonB
+  toolResults  Json?     @map("tool_results") @db.JsonB
+  attachments  Json?     @map("attachments")  @db.JsonB
+  createdAt    DateTime  @map("created_at")   @db.Timestamp  @default(now())
+
+  @@id([id])
+  @@index([userId, createdAt])
+  @@map("ai_message")
+}

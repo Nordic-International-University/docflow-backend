@@ -1,0 +1,200 @@
+================================================================
+HUJJAT TAFSILOTLARI VA TARIXI — BACKEND O'ZGARISHLARI
+================================================================
+
+
+O'ZGARISH 1: DOCUMENT DETAIL — FAQAT BITTA PDF
+================================================================
+
+GET /api/v1/document/:id
+
+Endi attachments massivida FAQAT eng yangi PDF qaytariladi.
+DOCX va boshqa fayllar yashirin.
+
+Response misol:
+{
+  "id": "...",
+  "title": "Yangi buyruq",
+  "documentNumber": "IB-2026-0005",
+  "status": "PENDING",
+  "pdfUrl": "https://cdn.../buyruq (v3).pdf",
+  "attachments": [
+    {
+      "id": "...",
+      "fileName": "buyruq (v3).pdf",
+      "fileUrl": "https://cdn.../buyruq (v3).pdf",
+      "fileSize": 24500,
+      "mimeType": "application/pdf",
+      "createdAt": "..."
+    }
+  ]
+}
+
+NIMA QILISH KERAK:
+  - Detail sahifada PDF viewer'da attachments[0].fileUrl ni ko'rsatish
+  - Eski versiyalarni mapping qilmaslik (allaqachon yashirin)
+  - "Versiyalarni ko'rish" tugmasini history endpoint'iga ulash
+
+
+O'ZGARISH 2: HUJJAT TARIXI — YANGI ENDPOINT
+================================================================
+
+GET /api/v1/document/:id/history
+Permission: document:view_history
+
+Kim ko'ra oladi:
+  - Hujjat yaratuvchisi
+  - Workflow step'ga tayinlangan foydalanuvchilar
+  - Super Admin / Admin
+
+Response:
+{
+  "document": {
+    "id", "title", "documentNumber", "status",
+    "documentType", "journal", "createdBy", "updatedBy",
+    "createdAt", "updatedAt"
+  },
+
+  "summary": {
+    "totalVersions": 5,        // jami fayl versiyalari
+    "totalSteps": 3,           // jami workflow bosqichlari
+    "totalActions": 7,         // jami harakatlar
+    "currentStatus": "IN_REVIEW",
+    "workflowsCount": 1
+  },
+
+  "fileVersions": {
+    "application/pdf": [
+      { "id", "fileName": "buyruq (v3).pdf", "fileUrl", "createdAt", "uploadedBy" },
+      { "id", "fileName": "buyruq (v2).pdf", ... },
+      { "id", "fileName": "buyruq (v1).pdf", ... }
+    ],
+    "application/vnd.openxml...docx": [
+      { "id", "fileName": "buyruq.docx", "fileUrl", "uploadedBy" }
+    ]
+  },
+
+  "workflows": [
+    {
+      "id", "type", "status",
+      "workflowSteps": [
+        {
+          "id", "order", "actionType", "status",
+          "assignedToUser": { "id", "fullname", "avatarUrl" },
+          "actions": [...],         // bu bosqichdagi harakatlar
+          "attachments": [...]      // bu bosqichda yuklangan fayllar
+        }
+      ]
+    }
+  ],
+
+  "auditLogs": [
+    {
+      "id", "action", "performedAt",
+      "performedBy": { "fullname", "avatarUrl" },
+      "changes", "oldValues", "newValues", "ipAddress"
+    }
+  ],
+
+  "timeline": [
+    // Vaqt bo'yicha tartiblangan barcha hodisalar (eski → yangi)
+    {
+      "type": "DOCUMENT_CREATED",
+      "timestamp": "2026-04-01T10:00:00Z",
+      "actor": { "id", "fullname", "avatarUrl" },
+      "title": "Hujjat yaratildi",
+      "description": "...",
+      "meta": { ... }
+    },
+    {
+      "type": "FILE_UPLOADED",
+      "timestamp": "...",
+      "actor": { ... },
+      "title": "Avtomatik PDF yaratildi",
+      "description": "buyruq (v1).pdf",
+      "meta": { "attachmentId", "fileName", "fileUrl", "mimeType", "fileSize" }
+    },
+    {
+      "type": "WORKFLOW_STARTED",
+      "timestamp": "...",
+      "actor": { ... },
+      "title": "Ish jarayoni boshlandi",
+      "meta": { "workflowId", "type", "status" }
+    },
+    {
+      "type": "STEP_STARTED",
+      "timestamp": "...",
+      "actor": { ... },
+      "title": "1-bosqich boshlandi: Ko'rib chiqish",
+      "meta": { "stepId", "order", "actionType", "dueDate" }
+    },
+    {
+      "type": "STEP_APPROVED",
+      "timestamp": "...",
+      "actor": { ... },
+      "title": "1-bosqich tasdiqlandi: Ko'rib chiqish",
+      "description": "Bobur Tursunov muvaffaqiyatli bajardi",
+      "meta": { ... }
+    },
+    {
+      "type": "STEP_REJECTED",
+      "title": "2-bosqich rad etildi",
+      "description": "Smeta noto'g'ri",
+      ...
+    },
+    {
+      "type": "AUDIT_UPDATE",
+      "title": "Hujjat ma'lumotlari yangilandi",
+      "meta": { "changes": {...} }
+    }
+  ]
+}
+
+NIMA QILISH KERAK:
+  - "Tarix" / "Versiyalar" tugmasini detail sahifasiga qo'shish
+  - Modal yoki alohida sahifada timeline ko'rsatish
+  - Har bir hodisa: icon + actor avatar + title + sana
+  - fileVersions blokida har bir mime type uchun versiyalar ro'yxati
+  - Yuklab olish tugmasi har bir versiyada
+  - Summary bloki dashboard'dek ko'rsatilsin
+
+UI MISOL — TIMELINE:
+  ●─── Asror Abdullayev — Hujjat yaratdi
+       2026-04-01 10:00
+  │
+  ●─── Asror Abdullayev — Avtomatik PDF yaratildi
+       buyruq (v1).pdf
+  │
+  ●─── Asror Abdullayev — Ish jarayoni boshlandi
+       Ketma-ket, 3 bosqich
+  │
+  ●─── Bobur Tursunov — 1-bosqich tasdiqladi: Ko'rib chiqish
+       "Hammasi to'g'ri"
+       2026-04-02 14:30
+  │
+  ●─── Avtomatik — Yangi PDF yaratildi
+       buyruq (v2).pdf (annotatsiya bilan)
+
+
+O'ZGARISH 3: WORKFLOW YARATILGANDA AVTOMATIK PDF QOTIRISH
+================================================================
+
+POST /api/v1/workflow chaqirilganda backend avtomatik:
+  - DOCX → PDF konvertatsiya (final freeze)
+  - Yangi PDF attachment yaratiladi (v1, v2...)
+  - document.pdfUrl yangilanadi
+  - document.status: DRAFT → PENDING
+
+Frontend tomonidan qo'shimcha ish kerak emas.
+
+
+================================================================
+FRONTEND CHECKLIST
+================================================================
+
+[ ] Detail sahifa: faqat attachments[0] (PDF) viewer'da ko'rsatish
+[ ] "Versiyalarni ko'rish" / "Tarix" tugmasi
+[ ] Timeline UI komponenti (icon + actor + title + date)
+[ ] fileVersions bloki (har bir mime type uchun versiyalar)
+[ ] Summary kartochkalari (jami versiyalar, bosqichlar, harakatlar)
+[ ] Eski "attachments versiyalari" mapping logikasini olib tashlash

@@ -39,6 +39,7 @@ import {
   KpiRewardTierModule,
   UserMonthlyKpiModule,
   KpiRewardModule,
+  AiModule,
 } from '@modules'
 import { databaseConfig, jwtConfig, minioConfig, redisConfig } from '@config'
 import { JwtModule } from '@nestjs/jwt'
@@ -106,6 +107,7 @@ console.log('Sandbox mode is active.')
     KpiRewardTierModule,
     UserMonthlyKpiModule,
     KpiRewardModule,
+    AiModule,
   ],
 })
 export class App {}
