@@ -1016,4 +1016,278 @@ export class AnalyticsService {
       activityTrend,
     }
   }
+
+  /**
+   * Comprehensive KPI statistics for dashboard.
+   * Returns everything in one object — frontend picks what it needs.
+   */
+  async getKpiStatistics(payload: {
+    userId: string
+    year: number
+    month: number
+    currentUserRole?: string
+    currentUserDepartmentId?: string
+  }) {
+    const { userId, year, month } = payload
+    const isAdmin =
+      payload.currentUserRole === 'Super Administrator' ||
+      payload.currentUserRole === 'Admin'
+
+    // ============ 1. SHAXSIY KPI (joriy oy) ============
+    const personalKpi = await this.prisma.userMonthlyKpi.findFirst({
+      where: { userId, year, month },
+    })
+
+    // ============ 2. SHAXSIY KPI TRENDI (oxirgi 12 oy) ============
+    const trend = await this.prisma.userMonthlyKpi.findMany({
+      where: { userId },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      take: 12,
+      select: {
+        year: true,
+        month: true,
+        finalScore: true,
+        tasksCompleted: true,
+        tasksOnTime: true,
+        tasksLate: true,
+        totalEarnedScore: true,
+        totalPenalty: true,
+        isFullScore: true,
+      },
+    })
+
+    // ============ 3. KOMPANIYA / DEPARTAMENT REYTINGI ============
+    const leaderboard = await this.prisma.userMonthlyKpi.findMany({
+      where: {
+        year, month,
+        ...(payload.currentUserDepartmentId && !isAdmin
+          ? { departmentId: payload.currentUserDepartmentId }
+          : {}),
+      },
+      orderBy: { finalScore: 'desc' },
+      take: 20,
+    })
+
+    const leaderboardWithUsers = await Promise.all(
+      leaderboard.map(async (k, idx) => {
+        const u = await this.prisma.user.findFirst({
+          where: { id: k.userId },
+          select: {
+            id: true, fullname: true, username: true, avatarUrl: true,
+            department: { select: { id: true, name: true } },
+          },
+        })
+        return {
+          rank: idx + 1,
+          user: u,
+          finalScore: k.finalScore,
+          tasksCompleted: k.tasksCompleted,
+          tasksOnTime: k.tasksOnTime,
+          tasksLate: k.tasksLate,
+          isFullScore: k.isFullScore,
+        }
+      }),
+    )
+
+    // ============ 4. SHAXSIY TOP-5 TASKLAR ============
+    const topTasks = await this.prisma.taskKpiScore.findMany({
+      where: { userId, periodYear: year, periodMonth: month },
+      orderBy: { earnedScore: 'desc' },
+      take: 5,
+    })
+
+    const topTasksWithDetails = await Promise.all(
+      topTasks.map(async (s) => {
+        const task = await this.prisma.task.findFirst({
+          where: { id: s.taskId },
+          select: {
+            id: true, title: true, taskNumber: true,
+            project: { select: { name: true, key: true } },
+          },
+        })
+        return {
+          taskId: s.taskId,
+          task,
+          baseScore: s.baseScore,
+          earnedScore: s.earnedScore,
+          penaltyApplied: s.penaltyApplied,
+          daysLate: s.daysLate,
+          completedDate: s.completedDate,
+        }
+      }),
+    )
+
+    // ============ 5. DEPARTMENT KPI ============
+    let departmentKpi = null
+    if (payload.currentUserDepartmentId) {
+      const dept = await this.prisma.departmentMonthlyKpi.findFirst({
+        where: { departmentId: payload.currentUserDepartmentId, year, month },
+      })
+      if (dept) {
+        const deptInfo = await this.prisma.department.findFirst({
+          where: { id: payload.currentUserDepartmentId },
+          select: { id: true, name: true },
+        })
+        departmentKpi = {
+          department: deptInfo,
+          averageScore: Number(dept.averageScore),
+          totalScore: dept.totalScore,
+          totalUsers: dept.totalUsers,
+          usersAbove85: dept.usersAbove85,
+          usersAt100: dept.usersAt100,
+          isEligibleForTeamReward: dept.isEligibleForTeamReward,
+        }
+      }
+    }
+
+    // ============ 6. BARCHA DEPARTAMENT REYTINGI (admin uchun) ============
+    let allDepartments: any[] = []
+    if (isAdmin) {
+      const depts = await this.prisma.departmentMonthlyKpi.findMany({
+        where: { year, month },
+        orderBy: { averageScore: 'desc' },
+      })
+      allDepartments = await Promise.all(
+        depts.map(async (d, idx) => {
+          const info = await this.prisma.department.findFirst({
+            where: { id: d.departmentId },
+            select: { id: true, name: true },
+          })
+          return {
+            rank: idx + 1,
+            department: info,
+            averageScore: Number(d.averageScore),
+            totalUsers: d.totalUsers,
+            usersAbove85: d.usersAbove85,
+            usersAt100: d.usersAt100,
+          }
+        }),
+      )
+    }
+
+    // ============ 7. ACHIEVEMENTLAR ============
+    const achievements = await this.prisma.kpiAchievement.findMany({
+      where: { userId },
+      orderBy: { awardedAt: 'desc' },
+      take: 10,
+    })
+
+    // ============ 8. MUKOFOTLAR (KpiReward) ============
+    const myRewards = await this.prisma.kpiReward.findMany({
+      where: { userId, deletedAt: null },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      take: 12,
+      include: { rewardTier: true },
+    })
+
+    // ============ 9. UMUMIY KOMPANIYA STATISTIKASI ============
+    const allKpisThisMonth = await this.prisma.userMonthlyKpi.findMany({
+      where: { year, month },
+      select: { finalScore: true, isFullScore: true, tasksCompleted: true },
+    })
+
+    const companyStats = {
+      totalUsers: allKpisThisMonth.length,
+      averageScore:
+        allKpisThisMonth.length > 0
+          ? Math.round(
+              allKpisThisMonth.reduce((s, k) => s + k.finalScore, 0) /
+                allKpisThisMonth.length,
+            )
+          : 0,
+      usersAt100: allKpisThisMonth.filter((k) => k.isFullScore).length,
+      usersAbove85: allKpisThisMonth.filter((k) => k.finalScore >= 85).length,
+      usersBelow50: allKpisThisMonth.filter((k) => k.finalScore < 50).length,
+      totalTasksCompleted: allKpisThisMonth.reduce((s, k) => s + k.tasksCompleted, 0),
+    }
+
+    // ============ 10. SHAXSIY POSITION (kompaniya ichida) ============
+    const allSorted = await this.prisma.userMonthlyKpi.findMany({
+      where: { year, month },
+      orderBy: { finalScore: 'desc' },
+      select: { userId: true },
+    })
+    const myPosition = allSorted.findIndex((k) => k.userId === userId) + 1
+
+    // ============ 11. SCORE BREAKDOWN (priority bo'yicha) ============
+    const taskScores = await this.prisma.taskKpiScore.findMany({
+      where: { userId, periodYear: year, periodMonth: month },
+    })
+    const scoreBreakdown = {
+      byPriority: {} as Record<string, { count: number; earned: number }>,
+      onTimeCount: taskScores.filter((s) => s.daysLate === 0).length,
+      lateCount: taskScores.filter((s) => s.daysLate > 0).length,
+      totalPenalty: taskScores.reduce((s, t) => s + t.penaltyApplied, 0),
+      averageDaysLate:
+        taskScores.length > 0
+          ? Math.round(
+              taskScores.reduce((s, t) => s + t.daysLate, 0) / taskScores.length,
+            )
+          : 0,
+    }
+    for (const s of taskScores) {
+      const key = `${s.baseScore}`
+      if (!scoreBreakdown.byPriority[key]) {
+        scoreBreakdown.byPriority[key] = { count: 0, earned: 0 }
+      }
+      scoreBreakdown.byPriority[key].count++
+      scoreBreakdown.byPriority[key].earned += s.earnedScore
+    }
+
+    // ============ 12. ENG SO'NGGI YAKUNLANGAN TASKLAR ============
+    const recentCompletedTasks = await this.prisma.taskKpiScore.findMany({
+      where: { userId, periodYear: year, periodMonth: month },
+      orderBy: { completedDate: 'desc' },
+      take: 10,
+    })
+
+    const recentTasksWithDetails = await Promise.all(
+      recentCompletedTasks.map(async (s) => {
+        const task = await this.prisma.task.findFirst({
+          where: { id: s.taskId },
+          select: {
+            id: true, title: true, taskNumber: true,
+            project: { select: { name: true, key: true } },
+          },
+        })
+        return {
+          task,
+          earnedScore: s.earnedScore,
+          completedDate: s.completedDate,
+          daysLate: s.daysLate,
+        }
+      }),
+    )
+
+    // ============ FINAL RESPONSE ============
+    return {
+      period: { year, month },
+      personal: personalKpi
+        ? {
+            finalScore: personalKpi.finalScore,
+            totalBaseScore: personalKpi.totalBaseScore,
+            totalEarnedScore: personalKpi.totalEarnedScore,
+            totalPenalty: personalKpi.totalPenalty,
+            tasksCompleted: personalKpi.tasksCompleted,
+            tasksOnTime: personalKpi.tasksOnTime,
+            tasksLate: personalKpi.tasksLate,
+            isFullScore: personalKpi.isFullScore,
+            consecutiveFullMonths: personalKpi.consecutiveFullMonths,
+            isFinalized: personalKpi.isFinalized,
+            position: myPosition,
+            totalUsers: companyStats.totalUsers,
+          }
+        : null,
+      trend: trend.reverse(), // eski → yangi
+      scoreBreakdown,
+      topTasks: topTasksWithDetails,
+      recentCompletedTasks: recentTasksWithDetails,
+      department: departmentKpi,
+      leaderboard: leaderboardWithUsers,
+      allDepartments,
+      achievements,
+      rewards: myRewards,
+      companyStats,
+    }
+  }
 }

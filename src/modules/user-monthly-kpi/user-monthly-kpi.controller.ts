@@ -110,6 +110,27 @@ export class UserMonthlyKpiController {
     )
   }
 
+  @Get('statistics/full')
+  @Permissions(PERMISSIONS.USER_MONTHLY_KPI.READ)
+  @ApiOperation({
+    summary: "To'liq KPI statistikasi — frontend dashboard uchun",
+    description: 'Barcha KPI statistikasi: shaxsiy, departament, leaderboard, trend, top tasklar, achievements',
+  })
+  async getFullStatistics(
+    @Req() req: any,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('userId') userId?: string,
+  ) {
+    return await this.userMonthlyKpiService.getFullStatistics({
+      userId: userId || req.user.userId,
+      year: year ? parseInt(year, 10) : new Date().getFullYear(),
+      month: month ? parseInt(month, 10) : new Date().getMonth() + 1,
+      currentUserRole: req.user.roleName,
+      currentUserDepartmentId: req.user.departmentId,
+    })
+  }
+
   @Get(':id')
   @Permissions(PERMISSIONS.USER_MONTHLY_KPI.READ)
   @ApiOperation({ summary: 'Get user monthly KPI by ID' })

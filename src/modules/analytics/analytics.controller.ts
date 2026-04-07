@@ -1,6 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
 import { AnalyticsService } from './analytics.service'
+import { AuthGuard } from '@guards'
 import { AnalyticsQueryDto } from './dtos/analytics-query.dto'
 import {
   DashboardAnalyticsResponseDto,
@@ -64,5 +65,29 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ): Promise<UserAnalyticsResponseDto> {
     return this.analyticsService.getUserAnalytics(query)
+  }
+
+  @Get('kpi')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "To'liq KPI statistikasi (dashboard uchun)",
+    description:
+      "Barcha KPI ma'lumotlari bitta endpoint'da: shaxsiy KPI, departament o'rtachasi, leaderboard, oylar trendi, top tasklar, achievementlar, score breakdown",
+  })
+  async getKpiStatistics(
+    @Req() req: any,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('userId') userId?: string,
+  ) {
+    const now = new Date()
+    return this.analyticsService.getKpiStatistics({
+      userId: userId || req.user.userId,
+      year: year ? parseInt(year, 10) : now.getFullYear(),
+      month: month ? parseInt(month, 10) : now.getMonth() + 1,
+      currentUserRole: req.user.roleName,
+      currentUserDepartmentId: req.user.departmentId,
+    })
   }
 }
