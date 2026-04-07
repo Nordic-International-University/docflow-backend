@@ -165,6 +165,35 @@ export class DocumentController {
     })
   }
 
+  @Post(':id/start-workflow')
+  @Permissions(PERMISSIONS.DOCUMENT.UPDATE)
+  @ApiOperation({
+    summary: "Hujjat ish jarayonini boshlash",
+    description:
+      "DOCX dan PDF yaratadi (qotirish), DOCX'ni lock qiladi, workflow yaratadi va status PENDING ga o'tadi. Bundan keyin DOCX edit qilib bo'lmaydi, faqat PDF ustida annotatsiya/imzo.",
+  })
+  async documentStartWorkflow(
+    @Param('id') id: string,
+    @Body() body: {
+      workflowTemplateId?: string
+      type?: 'CONSECUTIVE' | 'PARALLEL'
+      deadline?: string
+      steps?: Array<{
+        order: number
+        actionType: string
+        assignedToUserId?: string
+        dueDate?: string
+      }>
+    },
+    @Req() req: any,
+  ) {
+    return await this.documentService.documentStartWorkflow({
+      documentId: id,
+      ...body,
+      userId: req.user.userId,
+    })
+  }
+
   @Post('create-with-office')
   @Permissions(PERMISSIONS.DOCUMENT.CREATE)
   @ApiOperation({
