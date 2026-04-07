@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
-import { MinioService } from '@clients'
+import { MinioService, RedisService } from '@clients'
 import { TelegramService } from '../telegram/telegram.service'
 import { ChatEncryptionService } from './chat-encryption'
 import {
@@ -37,9 +37,35 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
+    private readonly redis: RedisService,
     private readonly crypto: ChatEncryptionService,
     private readonly telegram: TelegramService,
   ) {}
+
+  /**
+   * Foydalanuvchilarning online holatini va showOnlineStatus sozlamasini
+   * hisobga olgan holda {userId → isOnline} map qaytaradi.
+   * showOnlineStatus=false bo'lgan foydalanuvchi doim offline ko'rsatiladi.
+   */
+  private async getOnlineStatusMap(userIds: string[]): Promise<Map<string, boolean>> {
+    const map = new Map<string, boolean>()
+    if (userIds.length === 0) return map
+    const [onlineIds, settings] = await Promise.all([
+      this.redis.getOnlineUsers(),
+      this.prisma.userChatSettings.findMany({
+        where: { userId: { in: userIds } },
+        select: { userId: true, showOnlineStatus: true },
+      }),
+    ])
+    const hiddenSet = new Set(
+      settings.filter((s) => s.showOnlineStatus === false).map((s) => s.userId),
+    )
+    const onlineSet = new Set(onlineIds)
+    for (const uid of userIds) {
+      map.set(uid, onlineSet.has(uid) && !hiddenSet.has(uid))
+    }
+    return map
+  }
 
   private isAdmin(ctx: Ctx) {
     return ADMIN_ROLES.includes(ctx.roleName || '')
@@ -99,15 +125,28 @@ export class ChatService {
       take: limit,
     })
 
+    // DIRECT chatlar uchun peer userId'larini to'plash va online holatni olish
+    const peerIds: string[] = []
+    for (const m of memberships) {
+      if (m.chat.type === 'DIRECT') {
+        const peer = m.chat.members.find((mm) => mm.userId !== ctx.userId)
+        if (peer) peerIds.push(peer.userId)
+      }
+    }
+    const onlineMap = await this.getOnlineStatusMap(peerIds)
+
     const result = memberships
       .filter((m) => m.chat.deletedAt === null)
       .map((m) => {
         const chat = m.chat
         const lastMessage = chat.messages[0]
-        const peer =
+        const peerUser =
           chat.type === 'DIRECT'
             ? chat.members.find((mm) => mm.userId !== ctx.userId)?.user
             : null
+        const peer = peerUser
+          ? { ...peerUser, isOnline: onlineMap.get(peerUser.id) || false }
+          : null
         return {
           id: chat.id,
           type: chat.type,
@@ -249,7 +288,35 @@ export class ChatService {
       },
     })
     if (!chat) throw new NotFoundException('Chat topilmadi')
-    return chat
+
+    // Online holatni a'zolar uchun to'ldirish (showOnlineStatus hurmat qilinadi)
+    const memberIds = chat.members.map((m) => m.userId)
+    const onlineMap = await this.getOnlineStatusMap(memberIds)
+
+    const membersWithOnline = chat.members.map((m) => ({
+      ...m,
+      user: {
+        ...m.user,
+        isOnline: onlineMap.get(m.userId) || false,
+      },
+    }))
+
+    // DIRECT uchun peer obyekti
+    const peerMember =
+      chat.type === 'DIRECT'
+        ? membersWithOnline.find((mm) => mm.userId !== ctx.userId)
+        : null
+    const peer = peerMember ? peerMember.user : null
+
+    return {
+      ...chat,
+      members: membersWithOnline,
+      membersCount: chat.members.length,
+      peer,
+      // DIRECT uchun title'ni peer nomiga aylantirish (ro'yxat bilan mos kelishi uchun)
+      title: chat.type === 'DIRECT' ? peer?.fullname || null : chat.title,
+      avatarUrl: chat.type === 'DIRECT' ? peer?.avatarUrl || null : chat.avatarUrl,
+    }
   }
 
   async updateGroupChat(chatId: string, payload: UpdateGroupChatDto, ctx: Ctx) {
@@ -428,8 +495,12 @@ export class ChatService {
     let fileUrl = payload.fileUrl
     let fileName = payload.fileName
     let mimeType = payload.mimeType
-    let fileSize = payload.fileSize
+    let fileSize: number | undefined =
+      payload.fileSize != null ? Number(payload.fileSize) : undefined
     let type = payload.type || 'TEXT'
+    // Multipart form'da raqamlar string bo'lib keladi — cast qilish
+    const duration =
+      payload.duration != null ? Math.round(Number(payload.duration)) : undefined
 
     if (file) {
       const uploaded = await this.minio.uploadFile(file, 'chat/')
@@ -468,7 +539,7 @@ export class ChatService {
         fileName,
         fileSize,
         mimeType,
-        duration: payload.duration,
+        duration,
         thumbnailUrl: payload.thumbnailUrl,
       },
       include: {

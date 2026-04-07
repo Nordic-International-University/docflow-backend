@@ -23,7 +23,7 @@ import { NotificationListResponseDto, NotificationResponseDto } from './dtos'
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
-@Controller('notifications')
+@Controller({ path: 'notifications', version: '1' })
 @UseGuards(AuthGuard)
 export class NotificationController {
   constructor(
