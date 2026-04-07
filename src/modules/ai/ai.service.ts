@@ -56,12 +56,14 @@ Bugun: ${today}
 QOIDALAR:
 - O'zbek tilida tabiiy va korporativ uslubda javob ber
 - Faqat berilgan tool'lardan foydalan, o'zingdan ma'lumot to'qima
+- Tool natijalari frontend'da CARDS sifatida avtomatik ko'rsatiladi
+- Shuning uchun matnda ro'yxatni TO'LIQ takrorlama, qisqa xulosa ber
+- Misol: "Sizda 3 ta yangi vazifa bor. Quyida ko'ring." (ro'yxatni qaytarma)
 - Hujjat raqamlarini formatda yoz: IB-2026-0005
 - Agar foydalanuvchi "menga", "men", "o'zimning" desa — uning shaxsiy ma'lumotlari haqida
 - Agar tool xato qaytarsa, uni foydalanuvchiga tushunarli tarzda ayt
 - Sanalar bilan ishlaganda Asia/Tashkent vaqt mintaqasidan foydalan
-- Agar fayl yoki PDF kerak bo'lsa, getDocumentPdf tool'idan foydalan
-- Javoblar qisqa, aniq va foydali bo'lsin (markdown formatda)
+- Javoblar QISQA bo'lsin (1-3 jumla), chunki cards alohida ko'rsatiladi
 - Hech qachon parol, token, maxfiy ma'lumotlarni ochma
 - Agar so'rov DocFlow ga aloqasi bo'lmasa, "Men faqat DocFlow tizimi bo'yicha yordam bera olaman" deb javob ber`
 
@@ -85,7 +87,7 @@ QOIDALAR:
     let response = await this.groq.chat(messages, this.tools.getToolDefinitions())
 
     // 5. Tool call bo'lsa — bajarish
-    let attachments: any[] = []
+    let cards: any[] = []
     let toolResultsLog: any[] = []
 
     if (response.tool_calls && response.tool_calls.length > 0) {
@@ -101,15 +103,9 @@ QOIDALAR:
 
         toolResultsLog.push({ name: tc.function.name, args, result })
 
-        // Attachment'larni ajratish
-        if (result?.isAttachment && result?.pdfUrl) {
-          attachments.push({
-            type: 'document',
-            fileName: result.title + '.pdf',
-            fileUrl: result.pdfUrl,
-            documentNumber: result.documentNumber,
-          })
-        }
+        // Tool natijasini structured cards'ga aylantirish
+        const builtCards = this.buildCardsFromTool(tc.function.name, result)
+        cards.push(...builtCards)
 
         messages.push({
           role: 'tool',
@@ -132,16 +128,223 @@ QOIDALAR:
         role: 'assistant',
         content: assistantContent,
         toolResults: toolResultsLog.length > 0 ? toolResultsLog : undefined,
-        attachments: attachments.length > 0 ? attachments : undefined,
+        attachments: cards.length > 0 ? cards : undefined,
       },
     })
 
     return {
       id: saved.id,
       message: assistantContent,
-      attachments,
+      cards,
       timestamp: saved.createdAt,
     }
+  }
+
+  /**
+   * Tool natijasidan frontend uchun structured cards yaratish
+   */
+  private buildCardsFromTool(toolName: string, result: any): any[] {
+    if (!result || result.error) return []
+
+    const cards: any[] = []
+
+    switch (toolName) {
+      case 'getMyTasks': {
+        if (result.tasks?.length) {
+          for (const t of result.tasks) {
+            cards.push({
+              type: 'task',
+              id: t.ref,
+              title: t.title,
+              subtitle: t.project,
+              meta: {
+                ref: t.ref,
+                priority: t.priority,
+                score: t.score,
+                dueDate: t.dueDate,
+                completed: t.completed,
+                createdBy: t.createdBy,
+              },
+              actions: [
+                { label: 'Ochish', url: t.url },
+              ],
+            })
+          }
+        }
+        break
+      }
+
+      case 'getMyWorkflows': {
+        if (result.workflows?.length) {
+          for (const w of result.workflows) {
+            cards.push({
+              type: 'workflow',
+              id: w.id,
+              title: w.document?.title || 'Workflow',
+              subtitle: w.document?.documentNumber,
+              meta: {
+                type: w.type,
+                status: w.status,
+                currentStep: w.currentStep,
+                totalSteps: w.totalSteps,
+                deadline: w.deadline,
+              },
+              actions: [
+                { label: 'Ish jarayonini ochish', url: w.url },
+              ],
+            })
+          }
+        }
+        break
+      }
+
+      case 'getDocumentByNumber': {
+        if (result.id) {
+          cards.push({
+            type: 'document',
+            id: result.id,
+            title: result.title,
+            subtitle: result.documentNumber,
+            meta: {
+              status: result.status,
+              type: result.documentType?.name,
+              createdBy: result.createdBy?.fullname,
+              createdAt: result.createdAt,
+              pdfUrl: result.pdfUrl,
+            },
+            actions: [
+              { label: 'Hujjatni ochish', url: result.url },
+              ...(result.pdfUrl ? [{ label: 'PDF', url: result.pdfUrl, external: true }] : []),
+            ],
+          })
+        }
+        break
+      }
+
+      case 'getDocumentsByType':
+      case 'searchDocuments': {
+        if (result.documents?.length) {
+          for (const d of result.documents) {
+            cards.push({
+              type: 'document',
+              id: d.id,
+              title: d.title,
+              subtitle: d.documentNumber,
+              meta: {
+                status: d.status,
+                type: d.documentType?.name,
+                createdBy: d.createdBy?.fullname,
+              },
+              actions: [
+                { label: 'Ochish', url: d.url },
+              ],
+            })
+          }
+        }
+        break
+      }
+
+      case 'getDocumentPdf': {
+        if (result.pdfUrl) {
+          cards.push({
+            type: 'pdf',
+            id: result.documentNumber,
+            title: result.title,
+            subtitle: result.documentNumber,
+            meta: {
+              fileUrl: result.pdfUrl,
+              fileName: `${result.documentNumber}.pdf`,
+            },
+            actions: [
+              { label: 'PDF yuklab olish', url: result.pdfUrl, external: true },
+              { label: 'Hujjatga o\'tish', url: result.url },
+            ],
+          })
+        }
+        break
+      }
+
+      case 'getMyKpi': {
+        if (result.finalScore !== undefined) {
+          cards.push({
+            type: 'kpi',
+            id: `kpi-${result.year}-${result.month}`,
+            title: `${result.month}/${result.year} oy KPI`,
+            subtitle: `${result.finalScore}/100 ball`,
+            meta: {
+              finalScore: result.finalScore,
+              tasksCompleted: result.tasksCompleted,
+              tasksOnTime: result.tasksOnTime,
+              tasksLate: result.tasksLate,
+              isFullScore: result.isFullScore,
+            },
+            actions: [
+              { label: 'Batafsil', url: '/dashboard/kpi' },
+            ],
+          })
+        }
+        break
+      }
+
+      case 'getMyNotifications': {
+        if (result.notifications?.length) {
+          for (const n of result.notifications) {
+            cards.push({
+              type: 'notification',
+              id: n.id,
+              title: n.title,
+              subtitle: n.type,
+              meta: {
+                message: n.message,
+                createdAt: n.createdAt,
+              },
+            })
+          }
+        }
+        break
+      }
+
+      case 'getMyProjects': {
+        if (result.projects?.length) {
+          for (const p of result.projects) {
+            cards.push({
+              type: 'project',
+              id: p.id,
+              title: p.name,
+              subtitle: p.key,
+              meta: {
+                status: p.status,
+                tasksCount: p.tasksCount,
+                membersCount: p.membersCount,
+              },
+              actions: [
+                { label: 'Loyihani ochish', url: p.url },
+              ],
+            })
+          }
+        }
+        break
+      }
+
+      case 'getDepartmentStats': {
+        if (result.department) {
+          cards.push({
+            type: 'stats',
+            id: 'dept-stats',
+            title: result.department,
+            subtitle: "Bo'lim statistikasi",
+            meta: {
+              totalUsers: result.totalUsers,
+              activeTasks: result.activeTasks,
+              completedTasks: result.completedTasks,
+            },
+          })
+        }
+        break
+      }
+    }
+
+    return cards
   }
 
   async getHistory(userId: string, limit = 50) {
@@ -154,7 +357,7 @@ QOIDALAR:
       id: m.id,
       role: m.role,
       content: m.content,
-      attachments: m.attachments,
+      cards: m.attachments || [],
       timestamp: m.createdAt,
     }))
   }

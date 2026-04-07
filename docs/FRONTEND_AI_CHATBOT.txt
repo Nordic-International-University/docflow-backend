@@ -1,0 +1,190 @@
+================================================================
+DOCFLOW AI CHATBOT — FRONTEND O'ZGARISHLARI
+================================================================
+
+
+1. UI: FLOATING CHAT WIDGET
+================================================================
+
+Sayt o'ng pastki burchakda doimiy floating tugma:
+  - Dumaloq icon (🤖 yoki AI avatar)
+  - Bosilganda chat oynasi ochiladi
+  - Yopilganda yana tugma ko'rinadi
+  - Barcha sahifalarda mavjud (layout darajasida)
+
+Tavsiya:
+  - Tugma o'lchami: 60×60 px
+  - Oynacha o'lchami: 400×600 px (mobile: full screen)
+  - Pozitsiya: position: fixed; bottom: 24px; right: 24px;
+  - z-index: 9999
+
+
+2. ENDPOINTLAR
+================================================================
+
+A) Chat — savol yuborish:
+   POST /api/v1/ai/chat
+   Headers: Authorization: Bearer {token}
+   Body: { "message": "savol matni" }
+
+   Response:
+   {
+     "id": "uuid",
+     "message": "AI javobi (markdown format)",
+     "attachments": [
+       {
+         "type": "document",
+         "fileName": "buyruq.pdf",
+         "fileUrl": "https://...",
+         "documentNumber": "IB-2026-0005"
+       }
+     ],
+     "timestamp": "2026-04-07T10:15:00.000Z"
+   }
+
+B) Tarix:
+   GET /api/v1/ai/history
+
+   Response:
+   [
+     {
+       "id": "uuid",
+       "role": "user" | "assistant",
+       "content": "matn",
+       "attachments": [...] | null,
+       "timestamp": "..."
+     },
+     ...
+   ]
+
+C) Tarixini tozalash:
+   DELETE /api/v1/ai/history
+   Response: { "deleted": 12 }
+
+
+3. CHAT WIDGET TUZILISHI
+================================================================
+
+  ┌─────────────────────────────┐
+  │ 🤖 DocFlow AI yordamchi  ✕ │  ← Header (yopish tugmasi, tarixni tozalash)
+  ├─────────────────────────────┤
+  │                             │
+  │  [user] Salom!              │
+  │  [ai]   Salom! Sizga qan-   │  ← Messages (scrollable)
+  │         day yordam bera     │
+  │         olaman?             │
+  │                             │
+  │  [user] Bugungi tasklarim?  │
+  │  [ai]   Bugun 3 ta task...  │
+  │         📎 attachment       │
+  │                             │
+  ├─────────────────────────────┤
+  │ [savol yozing...]      [→]  │  ← Input + send button
+  └─────────────────────────────┘
+
+
+4. MESSAGE FORMAT
+================================================================
+
+User message — o'ng tomonda
+AI message — chap tomonda (avatar bilan)
+
+AI javobi MARKDOWN formatda keladi — markdown render qiling
+(react-markdown yoki marked):
+  - **bold**
+  - *italic*
+  - lists (1. 2. 3.)
+  - links
+
+
+5. ATTACHMENTLAR
+================================================================
+
+AI ba'zan attachment qaytaradi (PDF havolasi va h.k.):
+
+  message.attachments?.map(att => (
+    <AttachmentCard
+      icon="📄"
+      fileName={att.fileName}
+      onClick={() => window.open(att.fileUrl, '_blank')}
+    />
+  ))
+
+Hozircha attachment turi: "document"
+Qo'shimcha info: documentNumber, fileUrl, fileName
+
+
+6. INPUT BEHAVIOR
+================================================================
+
+  - Enter — yuborish
+  - Shift+Enter — yangi qator
+  - Bo'sh xabar — yubormaslik
+  - Yuborayotgan paytda input disabled
+  - "AI o'ylayapti..." typing indicator (loading)
+
+
+7. INITIAL MESSAGE
+================================================================
+
+Chat birinchi marta ochilganda (history bo'sh bo'lsa):
+
+  "Salom! Men DocFlow AI yordamchisiman. Quyidagilarni so'rashingiz mumkin:
+
+  • Mening bugungi tasklarim
+  • Muddati o'tgan tasklar
+  • IB-2026-0001 hujjati
+  • Buyruq turidagi tasdiqlangan hujjatlar
+  • Mening KPI ko'rsatkichim
+  • Loyihalarim ro'yxati"
+
+
+8. SUGGESTED QUESTIONS (BOSHLANG'ICH)
+================================================================
+
+History bo'sh bo'lsa, tugmalar ko'rinadi:
+
+  [📋 Bugungi tasklarim]
+  [⏰ Muddati o'tganlar]
+  [📊 KPI'm]
+  [📁 Loyihalarim]
+
+Bosilganda — mos savol input'ga yoziladi va yuboriladi.
+
+
+9. ERROR HANDLING
+================================================================
+
+  401 — token eskirgan: foydalanuvchini login sahifasiga yo'naltiring
+  500 — AI xatosi: "Kechirasiz, javob bera olmadim. Qayta urinib ko'ring"
+  Rate limit — keyinroq urinib ko'ring
+
+
+10. PERFORMANCE
+================================================================
+
+  - History faqat birinchi ochilganda yuklansin (lazy load)
+  - Optimistik UI: user message darhol ko'rsatiladi (response kutmasdan)
+  - AI typing indicator (3 nuqta animatsiya)
+  - Auto scroll to bottom yangi message kelganda
+
+
+================================================================
+FRONTEND CHECKLIST
+================================================================
+
+[ ] Layout darajasida floating chat widget (har sahifada)
+[ ] O'ng pastki burchak — dumaloq tugma (🤖)
+[ ] Bosilganda chat oynasi ochilishi (animatsiya bilan)
+[ ] Header: nom + yopish + tarixni tozalash tugmalari
+[ ] Messages list (scrollable, autoscroll bottom)
+[ ] User va AI message uchun har xil styling
+[ ] Markdown render (react-markdown)
+[ ] Attachment kartochkalari (PDF link)
+[ ] Input: Enter yuborish, Shift+Enter yangi qator
+[ ] Loading indicator (AI yozyapti)
+[ ] Initial welcome message
+[ ] Suggested questions tugmalari (bo'sh history'da)
+[ ] Tarixni yuklash (GET /ai/history)
+[ ] Tarixni tozalash (DELETE /ai/history)
+[ ] Mobile uchun full-screen modal
