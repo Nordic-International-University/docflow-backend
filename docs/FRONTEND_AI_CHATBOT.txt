@@ -30,16 +30,9 @@ A) Chat — savol yuborish:
    Response:
    {
      "id": "uuid",
-     "message": "AI javobi (markdown format)",
-     "attachments": [
-       {
-         "type": "document",
-         "fileName": "buyruq.pdf",
-         "fileUrl": "https://...",
-         "documentNumber": "IB-2026-0005"
-       }
-     ],
-     "timestamp": "2026-04-07T10:15:00.000Z"
+     "message": "Qisqa matn javob (1-3 jumla)",
+     "cards": [...],     // Structured cards (quyida format)
+     "timestamp": "..."
    }
 
 B) Tarix:
@@ -97,21 +90,123 @@ AI javobi MARKDOWN formatda keladi — markdown render qiling
   - links
 
 
-5. ATTACHMENTLAR
+5. CARDS — STRUCTURED RESPONSE
 ================================================================
 
-AI ba'zan attachment qaytaradi (PDF havolasi va h.k.):
+AI har bir tool natijasini structured cards formatida qaytaradi.
+Frontend turlarga qarab har xil card komponenti chiqaradi.
 
-  message.attachments?.map(att => (
-    <AttachmentCard
-      icon="📄"
-      fileName={att.fileName}
-      onClick={() => window.open(att.fileUrl, '_blank')}
-    />
-  ))
+Umumiy card formati:
+{
+  "type": "task" | "workflow" | "document" | "pdf" | "kpi" | "notification" | "project" | "stats",
+  "id": "string",
+  "title": "string",
+  "subtitle": "string",
+  "meta": { ... },           // type ga qarab har xil maydonlar
+  "actions": [               // tugmalar
+    { "label": "Ochish", "url": "/dashboard/...", "external"?: true }
+  ]
+}
 
-Hozircha attachment turi: "document"
-Qo'shimcha info: documentNumber, fileUrl, fileName
+────────────────────────────────────────────────────────────────
+CARD TURLARI VA META MAYDONLARI:
+────────────────────────────────────────────────────────────────
+
+type: "task"
+  meta: {
+    ref: "DOCFLOW-15",
+    priority: "HIGH",
+    score: 25,
+    dueDate: "2026-04-10",
+    completed: false,
+    createdBy: "Asror Abdullayev"
+  }
+  Icon: 📋
+  Color: priority bo'yicha (URGENT=red, HIGH=orange, ...)
+
+type: "workflow"
+  meta: {
+    type: "CONSECUTIVE",
+    status: "ACTIVE",
+    currentStep: 2,
+    totalSteps: 4,
+    deadline: "2026-04-15"
+  }
+  Icon: 🔄
+  Progress bar: currentStep/totalSteps
+
+type: "document"
+  meta: {
+    status: "APPROVED" | "PENDING" | ...,
+    type: "Buyruq",
+    createdBy: "Asror",
+    pdfUrl?: "https://..."
+  }
+  Icon: 📄
+  StatusBadge
+
+type: "pdf"
+  meta: {
+    fileUrl: "https://...",
+    fileName: "buyruq.pdf"
+  }
+  Icon: 📕
+  PDF preview yoki yuklab olish tugmasi
+
+type: "kpi"
+  meta: {
+    finalScore: 95,
+    tasksCompleted: 5,
+    tasksOnTime: 4,
+    tasksLate: 1,
+    isFullScore: false
+  }
+  Icon: 📊
+  Progress bar (finalScore/100)
+
+type: "notification"
+  meta: {
+    message: "...",
+    createdAt: "..."
+  }
+  Icon: 🔔
+
+type: "project"
+  meta: {
+    status: "ACTIVE",
+    tasksCount: 12,
+    membersCount: 6
+  }
+  Icon: 🚀
+
+type: "stats"
+  meta: {
+    totalUsers: 5,
+    activeTasks: 12,
+    completedTasks: 47
+  }
+  Icon: 📈
+  Statistik kartochka
+
+────────────────────────────────────────────────────────────────
+CARDS RENDERING MISOL:
+────────────────────────────────────────────────────────────────
+
+  {message.cards?.map(card => {
+    switch(card.type) {
+      case 'task':       return <TaskCard {...card} />
+      case 'document':   return <DocumentCard {...card} />
+      case 'workflow':   return <WorkflowCard {...card} />
+      case 'pdf':        return <PdfCard {...card} />
+      case 'kpi':        return <KpiCard {...card} />
+      case 'notification': return <NotificationCard {...card} />
+      case 'project':    return <ProjectCard {...card} />
+      case 'stats':      return <StatsCard {...card} />
+    }
+  })}
+
+Har bir card komponent o'z stilidagi vizual ko'rinish bilan
+chiqariladi (icon, badge, progress, action tugmalari).
 
 
 6. INPUT BEHAVIOR
