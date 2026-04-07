@@ -165,6 +165,21 @@ export class DocumentController {
     })
   }
 
+  @Get(':id/history')
+  @Permissions(PERMISSIONS.DOCUMENT.VIEW_HISTORY)
+  @ApiOperation({
+    summary: 'Hujjat tarixi: barcha versiyalar, bosqichlar, harakatlar',
+    description:
+      "Hujjat ustida bajarilgan barcha amallar — fayl versiyalari, workflow bosqichlari, kim nima qilgan, status o'zgarishlari, audit log.",
+  })
+  async documentHistory(@Param('id') id: string, @Req() req: any) {
+    return await this.documentService.documentHistory({
+      id,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+    })
+  }
+
   @Post('create-with-office')
   @Permissions(PERMISSIONS.DOCUMENT.CREATE)
   @ApiOperation({

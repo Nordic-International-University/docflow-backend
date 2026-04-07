@@ -1,0 +1,74 @@
+================================================================
+WORKFLOW — BACKEND O'ZGARISHLARI
+================================================================
+
+
+O'ZGARISH 1: WORKFLOW YARATISH AVTOMATIKLASHTIRILDI
+================================================================
+
+ENDPOINT: POST /api/v1/workflow
+(o'zgarmadi, faqat ichida qo'shimcha ishlar bajariladi)
+
+Backend endi avtomatik bajaradi:
+  - DOCX → PDF konvertatsiya
+  - document.pdfUrl yangilanadi
+  - Yangi PDF attachment yaratiladi
+  - document.status: DRAFT → PENDING
+  - DOCX edit lock bo'ladi (Collabora read-only)
+  - Birinchi bosqich userlariga notification + Telegram
+
+Frontend tomonidan hech qanday qo'shimcha so'rov yubormaslik
+shart. Faqat oldingidek POST /workflow chaqiring.
+
+
+O'ZGARISH 2: ESKI ENDPOINT O'CHIRILDI
+================================================================
+
+❌ POST /api/v1/document/:id/start-workflow
+
+Bu endpoint o'chirildi. Agar frontend ishlatgan bo'lsa,
+olib tashlash kerak. O'rniga POST /api/v1/workflow ishlatiladi.
+
+
+O'ZGARISH 3: WOPI PERMISSION — STATUS BO'YICHA
+================================================================
+
+Hujjat statusiga qarab Collabora UI avtomatik:
+
+  DRAFT     → Creator/Admin: edit | Boshqalar: read-only
+  PENDING   → HAMMA: read-only (DOCX lock)
+  IN_REVIEW → HAMMA: read-only (DOCX lock)
+  APPROVED  → HAMMA: read-only (umrbod)
+  ARCHIVED  → HAMMA: read-only
+  REJECTED  → Creator/Admin: edit | Boshqalar: read-only
+
+Frontend Collabora iframe ochishda WOPI token oladi —
+permission backend tomonidan o'rnatiladi. UI tugmalarini
+status bo'yicha ko'rsatish/yashirish kerak.
+
+
+O'ZGARISH 4: PDF VERSIYALASH
+================================================================
+
+Har safar PDF yaratilganda nom: filename (v1).pdf, (v2).pdf...
+
+GET /api/v1/document/:id response:
+  - pdfUrl: har doim eng oxirgi versiya
+  - attachments[]: createdAt DESC tartibda
+    - attachments[0] = eng yangi
+    - attachments[1] = oldingi versiya, va h.k.
+
+Frontend "versiya tarixi" ko'rsatishi uchun shu attachments
+massividan foydalanishi mumkin.
+
+
+================================================================
+FRONTEND CHECKLIST
+================================================================
+
+[ ] DRAFT statusda — "Workflow yaratish" tugmasi (POST /workflow)
+[ ] PENDING/IN_REVIEW da — "Office'da tahrirlash" DISABLED
+[ ] APPROVED da — faqat yuklab olish va ko'rish
+[ ] REJECTED da — qayta tahrirlash + qayta workflow yaratish
+[ ] Eski "start-workflow" so'rovi bo'lsa — olib tashlash
+[ ] Versiya tarixi: attachments massividan ko'rsatish

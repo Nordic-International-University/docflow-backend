@@ -79,8 +79,11 @@ export class WorkflowService {
     }
 
     try {
-      const docxFileName = officeAttachment.fileUrl.split('/').pop()!
-      const docxBuffer = await this.minio.getFile(`attachments/${docxFileName}`)
+      // URL dan to'liq path olish (documents/... yoki attachments/...)
+      const url = officeAttachment.fileUrl
+      const idx = url.indexOf('docflow-files/')
+      const fullPath = idx >= 0 ? url.substring(idx + 'docflow-files/'.length) : url.split('/').pop()!
+      const docxBuffer = await this.minio.getFile(fullPath)
 
       const { pdfBuffer, fileName: pdfFileName } =
         await PdfConverterUtil.convertDocxToPdf(docxBuffer, officeAttachment.fileName)
