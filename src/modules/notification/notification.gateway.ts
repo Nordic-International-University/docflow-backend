@@ -8,7 +8,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
@@ -35,8 +35,23 @@ interface AuthenticatedSocket extends Socket {
   transports: ['websocket', 'polling'],
 })
 export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {
+  /**
+   * Server startup — Redis'dagi eski/orphan socket kalitlarini tozalash.
+   * Aks holda restart'dan keyin "online" ro'yxatda o'lgan foydalanuvchilar qoladi.
+   */
+  async onModuleInit() {
+    try {
+      const cleared = await this.redisService.clearAllSocketKeys()
+      if (cleared > 0) {
+        this.logger.log(`Startup: ${cleared} ta eski socket kaliti tozalandi`)
+      }
+    } catch (err: any) {
+      this.logger.error(`Startup cleanup failed: ${err.message}`)
+    }
+  }
+
   @WebSocketServer()
   server: Server
 

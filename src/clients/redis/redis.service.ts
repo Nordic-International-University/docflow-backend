@@ -36,8 +36,8 @@ export class RedisService implements OnModuleDestroy {
     const key = `socket:user:${userId}`
     // Add socket to user's set of sockets
     await this.client.sadd(key, socketId)
-    // Set expiration on the key (will be refreshed on each connection)
-    await this.client.expire(key, 86400) // Expire in 24 hours
+    // Safety TTL — agar disconnect event o'tkazib yuborilsa, 2 soatdan keyin avto-tozalanadi
+    await this.client.expire(key, 7200)
   }
 
   // Get all socket IDs for a user (for multiple devices)
@@ -76,7 +76,7 @@ export class RedisService implements OnModuleDestroy {
     data: { userId: string; username: string; connectedAt: number },
   ): Promise<void> {
     const key = `socket:meta:${socketId}`
-    await this.client.set(key, JSON.stringify(data), 'EX', 86400)
+    await this.client.set(key, JSON.stringify(data), 'EX', 7200)
   }
 
   // Get socket metadata
@@ -100,16 +100,45 @@ export class RedisService implements OnModuleDestroy {
     return sockets.length > 0
   }
 
-  // Get all online users count
+  // Get all online users count (faqat kamida 1 ta haqiqiy socketi bor foydalanuvchilar)
   async getOnlineUsersCount(): Promise<number> {
-    const keys = await this.client.keys('socket:user:*')
-    return keys.length
+    const ids = await this.getOnlineUsers()
+    return ids.length
   }
 
-  // Get all online users
+  // Get all online users — bo'sh set'li yoki orphan kalitlarni avtomatik tozalaydi
   async getOnlineUsers(): Promise<string[]> {
     const keys = await this.client.keys('socket:user:*')
-    return keys.map((key) => key.replace('socket:user:', ''))
+    if (!keys.length) return []
+    const result: string[] = []
+    const pipeline = this.client.pipeline()
+    for (const k of keys) pipeline.scard(k)
+    const cards = await pipeline.exec()
+    for (let i = 0; i < keys.length; i++) {
+      const count = (cards?.[i]?.[1] as number) || 0
+      if (count > 0) {
+        result.push(keys[i].replace('socket:user:', ''))
+      } else {
+        // Orphan kalit — darhol o'chirish
+        await this.client.del(keys[i])
+      }
+    }
+    return result
+  }
+
+  /**
+   * Barcha socket kalitlarini tozalash — server startup'da chaqiriladi.
+   * Restart bo'lgach eski socketlar o'lgan, lekin Redis'da qolib ketgan bo'lsa,
+   * ular avtomatik tozalanadi. Tirik clientlar darhol qayta ulanadi.
+   */
+  async clearAllSocketKeys(): Promise<number> {
+    const keys = [
+      ...(await this.client.keys('socket:user:*')),
+      ...(await this.client.keys('socket:meta:*')),
+    ]
+    if (!keys.length) return 0
+    await this.client.del(...keys)
+    return keys.length
   }
 
   async onModuleDestroy() {
