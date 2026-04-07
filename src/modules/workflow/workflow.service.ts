@@ -214,6 +214,10 @@ export class WorkflowService {
     }
 
     // User access filter (non-admin)
+    // Foydalanuvchi ko'rishi mumkin bo'lgan workflowlar:
+    //  1) o'zi yaratgan hujjat workflow'lari
+    //  2) istalgan bosqichida (status'dan qat'iy nazar — PENDING/IN_PROGRESS/APPROVED/REJECTED)
+    //     assignee sifatida qatnashgan workflowlar
     if (!isAdmin && userId) {
       andConditions.push({
         OR: [
@@ -223,7 +227,6 @@ export class WorkflowService {
               some: {
                 assignedToUserId: userId,
                 deletedAt: null,
-                status: WORKFLOW_STEP_STATUS.IN_PROGRESS,
               },
             },
           },
