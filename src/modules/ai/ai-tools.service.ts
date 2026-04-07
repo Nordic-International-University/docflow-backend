@@ -1033,7 +1033,10 @@ export class AiToolsService {
       take: 5,
       select: { id: true, name: true, key: true, status: true },
     })
-    return { count: projects.length, projects }
+    return {
+      count: projects.length,
+      projects: projects.map((p) => ({ ...p, url: `/dashboard/project/${p.id}` })),
+    }
   }
 
   private async createTask(args: any, ctx: ToolContext) {

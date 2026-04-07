@@ -184,17 +184,22 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
         })
       }
 
-      // 6. Ikkinchi Groq chaqiruvi — natijani matn formatda javob qilish
+      // 6. Ikkinchi LLM chaqiruvi — natijani matn formatda javob qilish
+      // MUHIM: tools'ni ham berish kerak, aks holda Gemini bo'sh javob qaytarishi mumkin
       try {
-        response = await this.callLlm(messages)
+        response = await this.callLlm(messages, this.tools.getToolDefinitions())
       } catch (err: any) {
-        // 429 yoki boshqa xato — cards allaqachon tayyor, qisqa javob beramiz
-        this.logger.warn(`Second Groq call failed: ${err.message}`)
-        response = { content: 'Natijalar quyida ko\'rsatildi.' }
+        this.logger.warn(`Second LLM call failed: ${err.message}`)
+        response = { content: null }
       }
     }
 
-    const assistantContent = response.content || 'Kechirasiz, javob bera olmadim.'
+    // Agar LLM bo'sh javob qaytarsa, cards asosida qisqa xulosadan foydalanamiz
+    const assistantContent =
+      response.content?.trim() ||
+      (cards.length > 0
+        ? this.summarizeFromTools(toolResultsLog, cards)
+        : 'Kechirasiz, javob bera olmadim.')
 
     // 7. Assistant xabarini saqlash
     const saved = await this.prisma.aiMessage.create({
@@ -212,6 +217,70 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       message: assistantContent,
       cards,
       timestamp: saved.createdAt,
+    }
+  }
+
+  /**
+   * Tool natijalaridan qisqa matn xulosasi (LLM bo'sh javob qaytarganda)
+   */
+  private summarizeFromTools(toolResults: any[], cards: any[]): string {
+    if (!toolResults.length) return "Natijalar quyida ko'rsatildi."
+    const last = toolResults[toolResults.length - 1]
+    const name = last?.name
+    const r = last?.result || {}
+    if (r.error) return r.error
+
+    switch (name) {
+      case 'getMyOverallStats':
+        return `Umumiy statistikangiz: ${r.tasks?.total || 0} topshiriq (${r.tasks?.completed || 0} yakunlangan, ${r.tasks?.overdue || 0} muddati o'tgan), KPI: ${r.kpi?.finalScore ?? '-'}.`
+      case 'getDepartmentFullStats':
+        return `${r.department || "Bo'lim"} statistikasi: ${r.totalUsers || 0} xodim, ${r.tasks?.active || 0} faol topshiriq, o'rtacha KPI: ${r.avgKpiScore ?? '-'}.`
+      case 'getMyTasks':
+        return `${r.count || 0} ta topshiriq topildi.`
+      case 'getMyWorkflows':
+        return `${r.count || 0} ta ish jarayoni topildi.`
+      case 'countMyTasks':
+        return `Jami: ${r.total || 0}, faol: ${r.active || 0}, bugun: ${r.dueToday || 0}, muddati o'tgan: ${r.overdue || 0}.`
+      case 'getMyKpi':
+        return r.finalScore !== undefined
+          ? `Joriy oy KPI: ${r.finalScore}/100 ball.`
+          : r.message || "KPI ma'lumoti yo'q."
+      case 'getDocumentLatestFile':
+        return `${r.documentNumber || 'Hujjat'} fayli: ${r.fileName || ''}`
+      case 'getDocumentVersions':
+        return `${r.versions?.length || 0} ta versiya topildi.`
+      case 'getDocumentByNumber':
+        return r.title ? `${r.title} (${r.documentNumber}) - ${r.status}` : 'Hujjat topildi.'
+      case 'getDocumentsByType':
+      case 'searchDocuments':
+      case 'getRecentDocuments':
+        return `${r.count || 0} ta hujjat topildi.`
+      case 'getMyProjects':
+        return `${r.count || 0} ta loyiha topildi.`
+      case 'getMyNotifications':
+        return `${r.count || 0} ta o'qilmagan bildirishnoma.`
+      case 'findUserByName':
+        if (r.count === 0) return 'Foydalanuvchi topilmadi.'
+        if (r.count === 1) return `${r.users[0].fullname} topildi.`
+        return `${r.count} ta foydalanuvchi topildi, kerakligini tanlang.`
+      case 'findProjectByName':
+        if (r.count === 0) return 'Loyiha topilmadi.'
+        if (r.count === 1) return `"${r.projects[0].name}" loyihasi topildi. Vazifa kimga biriktirilsin?`
+        return `${r.count} ta loyiha topildi, kerakligini tanlang.`
+      case 'createTask':
+        return r.success ? `Topshiriq yaratildi: ${r.task?.ref}` : r.error || 'Xato'
+      case 'addTaskComment':
+        return r.success ? `Izoh qo'shildi: ${r.taskRef || ''}` : r.error || 'Xato'
+      case 'completeTask':
+        return r.success ? `Topshiriq yakunlandi: ${r.taskRef || ''}` : r.error || 'Xato'
+      case 'getWorkflowStatusForDocument':
+        return r.workflow
+          ? `${r.document?.documentNumber}: ${r.workflow.status}, ${r.workflow.currentStep}/${r.workflow.totalSteps}-bosqich.`
+          : r.message || "Ma'lumot yo'q."
+      case 'getTaskByRef':
+        return r.title ? `${r.ref}: ${r.title}` : 'Topshiriq topildi.'
+      default:
+        return "Natijalar quyida ko'rsatildi."
     }
   }
 
