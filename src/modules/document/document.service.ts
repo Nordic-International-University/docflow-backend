@@ -252,16 +252,14 @@ export class DocumentService {
       throw new NotFoundException('Document not found')
     }
 
-    // Faqat eng oxirgi versiya har bir mime type uchun
-    // (DOCX dan eng yangisi, PDF dan eng yangisi, ...)
-    const seenMimeTypes = new Set<string>()
-    const latestAttachments = (document as any).attachments.filter((att: any) => {
-      if (seenMimeTypes.has(att.mimeType)) return false
-      seenMimeTypes.add(att.mimeType)
-      return true
-    })
+    // Faqat eng yangi PDF fayl qaytariladi (DOCX yashirin)
+    const atts = (document as any).attachments || []
+    const latestPdf = atts.find((a: any) => a.mimeType === 'application/pdf') || null
 
-    return { ...document, attachments: latestAttachments } as any
+    return {
+      ...document,
+      attachments: latestPdf ? [latestPdf] : [],
+    } as any
   }
 
   /**
