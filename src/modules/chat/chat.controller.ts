@@ -80,6 +80,37 @@ export class ChatController {
     return chat
   }
 
+  // ============ STATIC ROUTES (must be BEFORE :id catch-all) ============
+
+  @Get('settings/me')
+  @Permissions(PERMISSIONS.CHAT.SETTINGS)
+  async getSettingsStatic(@Req() req: any) {
+    return this.chat.getSettings(this.ctx(req))
+  }
+
+  @Patch('settings/me')
+  @Permissions(PERMISSIONS.CHAT.SETTINGS)
+  async updateSettingsStatic(@Body() payload: UpdateChatSettingsDto, @Req() req: any) {
+    return this.chat.updateSettings(payload, this.ctx(req))
+  }
+
+  @Get('search/messages')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async searchMessagesStatic(@Query() query: SearchMessagesDto, @Req() req: any) {
+    return this.chat.searchMessages(query.q, query.chatId, this.ctx(req))
+  }
+
+  @Get('messages/:messageId/reads')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async getMessageReadsStatic(
+    @Param('messageId') messageId: string,
+    @Req() req: any,
+  ) {
+    return this.chat.getMessageReads(messageId, this.ctx(req))
+  }
+
+  // ============ CHAT BY ID ============
+
   @Get(':id')
   @Permissions(PERMISSIONS.CHAT.READ)
   async getChat(@Param('id') id: string, @Req() req: any) {
@@ -344,39 +375,6 @@ export class ChatController {
     @Req() req: any,
   ) {
     return this.chat.archiveChat(id, payload.archived, this.ctx(req))
-  }
-
-  // ============ READ-BY LIST (Faza 2) ============
-
-  @Get('messages/:messageId/reads')
-  @Permissions(PERMISSIONS.CHAT.READ)
-  async getMessageReads(
-    @Param('messageId') messageId: string,
-    @Req() req: any,
-  ) {
-    return this.chat.getMessageReads(messageId, this.ctx(req))
-  }
-
-  // ============ SEARCH (Faza 2) ============
-
-  @Get('search/messages')
-  @Permissions(PERMISSIONS.CHAT.READ)
-  async searchMessages(@Query() query: SearchMessagesDto, @Req() req: any) {
-    return this.chat.searchMessages(query.q, query.chatId, this.ctx(req))
-  }
-
-  // ============ SETTINGS ============
-
-  @Get('settings/me')
-  @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async getSettings(@Req() req: any) {
-    return this.chat.getSettings(this.ctx(req))
-  }
-
-  @Patch('settings/me')
-  @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async updateSettings(@Body() payload: UpdateChatSettingsDto, @Req() req: any) {
-    return this.chat.updateSettings(payload, this.ctx(req))
   }
 
   // ============ CALLS ============
