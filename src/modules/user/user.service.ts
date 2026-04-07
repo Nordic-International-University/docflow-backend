@@ -37,7 +37,7 @@ export class UserService {
   }
 
   async userRetrieveAll(
-    payload: UserRetrieveAllRequest,
+    payload: UserRetrieveAllRequest & { projectId?: string },
   ): Promise<UserRetrieveAllResponse> {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
@@ -45,20 +45,50 @@ export class UserService {
     const take = pageSize
 
     const search = payload.search ? payload.search : undefined
-
     const departmentId = payload.departmentId ? payload.departmentId : undefined
 
+    // Loyihaga tegishli userlar — bo'lim a'zolari + qo'shilgan memberlar
+    let projectAccessFilter: any = undefined
+    if (payload.projectId) {
+      const project = await this.#_prisma.project.findFirst({
+        where: { id: payload.projectId, deletedAt: null },
+        select: {
+          visibility: true,
+          departmentId: true,
+          createdById: true,
+          members: { where: { deletedAt: null }, select: { userId: true } },
+        },
+      })
+
+      if (project) {
+        const memberIds = project.members.map((m) => m.userId)
+        const orConditions: any[] = [{ id: { in: memberIds } }]
+        if (project.createdById) orConditions.push({ id: project.createdById })
+        if (project.visibility === 'DEPARTMENT' && project.departmentId) {
+          orConditions.push({ departmentId: project.departmentId })
+        }
+        if (project.visibility === 'PUBLIC') {
+          orConditions.push({})  // PUBLIC — hamma
+        }
+        projectAccessFilter = { OR: orConditions }
+      }
+    }
+
+    const baseWhere: any = {
+      deletedAt: null,
+      isActive: true,
+      ...(search && {
+        OR: [
+          { fullname: { contains: search, mode: 'insensitive' } },
+          { username: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+      ...(departmentId && { departmentId }),
+      ...(projectAccessFilter && projectAccessFilter),
+    }
+
     const userList = await this.#_prisma.user.findMany({
-      where: {
-        deletedAt: null,
-        ...(search && {
-          OR: [
-            { fullname: { contains: search, mode: 'insensitive' } },
-            { username: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-        ...(departmentId && { departmentId }),
-      },
+      where: baseWhere,
       select: {
         id: true,
         fullname: true,
@@ -88,18 +118,7 @@ export class UserService {
       skip,
     })
 
-    const total = await this.#_prisma.user.count({
-      where: {
-        deletedAt: null,
-        ...(search && {
-          OR: [
-            { fullname: { contains: search, mode: 'insensitive' } },
-            { username: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-        ...(departmentId && { departmentId }),
-      },
-    })
+    const total = await this.#_prisma.user.count({ where: baseWhere })
 
     return {
       count: total,

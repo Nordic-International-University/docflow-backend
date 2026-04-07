@@ -1,0 +1,197 @@
+================================================================
+PROJECT VISIBILITY — FRONTEND O'ZGARISHLARI
+================================================================
+
+
+1. PROJECT YARATISH FORMASIDA YANGI MAYDONLAR
+================================================================
+
+POST /api/v1/project
+Body:
+{
+  "name": "Sayt redizayn",
+  "key": "WEB",
+  "description": "...",
+  "visibility": "DEPARTMENT",        // YANGI: PRIVATE | DEPARTMENT | PUBLIC
+  "departmentId": "uuid",            // ixtiyoriy
+  "initialMemberIds": ["uuid", ...], // YANGI: boshlang'ich a'zolar
+  "startDate": "2026-04-01",
+  "endDate": "2026-12-31",
+  "color": "#3B82F6",
+  "icon": "globe"
+}
+
+YANGI FIELDLAR:
+  visibility       enum    PRIVATE | DEPARTMENT | PUBLIC
+  initialMemberIds uuid[]  Boshlang'ich a'zolar (boshqa bo'limdan ham mumkin)
+
+
+2. VISIBILITY TUSHUNCHASI
+================================================================
+
+PRIVATE — Faqat yaratuvchi va memberlar ko'radi
+  - departmentId tanlanmaganda default
+  - "Maxfiy loyiha" misol
+
+DEPARTMENT — Bo'lim hammasi + memberlar ko'radi
+  - departmentId tanlanganda default
+  - "IT bo'limi loyihasi" misol
+  - Bo'lim a'zolari avtomatik ko'radi (member qo'shish shart emas)
+
+PUBLIC — Hamma kompaniya xodimlari ko'radi
+  - "Yillik hisobot" misol
+  - Faqat admin/direktor PUBLIC qila olishi tavsiya etiladi
+
+
+3. UI TAVSIYALARI — FORMA
+================================================================
+
+  <RadioGroup name="visibility" defaultValue="PRIVATE">
+    <Radio value="PRIVATE">
+      🔒 Maxfiy — Faqat tanlangan a'zolar ko'radi
+    </Radio>
+    <Radio value="DEPARTMENT">
+      🏢 Bo'lim — Tanlangan bo'lim hammasi ko'radi
+    </Radio>
+    <Radio value="PUBLIC" disabled={!isAdmin}>
+      🌐 Umumiy — Hamma kompaniya xodimlari ko'radi
+    </Radio>
+  </RadioGroup>
+
+  {visibility === 'DEPARTMENT' && (
+    <Select name="departmentId" required>
+      {departments.map(d => <Option value={d.id}>{d.name}</Option>)}
+    </Select>
+  )}
+
+  {/* Boshlang'ich a'zolarni tanlash (multi-select) */}
+  <UserMultiSelect
+    name="initialMemberIds"
+    label="Boshlang'ich a'zolar (ixtiyoriy)"
+    placeholder="Foydalanuvchilarni tanlang..."
+  />
+
+
+4. AVTO BEHAVIOR
+================================================================
+
+Yaratuvchi har doim OWNER member sifatida avtomatik qo'shiladi.
+Frontend createdBy ni alohida member sifatida ko'rsatish shart emas.
+
+Default visibility:
+  departmentId tanlanmasa → PRIVATE
+  departmentId tanlansa   → DEPARTMENT
+
+
+5. PROJECT LIST — RESPONSE
+================================================================
+
+GET /api/v1/project
+
+Response (har bir project'da):
+{
+  "id": "uuid",
+  "name": "Sayt redizayn",
+  "key": "WEB",
+  "visibility": "DEPARTMENT",       // YANGI
+  "createdById": "uuid",            // YANGI
+  "departmentId": "uuid",
+  "department": { "id", "name" },
+  ...
+}
+
+Backend filtratsiya qiladi — frontend keladigan loyihalarni
+qo'shimcha filtratsiyasiz ko'rsatish mumkin. Faqat ko'rinadigan
+loyihalar keladi (PUBLIC + DEPARTMENT + PRIVATE member + createdBy).
+
+
+6. UI BADGE — VISIBILITY
+================================================================
+
+  function VisibilityBadge({ visibility }) {
+    const config = {
+      PRIVATE:    { icon: '🔒', label: 'Maxfiy',  color: 'gray' },
+      DEPARTMENT: { icon: '🏢', label: "Bo'lim",  color: 'blue' },
+      PUBLIC:     { icon: '🌐', label: 'Umumiy',  color: 'green' },
+    }
+    const c = config[visibility]
+    return <Badge color={c.color}>{c.icon} {c.label}</Badge>
+  }
+
+
+7. MEMBER QO'SHISH — BOSHQA BO'LIMDAN
+================================================================
+
+Loyiha yaratilgandan keyin a'zo qo'shish:
+  POST /api/v1/project-member
+  {
+    "projectId": "uuid",
+    "userId": "uuid",        // istalgan bo'limdan
+    "role": "MEMBER"         // OWNER | MANAGER | MEMBER | VIEWER
+  }
+
+Misol — IT loyihasiga media bo'limdan qo'shish:
+  - IT direktor → loyiha yaratdi (visibility: DEPARTMENT, IT bo'limi)
+  - IT bo'lim hammasi avtomatik ko'radi
+  - Media bo'limdan Sherzodni qo'shish:
+    POST /project-member { projectId: ..., userId: sherzodId }
+  - Sherzod endi loyihani ko'radi
+  - Lekin media bo'limning boshqa odamlari ko'rmaydi
+
+User select uchun:
+  GET /api/v1/user?pageSize=100 — barcha userlar
+  yoki: GET /api/v1/user?departmentId=mediaId — bo'lim bo'yicha
+
+
+8. ACCESS DENIED — ERROR HANDLING
+================================================================
+
+Agar foydalanuvchi ko'rish huquqi yo'q loyihaga kirsa:
+  GET /api/v1/project/:id → 403 Forbidden
+  {
+    "statusCode": 403,
+    "message": "Bu loyihaga kirish huquqingiz yo'q",
+    "error": "Ruxsat berilmagan"
+  }
+
+Frontend logikasi:
+  try {
+    const project = await api.get(`/project/${id}`)
+  } catch (err) {
+    if (err.response.status === 403) {
+      router.push('/projects')
+      toast.error('Bu loyihaga kirish huquqingiz yo\'q')
+    }
+  }
+
+
+9. TASKLAR HAM AVTO FILTERLANADI
+================================================================
+
+GET /api/v1/task — faqat ko'rinadigan loyihalardagi tasklar keladi.
+Frontend qo'shimcha filtratsiya qilishi shart emas.
+
+
+10. KIM PROJECT YARATISH HUQUQIGA EGA?
+================================================================
+
+PERMISSIONS.PROJECT.CREATE bor foydalanuvchilar.
+Default rollarda Direktor, Menejer, Loyiha Menederi.
+
+isAdmin tekshiruvi (PUBLIC visibility uchun):
+  const isAdmin = user.role === 'Super Administrator' || user.role === 'Admin'
+
+
+================================================================
+XULOSA — FRONTEND CHECKLIST
+================================================================
+
+[ ] Project create form'ga visibility radio (PRIVATE/DEPARTMENT/PUBLIC)
+[ ] departmentId select (visibility === DEPARTMENT bo'lganda majburiy)
+[ ] initialMemberIds multi-select (boshlang'ich a'zolar)
+[ ] PUBLIC ni faqat admin uchun ko'rsatish
+[ ] Default visibility: departmentId bo'lsa DEPARTMENT, aks holda PRIVATE
+[ ] Project card/list'da VisibilityBadge ko'rsatish
+[ ] 403 errorda toast + redirect
+[ ] Member add modal: barcha userlardan tanlash mumkin
+[ ] Filtratsiyani backendga ishonib qilmaslik
