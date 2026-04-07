@@ -1,0 +1,594 @@
+================================================================
+DOCFLOW CHAT — FRONTEND INTEGRATION GUIDE
+================================================================
+
+Versiya: Faza 1
+Base URL: https://api.docverse.uz/api/v1
+WS URL:   https://api.docverse.uz/chat  (Socket.IO, namespace: /chat)
+Auth:     Bearer JWT (Authorization header yoki WS handshake auth.token)
+
+
+================================================================
+1. UMUMIY TUSHUNCHALAR
+================================================================
+
+CHAT TURLARI:
+  - DIRECT  → 2 ta foydalanuvchi o'rtasidagi shaxsiy chat
+  - GROUP   → ko'p a'zoli guruh chat (owner + adminlar + a'zolar)
+
+A'ZO ROLLARI:
+  - OWNER   → guruh yaratuvchisi (o'chirilmaydi, faqat leave qila oladi)
+  - ADMIN   → a'zo qo'shish/chiqarish, xabar o'chirish, sozlamalarni tahrirlash
+  - MEMBER  → oddiy a'zo
+
+XABAR TURLARI (ChatMessageType):
+  TEXT, IMAGE, VIDEO, VOICE, FILE, SYSTEM, FORWARD,
+  WORKFLOW, DOCUMENT, TASK, CALL
+
+XAVFSIZLIK:
+  - Transport: HTTPS + WSS
+  - At-rest: xabar content'i AES-256-GCM bilan shifrlangan holatda saqlanadi
+    (server automatik shifrlaydi/deshifrlaydi — frontend plain text oladi)
+  - Har bir endpoint permission guard bilan himoyalangan
+
+PERMISSION'LAR (foydalanuvchi role'ida bo'lishi kerak):
+  chat:list               — chatlar ro'yxatini ko'rish
+  chat:read               — chat xabarlarini o'qish
+  chat:send               — xabar yuborish
+  chat:create_direct      — shaxsiy chat yaratish
+  chat:create_group       — guruh yaratish
+  chat:manage_group       — guruhni boshqarish
+  chat:delete_any_message — istalgan xabarni o'chirish (admin)
+  chat:forward            — xabar forward qilish
+  chat:forward_document   — hujjat/workflow/topshiriq yuborish
+  chat:call_audio         — ovozli qo'ng'iroq
+  chat:call_video         — video qo'ng'iroq
+  chat:settings           — chat sozlamalari
+
+
+================================================================
+2. REST ENDPOINT'LAR
+================================================================
+
+=== 2.1 CHATLAR RO'YXATI ===
+
+GET /chat?search=<text>&limit=50
+Permission: chat:list
+
+Response:
+{
+  "count": 12,
+  "chats": [
+    {
+      "id": "uuid",
+      "type": "DIRECT" | "GROUP",
+      "title": "string",              // DIRECT uchun peer fullname
+      "avatarUrl": "url" | null,
+      "peer": {                        // DIRECT uchun to'ldiriladi
+        "id": "uuid",
+        "fullname": "...",
+        "username": "...",
+        "avatarUrl": "..."
+      } | null,
+      "lastMessageAt": "ISO",
+      "membersCount": 2,
+      "isPinned": false,
+      "isArchived": false,
+      "mutedUntil": null,
+      "myRole": "OWNER" | "ADMIN" | "MEMBER",
+      "lastMessage": {
+        "id": "uuid",
+        "type": "TEXT",
+        "content": "salom",
+        "sender": { "id": "uuid", "fullname": "..." },
+        "createdAt": "ISO"
+      } | null
+    }
+  ]
+}
+
+Tartib: pinned birinchi, keyin lastMessageAt DESC
+
+
+=== 2.2 DIRECT CHAT YARATISH ===
+
+POST /chat/direct
+Permission: chat:create_direct
+Body: { "userId": "uuid" }
+
+Response:
+{
+  "id": "uuid",
+  "type": "DIRECT",
+  "peer": { "id", "fullname", "username", "avatarUrl" },
+  "created": true  // false agar allaqachon mavjud bo'lsa
+}
+
+Eslatma: mavjud chat bo'lsa yangi yaratilmaydi, mavjudi qaytariladi.
+
+
+=== 2.3 GURUH YARATISH ===
+
+POST /chat/group
+Permission: chat:create_group
+Body:
+{
+  "title": "Marketing jamoasi",
+  "description": "2026 Q2",
+  "avatarUrl": "https://...",
+  "memberIds": ["uuid1", "uuid2", ...]    // foydalanuvchi UUID'lari
+}
+
+Response:
+{
+  "id": "uuid",
+  "type": "GROUP",
+  "title": "...",
+  "members": [ { "userId", "role", "user": {...} }, ... ]
+}
+
+Eslatma: yaratuvchi avtomatik OWNER bo'ladi.
+
+
+=== 2.4 CHAT MA'LUMOTI ===
+
+GET /chat/:id
+Permission: chat:read
+
+Response: chat + barcha a'zolari (role bilan)
+
+
+=== 2.5 GURUHNI TAHRIRLASH ===
+
+PATCH /chat/:id
+Permission: chat:manage_group
+Body: { "title"?, "description"?, "avatarUrl"? }
+
+Faqat OWNER/ADMIN yoki platforma admini qila oladi.
+
+
+=== 2.6 CHATNI O'CHIRISH ===
+
+DELETE /chat/:id
+Permission: chat:manage_group
+
+Group uchun faqat OWNER, direct uchun ikki tomondan bittasi.
+
+
+=== 2.7 A'ZOLARNI BOSHQARISH ===
+
+POST /chat/:id/members
+Body: { "userIds": ["uuid1", "uuid2"] }
+
+DELETE /chat/:id/members/:userId
+  → boshqa a'zoni chiqarish (admin/owner)
+
+POST /chat/:id/leave
+  → o'zi chiqish
+
+PATCH /chat/:id/members/:userId/role
+Body: { "role": "ADMIN" | "MEMBER" }
+
+OWNER rolini o'zgartirib bo'lmaydi.
+
+
+=== 2.8 XABARLAR RO'YXATI ===
+
+GET /chat/:id/messages?before=<messageId>&limit=50
+Permission: chat:read
+
+Response:
+{
+  "count": 50,
+  "messages": [
+    {
+      "id": "uuid",
+      "chatId": "uuid",
+      "senderId": "uuid",
+      "sender": { "id", "fullname", "username", "avatarUrl" },
+      "type": "TEXT",
+      "content": "plain text",       // deshifrlangan
+      "replyToId": "uuid" | null,
+      "replyTo": {                    // reply bo'lsa
+        "id", "content", "type", "senderId",
+        "sender": { "id", "fullname" }
+      } | null,
+      "forwardedFromId": "uuid" | null,
+
+      // Media maydonlari (type != TEXT bo'lsa)
+      "fileUrl", "fileName", "fileSize", "mimeType",
+      "duration",                     // voice/video sekundlar
+      "thumbnailUrl", "width", "height",
+
+      // Reference (forward qilingan DocFlow obyektlari uchun)
+      "refType": "workflow"|"document"|"task" | null,
+      "refId": "uuid" | null,
+      "refSnapshot": { ... } | null,  // tayyor karta ma'lumotlari
+
+      "reactions": [
+        { "emoji": "👍", "userId": "uuid", "user": {...} }
+      ],
+      "reads": [ { "userId": "uuid", "readAt": "ISO" } ],
+      "editedAt": "ISO" | null,
+      "createdAt": "ISO",
+      "updatedAt": "ISO",
+      "deletedAt": null
+    }
+  ]
+}
+
+PAGINATION:
+  - Eng yangi xabarlar oldin keladi (array oxirida eng yangi)
+  - Eski xabarlarni yuklash uchun `before=<eng_eski_messageId>` yuboring
+  - Limit maks 100
+
+
+=== 2.9 XABAR YUBORISH ===
+
+POST /chat/:id/messages
+Permission: chat:send
+Content-Type: multipart/form-data  YOKI  application/json
+
+-- MATN XABAR (JSON):
+{
+  "type": "TEXT",          // default
+  "content": "Salom!",
+  "replyToId": "uuid"      // ixtiyoriy
+}
+
+-- MEDIA XABAR (multipart):
+  form field "file" → fayl
+  form field "content" → ixtiyoriy caption
+  form field "replyToId" → ixtiyoriy
+  form field "duration" → voice/video uchun sekund
+  form field "thumbnailUrl" → ixtiyoriy
+
+Type auto-aniqlash:
+  image/*  → IMAGE
+  video/*  → VIDEO
+  audio/*  → VOICE
+  boshqa   → FILE
+
+Javob: to'liq message obyekti (deshifrlangan content bilan)
+
+
+=== 2.10 XABARNI TAHRIRLASH ===
+
+PATCH /chat/messages/:messageId
+Body: { "content": "yangi matn" }
+
+Faqat o'z xabaringizni va faqat TEXT turidagi xabarlarni tahrirlash mumkin.
+editedAt maydoni to'ldiriladi.
+
+
+=== 2.11 XABARNI O'CHIRISH ===
+
+DELETE /chat/messages/:messageId
+
+Kim o'chira oladi:
+  - Xabar muallifi
+  - Guruh admini/owner'i (boshqa xabarlarni)
+  - Platforma admini (istalgan xabarni)
+
+
+=== 2.12 REACTIONS ===
+
+POST /chat/messages/:messageId/reactions
+Body: { "emoji": "👍" }
+
+DELETE /chat/messages/:messageId/reactions/:emoji
+
+Bitta foydalanuvchi bir xabarga bir xil emoji faqat 1 marta qo'sha oladi.
+
+
+=== 2.13 FORWARD ===
+
+-- XABAR FORWARD:
+POST /chat/messages/:messageId/forward
+Body: { "toChatIds": ["uuid1", "uuid2"] }    // maks 50
+
+-- WORKFLOW FORWARD:
+POST /chat/forward/workflow/:workflowId
+Body: { "toChatId": "uuid", "caption": "ixtiyoriy" }
+
+-- HUJJAT FORWARD:
+POST /chat/forward/document/:documentId
+Body: { "toChatId": "uuid", "caption": "ixtiyoriy" }
+
+-- TOPSHIRIQ FORWARD:
+POST /chat/forward/task/:taskId
+Body: { "toChatId": "uuid", "caption": "ixtiyoriy" }
+
+refSnapshot message ichida obyekt ma'lumotlarini saqlaydi — frontend
+workflow/document/task kartochkasini shundan render qiladi:
+
+refSnapshot (workflow):
+  { id, type, status, document: {id,title,documentNumber,status}, url }
+refSnapshot (document):
+  { id, title, documentNumber, status, documentType, pdfUrl, url }
+refSnapshot (task):
+  { id, ref, title, priority, score, dueDate, project, url }
+
+
+=== 2.14 READ RECEIPTS ===
+
+POST /chat/:id/read
+Body: { "upToMessageId": "uuid" }    // ixtiyoriy
+
+Ikki darajada ishlaydi:
+  1) chat_member.lastReadAt yangilanadi (unread badge uchun)
+  2) upToMessageId berilsa — shu gacha bo'lgan xabarlarga individual
+     read_receipt yoziladi (kim o'qigan ro'yxati uchun)
+
+
+=== 2.15 SETTINGS ===
+
+GET /chat/settings/me
+Permission: chat:settings
+
+Response:
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "allowCalls": true,
+  "allowVideoCalls": true,
+  "allowGroupInvites": true,
+  "showOnlineStatus": true,
+  "showLastSeen": true,
+  "showReadReceipts": true,
+  "notifySound": true,
+  "notifyPreview": true
+}
+
+PATCH /chat/settings/me
+Body: har qaysi maydon ixtiyoriy
+
+Sozlama ta'siri:
+  allowCalls=false         → boshqalar sizga audio qo'ng'iroq qila olmaydi
+  allowVideoCalls=false    → video qo'ng'iroq bloklanadi
+  showOnlineStatus=false   → online/offline statusingiz ko'rinmaydi
+  showReadReceipts=false   → "o'qildi" galochkalarini jo'natmaysiz
+  notifyPreview=false      → notification'da xabar matni ko'rinmaydi
+
+
+=== 2.16 CALLS ===
+
+-- QO'NG'IROQ BOSHLASH:
+POST /chat/:id/call
+Permission: chat:call_audio (+ chat:call_video video uchun)
+Body: { "type": "AUDIO" | "VIDEO" }
+
+Response: CallSession obyekti (participants bilan)
+
+Agar qabul qiluvchi allowCalls=false bo'lsa, 403 qaytadi.
+
+-- QO'NG'IROQQA JAVOB:
+POST /chat/calls/:callId/accept
+POST /chat/calls/:callId/reject
+POST /chat/calls/:callId/end
+
+Status lifecycle:
+  RINGING  → ACTIVE (kimdir accept qilsa)
+  RINGING  → REJECTED (hamma rad etsa)
+  ACTIVE   → ENDED (kimdir end qilsa, duration saqlanadi)
+  RINGING  → MISSED (timeout — Faza 2 da)
+
+
+================================================================
+3. WEBSOCKET EVENT'LAR
+================================================================
+
+ULANISH:
+  const socket = io('https://api.docverse.uz/chat', {
+    auth: { token: localStorage.getItem('accessToken') },
+    transports: ['websocket'],
+  })
+
+Auth muvaffaqiyatsiz bo'lsa server 'error' eventini yuborib disconnect qiladi.
+
+
+=== 3.1 CLIENT → SERVER ===
+
+chat:join       { chatId }
+  → shu chat room'iga subscribe bo'lish
+  → faqat a'zolar qo'shila oladi
+  → ack: { ok: boolean, error?: string }
+
+chat:leave      { chatId }
+  → room'dan chiqish
+
+chat:typing     { chatId, isTyping: boolean }
+  → boshqa a'zolarga typing indicator yuboradi
+
+call:signal     { callId, type: 'offer'|'answer'|'ice',
+                  targetUserId, payload }
+  → WebRTC signal'ni target userga relay qiladi
+  → backend sdp/ice ichini tekshirmaydi, faqat yetkazadi
+  → target user shu call participant'i bo'lishi kerak
+
+
+=== 3.2 SERVER → CLIENT ===
+
+-- XABARLAR:
+message:new           { ...message }
+message:updated       { ...message }
+message:deleted       { chatId, messageId }
+message:reaction      { messageId, userId, emoji, action: 'add'|'remove' }
+message:read          { chatId, userId, upToMessageId, readAt }
+
+-- CHAT-LEVEL (user:{userId} room orqali — chat ochilmagan bo'lsa ham):
+chat:message          { chatId, message }           // yangi xabar
+chat:message-updated  { chatId, message }
+chat:message-deleted  { chatId, messageId }
+chat:created          { chatId }
+chat:updated          { chatId, ... }
+chat:deleted          { chatId }
+chat:typing           { chatId, userId, username, isTyping }
+
+-- QO'NG'IROQLAR:
+call:incoming         { chatId, call }
+call:status           { callId, action: 'accepted'|'rejected'|'ended', userId }
+call:signal           { callId, type, fromUserId, payload }
+
+
+================================================================
+4. WEBRTC QO'NG'IROQ AQSI (FRONTEND FLOW)
+================================================================
+
+A (qo'ng'iroqchi) → B (qabul qiluvchi)
+
+1) A: POST /chat/:chatId/call { type: 'VIDEO' }
+   → response: { id: callId, participants: [...] }
+
+2) A: getUserMedia({ audio, video }) → localStream
+
+3) A: RTCPeerConnection yaratish, localStream track'larini qo'shish
+
+4) A: pc.createOffer() → socket.emit('call:signal', {
+     callId, type: 'offer', targetUserId: B, payload: offer
+   })
+
+5) B: ulanib turgan socketdan 'call:incoming' keladi
+   → UI "Qo'ng'iroq keladi" modal
+
+6) B: "accept" bossa:
+   POST /chat/calls/:callId/accept
+   getUserMedia → localStream → RTCPeerConnection
+   → 'call:signal' offer'ini kutadi (allaqachon kelgan bo'lishi mumkin)
+
+7) B: pc.setRemoteDescription(offer)
+   pc.createAnswer() → socket.emit('call:signal', {
+     callId, type: 'answer', targetUserId: A, payload: answer
+   })
+
+8) ICE almashinuvi:
+   pc.onicecandidate → socket.emit('call:signal', {
+     callId, type: 'ice', targetUserId, payload: candidate
+   })
+
+9) Suhbat tugagach:
+   POST /chat/calls/:callId/end
+   pc.close()
+
+STUN/TURN:
+  Test uchun stun:stun.l.google.com:19302
+  Production uchun TURN server kerak (keyingi fazada)
+
+
+================================================================
+5. FRONTEND BEST PRACTICES
+================================================================
+
+XABAR YUBORISH FLOW:
+  a) Optimistic: darhol chatga qo'sh (status='sending', tempId)
+  b) POST /chat/:id/messages yuboring
+  c) Response kelgach tempId ni real id ga almashtiring
+  d) WS message:new event o'z userlariga ham keladi —
+     senderId === myId bo'lsa, tempId match qilib dublicate qilmang
+
+XABARLAR TARTIBI:
+  - createdAt + id bo'yicha saralang (AI chatdagi muammoga o'xshash)
+  - WS event'lar kelganida oxiriga append qiling
+  - reload bo'lganda GET /messages dan olingan tartibni ishlating
+
+UNREAD BADGE:
+  - chat_member.lastReadAt dan keyin keladigan xabarlar soni
+  - yangi xabar kelganda badge inkrement qiling
+  - chat ochilgach POST /chat/:id/read chaqiring (debounced)
+
+TYPING INDICATOR:
+  - user yozayotganida 300ms debounce bilan chat:typing isTyping=true
+  - 2 soniya jimlik bo'lsa isTyping=false
+  - chat:typing event kelganida 3 sekundlik timer qo'ying
+
+RECONNECTION:
+  - Socket.IO avto-reconnect bor, qo'shimcha qilish kerak emas
+  - Reconnect bo'lgach ochiq bo'lgan chatlarga qayta chat:join yuboring
+
+MEDIA UPLOAD:
+  - Voice record: MediaRecorder API (mimeType: audio/webm yoki audio/ogg)
+  - Video: short clips (15s), IMAGE: jpeg/png/webp
+  - Multipart form bilan yuboring, 'duration' ni ham qo'shing
+
+FORWARD UI:
+  - Xabarga long-press yoki menu → "Forward"
+  - ChatPicker modal → bir nechta chat tanlash
+  - DocFlow obyektlarini forward uchun:
+    workflow/document/task sahifasida "Chatda yuborish" tugmasi →
+    ChatPicker → POST /chat/forward/<type>/:id
+
+
+================================================================
+6. XAVFSIZLIK ESLATMALARI
+================================================================
+
+Frontend TEKSHIRISHI KERAK:
+  [ ] URL'larni sanitize qilib render (fileUrl, avatarUrl)
+  [ ] Xabar content'ini HTML sifatida emas, TEXT sifatida ko'rsatish
+  [ ] External URL'lar rel="noopener noreferrer"
+  [ ] File yuklashdan oldin maks hajmni tekshirish (50MB taklif)
+  [ ] Video/audio ni <video>/<audio> tag'lari orqali chiqarish
+  [ ] AuthGuard'dan o'tmay kirish mumkin bo'lmagan routelar himoyalangan
+
+Backend TA'MINLAYDI:
+  [x] Har bir API permission guard
+  [x] Xabar/chat/member darajasidagi access check
+  [x] Transport TLS (HTTPS/WSS)
+  [x] Content at-rest AES-256-GCM shifrlash
+  [x] WS handshake JWT verification
+  [x] WebRTC signal relay faqat participant'larga
+
+
+================================================================
+7. RESPONSE XATOLARI
+================================================================
+
+401 Unauthorized     — token yo'q yoki noto'g'ri
+403 Forbidden        — permission yoki access yo'q
+404 Not Found        — chat/xabar/foydalanuvchi topilmadi
+400 Bad Request      — validation xatosi (bo'sh content, noto'g'ri format)
+
+Javob body format: { statusCode, message, error } (standard Nest)
+
+
+================================================================
+8. FAZA 2 (KEYINGI VERSIYA)
+================================================================
+
+Kelishi kutilmoqda:
+  - Voice xabarlarda waveform + transkripsiya (Gemini orqali)
+  - Video thumbnail avtomatik generatsiya
+  - Push notification (Telegram bot orqali)
+  - Mute / Pin / Archive endpointlar
+  - Read-by list ("kim o'qigan" modal)
+  - showOnlineStatus=false ni WS presence bilan bog'lash
+  - Call timeout (RINGING 60s → MISSED)
+  - TURN server configuratsiya
+  - E2E encryption (client-side keys, optional)
+  - Xabar qidirish (full-text search)
+  - Chat folderlar / labels
+  - Broadcast xabarlar (admin → barcha chatlar)
+
+
+================================================================
+9. TEKSHIRISH CHECKLIST
+================================================================
+
+[ ] Chatlar ro'yxati yuklanadi (pinned oldin)
+[ ] Direct chat yaratish — mavjud bo'lsa qayta yaratilmaydi
+[ ] Guruh yaratish + a'zo qo'shish/chiqarish
+[ ] Matn xabar yuborish (optimistic + confirm)
+[ ] Fayl yuborish (image/video/voice/file auto-detect)
+[ ] Reply xabar
+[ ] Xabarni tahrirlash (faqat o'ziniki, TEXT)
+[ ] Xabarni o'chirish (o'zi / admin)
+[ ] Reactions qo'shish/olib tashlash
+[ ] Forward xabar + workflow/document/task
+[ ] Read receipts (lastReadAt + individual)
+[ ] Typing indicator
+[ ] WS reconnect va chat:join
+[ ] Settings CRUD
+[ ] Audio qo'ng'iroq end-to-end (ring → accept → offer/answer/ice → end)
+[ ] Video qo'ng'iroq
+[ ] Qo'ng'iroq rad etish / timeout UI
+[ ] allowCalls=false bo'lsa 403 ko'rsatish
