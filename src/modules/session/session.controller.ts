@@ -52,7 +52,7 @@ export class SessionController {
     @Query() payload: SessionRetrieveAllDto,
     @Request() req,
   ): Promise<SessionListResponseDto> {
-    return this.sessionService.sessionRetrieveAll(payload, req.user.userId)
+    return this.sessionService.sessionRetrieveAll(payload, req.user.userId, req.user.sessionId)
   }
 
   @Get(':id')
@@ -78,7 +78,7 @@ export class SessionController {
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req,
   ): Promise<SessionItemDto> {
-    return this.sessionService.sessionRetrieveOne(id, req.user.userId)
+    return this.sessionService.sessionRetrieveOne(id, req.user.userId, req.user.sessionId)
   }
 
   @Delete(':id')
@@ -148,7 +148,7 @@ export class SessionController {
   async sessionRevokeAll(
     @Request() req,
   ): Promise<{ message: string; count: number }> {
-    const count = await this.sessionService.sessionRevokeAll(req.user.userId)
+    const count = await this.sessionService.sessionRevokeAll(req.user.userId, req.user.sessionId)
     return {
       message: 'Barcha sessiyalar muvaffaqiyatli bekor qilindi',
       count,

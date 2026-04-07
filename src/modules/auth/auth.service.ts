@@ -292,12 +292,7 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.accessSecret,
-      expiresIn: this.accessExpiresIn,
-    })
-
-    // Generate a unique refresh token with random component
+    // Generate refresh token first (so we get sessionId)
     const refreshTokenPayload = {
       ...payload,
       jti: crypto.randomBytes(16).toString('hex'),
@@ -308,10 +303,9 @@ export class AuthService {
       expiresIn: this.refreshExpiresIn,
     })
 
-    // Calculate expiration date (refreshExpiresIn is in seconds)
     const expiresAt = new Date(Date.now() + this.refreshExpiresIn * 1000)
 
-    // Store refresh token in database
+    // Store refresh token in database first to get sessionId
     const stored = await this.prisma.refreshToken.create({
       data: {
         token: refreshToken,
@@ -322,6 +316,12 @@ export class AuthService {
       },
       select: { id: true },
     })
+
+    // Access token includes sessionId for guard to read
+    const accessToken = await this.jwtService.signAsync(
+      { ...payload, sessionId: stored.id },
+      { secret: this.accessSecret, expiresIn: this.accessExpiresIn },
+    )
 
     return { accessToken, refreshToken, sessionId: stored.id }
   }

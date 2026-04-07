@@ -121,6 +121,7 @@ export class AuthGuard implements CanActivate {
         departmentId: user.departmentId,
         departmentName: user.department?.name,
         permissions: permissionKeys,
+        sessionId: payload.sessionId,
       }
     } catch (error) {
       if (error instanceof UnauthorizedException) {
