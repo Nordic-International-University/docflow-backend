@@ -365,10 +365,16 @@ export class NotificationGateway
             name: true,
           },
         },
+        chatSettings: {
+          select: { showOnlineStatus: true },
+        },
       },
     })
 
+    // showOnlineStatus=false bo'lgan foydalanuvchilarni yashirish
     return users
+      .filter((u) => u.chatSettings?.showOnlineStatus !== false)
+      .map(({ chatSettings, ...rest }) => rest)
   }
 
   // Broadcast user online/offline status to all connected clients
@@ -394,6 +400,7 @@ export class NotificationGateway
               name: true,
             },
           },
+          chatSettings: { select: { showOnlineStatus: true } },
         },
       })
 
@@ -401,9 +408,15 @@ export class NotificationGateway
         return
       }
 
+      // showOnlineStatus=false bo'lsa — status broadcast qilmaymiz
+      if (user.chatSettings?.showOnlineStatus === false) {
+        return
+      }
+
+      const { chatSettings, ...publicUser } = user
       // Broadcast to all connected clients
       this.server.emit('user:status', {
-        user,
+        user: publicUser,
         isOnline,
         timestamp: new Date().toISOString(),
       })

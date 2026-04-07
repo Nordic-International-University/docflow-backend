@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { MinioService } from '@clients'
+import { TelegramService } from '../telegram/telegram.service'
 import { ChatEncryptionService } from './chat-encryption'
 import {
   AddMembersDto,
@@ -37,6 +38,7 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
     private readonly crypto: ChatEncryptionService,
+    private readonly telegram: TelegramService,
   ) {}
 
   private isAdmin(ctx: Ctx) {
@@ -483,10 +485,39 @@ export class ChatService {
     })
 
     // Chat metadata yangilash
-    await this.prisma.chat.update({
+    const chat = await this.prisma.chat.update({
       where: { id: chatId },
       data: { lastMessageAt: message.createdAt },
+      include: {
+        members: {
+          where: { leftAt: null, userId: { not: ctx.userId } },
+          take: 1,
+          include: {
+            user: { select: { fullname: true } },
+          },
+        },
+      },
     })
+
+    // Telegram push (non-blocking)
+    const senderName = message.sender.fullname
+    const chatTitle =
+      chat.type === 'GROUP'
+        ? chat.title || 'Guruh'
+        : chat.members[0]?.user?.fullname || 'Chat'
+    this.pushTelegramNotification(
+      chatId,
+      {
+        id: message.id,
+        type: message.type,
+        content: payload.content || null,
+        senderId: message.senderId,
+        fileName: message.fileName,
+        refSnapshot: message.refSnapshot,
+      },
+      senderName,
+      chatTitle,
+    ).catch(() => {})
 
     return {
       ...message,
@@ -552,6 +583,14 @@ export class ChatService {
       where: { chatId, userId: ctx.userId, leftAt: null },
       data: { lastReadAt: now },
     })
+
+    // showReadReceipts=false bo'lsa — individual read yozmaymiz (boshqalar ko'rmaydi)
+    const settings = await this.prisma.userChatSettings.findFirst({
+      where: { userId: ctx.userId },
+    })
+    if (settings && settings.showReadReceipts === false) {
+      return { success: true, readAt: now }
+    }
 
     // Individual message reads (for read receipts) — until upToMessageId
     if (upToMessageId) {
@@ -898,6 +937,284 @@ export class ChatService {
       data: { leftAt: endedAt },
     })
     return { success: true, action, duration }
+  }
+
+  // ============ FAZA 2: MUTE / PIN / ARCHIVE ============
+
+  async muteChat(chatId: string, until: string | null | undefined, ctx: Ctx) {
+    await this.ensureMember(chatId, ctx.userId)
+    const mutedUntil = until ? new Date(until) : null
+    await this.prisma.chatMember.updateMany({
+      where: { chatId, userId: ctx.userId, leftAt: null },
+      data: { mutedUntil },
+    })
+    return { success: true, mutedUntil }
+  }
+
+  async pinChat(chatId: string, pinned: boolean, ctx: Ctx) {
+    await this.ensureMember(chatId, ctx.userId)
+    await this.prisma.chatMember.updateMany({
+      where: { chatId, userId: ctx.userId, leftAt: null },
+      data: { isPinned: pinned },
+    })
+    return { success: true, isPinned: pinned }
+  }
+
+  async archiveChat(chatId: string, archived: boolean, ctx: Ctx) {
+    await this.ensureMember(chatId, ctx.userId)
+    await this.prisma.chatMember.updateMany({
+      where: { chatId, userId: ctx.userId, leftAt: null },
+      data: { isArchived: archived },
+    })
+    return { success: true, isArchived: archived }
+  }
+
+  // ============ FAZA 2: READ-BY LIST ============
+
+  async getMessageReads(messageId: string, ctx: Ctx) {
+    const msg = await this.prisma.chatMessage.findFirst({
+      where: { id: messageId, deletedAt: null },
+    })
+    if (!msg) throw new NotFoundException('Xabar topilmadi')
+    await this.ensureMember(msg.chatId, ctx.userId)
+
+    const reads = await this.prisma.chatMessageRead.findMany({
+      where: { messageId },
+      orderBy: { readAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
+      },
+    })
+
+    // showReadReceipts=false o'rnatgan foydalanuvchilarni filtrlamaymiz chunki
+    // bu ularning o'qiganligi haqidagi ma'lumotni yashirishi kerak — shuning uchun
+    // settings orqali ular o'qiganlar ro'yxatiga yozilmaydi (sendMessage/markRead'da).
+    // Hozircha hammasi qaytadi.
+    return {
+      count: reads.length,
+      reads: reads.map((r) => ({
+        userId: r.userId,
+        user: r.user,
+        readAt: r.readAt,
+      })),
+    }
+  }
+
+  // ============ FAZA 2: SEARCH ============
+
+  /**
+   * Xabar qidirish. Content shifrlangani uchun:
+   *  - Yaqin oxirgi 1000 ta xabarni memory'da deshifrlab, substring match
+   *  - File name, refSnapshot, chat title — DB darajasida ILIKE
+   * Fast va real-time, lekin juda katta tarixda sekinlashadi.
+   */
+  async searchMessages(q: string, chatId: string | undefined, ctx: Ctx) {
+    const query = q.trim()
+    if (query.length < 2) return { count: 0, messages: [] }
+    const queryLower = query.toLowerCase()
+
+    // Foydalanuvchi a'zo bo'lgan chatlar ro'yxati
+    const myChats = await this.prisma.chatMember.findMany({
+      where: { userId: ctx.userId, leftAt: null },
+      select: { chatId: true },
+    })
+    let chatIds = myChats.map((m) => m.chatId)
+    if (chatId) {
+      if (!chatIds.includes(chatId)) return { count: 0, messages: [] }
+      chatIds = [chatId]
+    }
+    if (chatIds.length === 0) return { count: 0, messages: [] }
+
+    // DB darajasidagi qidiruv — fayl nomi va refSnapshot
+    const dbMatches = await this.prisma.chatMessage.findMany({
+      where: {
+        chatId: { in: chatIds },
+        deletedAt: null,
+        OR: [
+          { fileName: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sender: { select: { id: true, fullname: true, avatarUrl: true } },
+        chat: { select: { id: true, type: true, title: true } },
+      },
+    })
+
+    // Memory darajasidagi content search (shifrlangan kontentni deshifrlab)
+    const recent = await this.prisma.chatMessage.findMany({
+      where: {
+        chatId: { in: chatIds },
+        deletedAt: null,
+        type: { in: ['TEXT', 'IMAGE', 'VIDEO', 'VOICE', 'FILE'] },
+        content: { not: null },
+      },
+      take: 2000,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sender: { select: { id: true, fullname: true, avatarUrl: true } },
+        chat: { select: { id: true, type: true, title: true } },
+      },
+    })
+
+    const contentMatches: any[] = []
+    for (const m of recent) {
+      const decrypted = this.crypto.decrypt(m.content)
+      if (decrypted && decrypted.toLowerCase().includes(queryLower)) {
+        contentMatches.push({ ...m, content: decrypted })
+        if (contentMatches.length >= 50) break
+      }
+    }
+
+    // Duplicate'larni olib tashlash
+    const seen = new Set<string>()
+    const combined: any[] = []
+    for (const m of [...contentMatches, ...dbMatches]) {
+      if (seen.has(m.id)) continue
+      seen.add(m.id)
+      combined.push({
+        ...m,
+        content: m.content && typeof m.content === 'string' && !m.content.startsWith('enc:v1:')
+          ? m.content
+          : this.crypto.decrypt(m.content),
+      })
+    }
+    combined.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+
+    return { count: combined.length, messages: combined.slice(0, 50) }
+  }
+
+  // ============ FAZA 2: CALL TIMEOUT ============
+
+  /**
+   * Timeout bo'lgan RINGING qo'ng'iroqlarni MISSED ga o'tkazadi (scheduler chaqiradi).
+   * Qaytaradi: o'zgartirilgan call ID'lar (WS event uchun).
+   */
+  async expireStaleCalls(): Promise<Array<{ id: string; chatId: string }>> {
+    const cutoff = new Date(Date.now() - 60_000)
+    const stale = await this.prisma.callSession.findMany({
+      where: { status: 'RINGING', createdAt: { lt: cutoff } },
+      select: { id: true, chatId: true },
+    })
+    if (!stale.length) return []
+    await this.prisma.callSession.updateMany({
+      where: { id: { in: stale.map((s) => s.id) } },
+      data: { status: 'MISSED', endedAt: new Date() },
+    })
+    return stale
+  }
+
+  // ============ FAZA 2: TELEGRAM PUSH ============
+
+  /**
+   * Chatda xabar yuborilganda offline yoki telegram orqali
+   * xabardor bo'lishni xohlovchi a'zolarga push yuboradi.
+   *
+   * Mantiq:
+   *  - Sender o'zi bildirishnoma olmaydi
+   *  - mutedUntil > hozir bo'lsa — o'tkazib yuboradi
+   *  - notifyPreview=false bo'lsa content yashiriladi
+   *  - Telegram ID bog'lanmagan bo'lsa — o'tkazib yuboriladi (silent)
+   */
+  async pushTelegramNotification(
+    chatId: string,
+    message: {
+      id: string
+      type: string
+      content: string | null
+      senderId: string
+      fileName?: string | null
+      refSnapshot?: any
+    },
+    senderName: string,
+    chatTitle: string,
+  ) {
+    try {
+      const members = await this.prisma.chatMember.findMany({
+        where: {
+          chatId,
+          leftAt: null,
+          userId: { not: message.senderId },
+        },
+        include: {
+          user: { select: { id: true, telegramId: true, fullname: true } },
+        },
+      })
+
+      const now = new Date()
+      const receiverIds = members
+        .filter((m) => !m.mutedUntil || m.mutedUntil < now)
+        .filter((m) => m.user.telegramId)
+        .map((m) => m.userId)
+
+      if (!receiverIds.length) return
+
+      // Settings — notifyPreview
+      const settings = await this.prisma.userChatSettings.findMany({
+        where: { userId: { in: receiverIds } },
+      })
+      const previewById = new Map(
+        settings.map((s) => [s.userId, s.notifyPreview]),
+      )
+
+      const escape = (s: string) =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+      for (const m of members.filter((x) => receiverIds.includes(x.userId))) {
+        const preview = previewById.get(m.userId) !== false // default true
+
+        let body: string
+        if (preview) {
+          switch (message.type) {
+            case 'TEXT':
+              body = escape(message.content || '')
+              break
+            case 'IMAGE':
+              body = '📷 Rasm'
+              break
+            case 'VIDEO':
+              body = '🎥 Video'
+              break
+            case 'VOICE':
+              body = '🎤 Ovozli xabar'
+              break
+            case 'FILE':
+              body = `📎 ${escape(message.fileName || 'Fayl')}`
+              break
+            case 'DOCUMENT':
+              body = `📄 Hujjat: ${escape(message.refSnapshot?.documentNumber || '')}`
+              break
+            case 'WORKFLOW':
+              body = `🔄 Workflow: ${escape(message.refSnapshot?.document?.documentNumber || '')}`
+              break
+            case 'TASK':
+              body = `✅ Topshiriq: ${escape(message.refSnapshot?.ref || '')}`
+              break
+            default:
+              body = 'Yangi xabar'
+          }
+          if (body.length > 300) body = body.slice(0, 300) + '…'
+        } else {
+          body = '<i>(yangi xabar)</i>'
+        }
+
+        const text =
+          `💬 <b>${escape(chatTitle)}</b>\n` +
+          `👤 ${escape(senderName)}\n\n` +
+          body
+
+        try {
+          await this.telegram.sendWorkflowNotification(m.userId, text)
+        } catch (err: any) {
+          this.logger.warn(`Telegram push failed for ${m.userId}: ${err.message}`)
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`pushTelegramNotification failed: ${err.message}`)
+    }
   }
 
   /** WS gateway tomonidan chaqiriladi — chatdagi barcha a'zo userId'lari */

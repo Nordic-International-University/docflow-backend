@@ -204,6 +204,37 @@ export class UpdateChatSettingsDto {
   notifyPreview?: boolean
 }
 
+export class MuteChatDto {
+  @ApiPropertyOptional({ description: "ISO vaqt. null bo'lsa unmute." })
+  @IsOptional()
+  @IsString()
+  mutedUntil?: string | null
+}
+
+export class PinChatDto {
+  @ApiProperty()
+  @IsBoolean()
+  pinned: boolean
+}
+
+export class ArchiveChatDto {
+  @ApiProperty()
+  @IsBoolean()
+  archived: boolean
+}
+
+export class SearchMessagesDto {
+  @ApiProperty()
+  @IsString()
+  @Length(1, 200)
+  q: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  chatId?: string
+}
+
 export class InitiateCallDto {
   @ApiProperty({ enum: ['AUDIO', 'VIDEO'] })
   @IsEnum(['AUDIO', 'VIDEO'])

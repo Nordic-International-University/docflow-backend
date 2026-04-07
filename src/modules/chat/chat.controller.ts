@@ -22,12 +22,16 @@ import { ChatGateway } from './chat.gateway'
 import {
   AddMembersDto,
   AddReactionDto,
+  ArchiveChatDto,
   CreateDirectChatDto,
   CreateGroupChatDto,
   EditMessageDto,
   ForwardEntityDto,
   ForwardMessageDto,
   InitiateCallDto,
+  MuteChatDto,
+  PinChatDto,
+  SearchMessagesDto,
   SendMessageDto,
   UpdateChatSettingsDto,
   UpdateGroupChatDto,
@@ -308,6 +312,57 @@ export class ChatController {
     const memberIds = await this.chat.getChatMemberIds(payload.toChatId)
     this.gateway.emitNewMessage(payload.toChatId, memberIds, msg)
     return msg
+  }
+
+  // ============ MUTE / PIN / ARCHIVE (Faza 2) ============
+
+  @Post(':id/mute')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async muteChat(
+    @Param('id') id: string,
+    @Body() payload: MuteChatDto,
+    @Req() req: any,
+  ) {
+    return this.chat.muteChat(id, payload.mutedUntil ?? null, this.ctx(req))
+  }
+
+  @Post(':id/pin')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async pinChat(
+    @Param('id') id: string,
+    @Body() payload: PinChatDto,
+    @Req() req: any,
+  ) {
+    return this.chat.pinChat(id, payload.pinned, this.ctx(req))
+  }
+
+  @Post(':id/archive')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async archiveChat(
+    @Param('id') id: string,
+    @Body() payload: ArchiveChatDto,
+    @Req() req: any,
+  ) {
+    return this.chat.archiveChat(id, payload.archived, this.ctx(req))
+  }
+
+  // ============ READ-BY LIST (Faza 2) ============
+
+  @Get('messages/:messageId/reads')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async getMessageReads(
+    @Param('messageId') messageId: string,
+    @Req() req: any,
+  ) {
+    return this.chat.getMessageReads(messageId, this.ctx(req))
+  }
+
+  // ============ SEARCH (Faza 2) ============
+
+  @Get('search/messages')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async searchMessages(@Query() query: SearchMessagesDto, @Req() req: any) {
+    return this.chat.searchMessages(query.q, query.chatId, this.ctx(req))
   }
 
   // ============ SETTINGS ============

@@ -8,10 +8,19 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  UnauthorizedException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
+import { ChatService } from './chat.service'
 
 interface AuthSocket extends Socket {
   userId?: string
@@ -56,17 +65,54 @@ interface AuthSocket extends Socket {
   namespace: '/chat',
   transports: ['websocket', 'polling'],
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
+{
   @WebSocketServer()
   server: Server
 
   private readonly logger = new Logger(ChatGateway.name)
+  private callExpiryInterval: NodeJS.Timeout | null = null
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
   ) {}
+
+  onModuleInit() {
+    // Har 15 soniyada stale RINGING qo'ng'iroqlarni MISSED ga o'tkazish
+    this.callExpiryInterval = setInterval(async () => {
+      try {
+        const expired = await this.chatService.expireStaleCalls()
+        for (const c of expired) {
+          this.server.to(`chat:${c.chatId}`).emit('call:status', {
+            callId: c.id,
+            action: 'missed',
+          })
+          const memberIds = await this.chatService.getChatMemberIds(c.chatId)
+          for (const uid of memberIds) {
+            this.server.to(`user:${uid}`).emit('call:status', {
+              callId: c.id,
+              chatId: c.chatId,
+              action: 'missed',
+            })
+          }
+        }
+      } catch (err: any) {
+        this.logger.error(`Call expiry check failed: ${err.message}`)
+      }
+    }, 15_000)
+  }
+
+  onModuleDestroy() {
+    if (this.callExpiryInterval) {
+      clearInterval(this.callExpiryInterval)
+      this.callExpiryInterval = null
+    }
+  }
 
   async handleConnection(client: AuthSocket) {
     try {
