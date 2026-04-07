@@ -386,7 +386,6 @@ export class ChatController {
     @Body() payload: InitiateCallDto,
     @Req() req: any,
   ) {
-    // Video uchun alohida permission
     if (payload.type === 'VIDEO' && !req.user.permissions?.includes(PERMISSIONS.CHAT.CALL_VIDEO)) {
       return { error: 'Video qo\'ng\'iroqlar uchun ruxsat yo\'q' }
     }
@@ -400,7 +399,12 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
   async acceptCall(@Param('callId') callId: string, @Req() req: any) {
     const result = await this.chat.respondToCall(callId, 'accept', this.ctx(req))
-    this.gateway.emitCallStatus(callId, { action: 'accepted', userId: req.user.userId })
+    this.gateway.emitCallStatus(callId, {
+      action: 'accepted',
+      userId: req.user.userId,
+      user: { id: req.user.userId, fullname: req.user.fullname },
+      chatId: result.chatId,
+    })
     return result
   }
 
@@ -408,7 +412,12 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
   async rejectCall(@Param('callId') callId: string, @Req() req: any) {
     const result = await this.chat.respondToCall(callId, 'reject', this.ctx(req))
-    this.gateway.emitCallStatus(callId, { action: 'rejected', userId: req.user.userId })
+    this.gateway.emitCallStatus(callId, {
+      action: 'rejected',
+      userId: req.user.userId,
+      user: { id: req.user.userId, fullname: req.user.fullname },
+      chatId: result.chatId,
+    })
     return result
   }
 
@@ -416,7 +425,13 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
   async endCall(@Param('callId') callId: string, @Req() req: any) {
     const result = await this.chat.respondToCall(callId, 'end', this.ctx(req))
-    this.gateway.emitCallStatus(callId, { action: 'ended', userId: req.user.userId })
+    this.gateway.emitCallStatus(callId, {
+      action: 'ended',
+      userId: req.user.userId,
+      user: { id: req.user.userId, fullname: req.user.fullname },
+      chatId: result.chatId,
+      duration: (result as any).duration,
+    })
     return result
   }
 }

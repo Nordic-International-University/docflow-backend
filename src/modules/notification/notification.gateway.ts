@@ -148,6 +148,8 @@ export class NotificationGateway
 
       // Only broadcast offline status if user has no more active connections
       if (remainingSockets.length === 0) {
+        // So'nggi faollik vaqtini yozish
+        await this.redisService.setLastSeen(userId)
         await this.broadcastUserOnlineStatus(userId, false)
       }
     }

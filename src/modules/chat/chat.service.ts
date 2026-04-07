@@ -44,25 +44,33 @@ export class ChatService {
 
   /**
    * Foydalanuvchilarning online holatini va showOnlineStatus sozlamasini
-   * hisobga olgan holda {userId → isOnline} map qaytaradi.
-   * showOnlineStatus=false bo'lgan foydalanuvchi doim offline ko'rsatiladi.
+   * hisobga olgan holda {userId → { isOnline, lastSeen }} map qaytaradi.
+   * showOnlineStatus=false bo'lgan foydalanuvchi doim offline + lastSeen=null.
    */
-  private async getOnlineStatusMap(userIds: string[]): Promise<Map<string, boolean>> {
-    const map = new Map<string, boolean>()
+  private async getOnlineStatusMap(
+    userIds: string[],
+  ): Promise<Map<string, { isOnline: boolean; lastSeen: Date | null }>> {
+    const map = new Map<string, { isOnline: boolean; lastSeen: Date | null }>()
     if (userIds.length === 0) return map
-    const [onlineIds, settings] = await Promise.all([
+    const [onlineIds, settings, lastSeenMap] = await Promise.all([
       this.redis.getOnlineUsers(),
       this.prisma.userChatSettings.findMany({
         where: { userId: { in: userIds } },
-        select: { userId: true, showOnlineStatus: true },
+        select: { userId: true, showOnlineStatus: true, showLastSeen: true },
       }),
+      this.redis.getLastSeenBatch(userIds),
     ])
-    const hiddenSet = new Set(
+    const hiddenOnline = new Set(
       settings.filter((s) => s.showOnlineStatus === false).map((s) => s.userId),
+    )
+    const hiddenLastSeen = new Set(
+      settings.filter((s) => s.showLastSeen === false).map((s) => s.userId),
     )
     const onlineSet = new Set(onlineIds)
     for (const uid of userIds) {
-      map.set(uid, onlineSet.has(uid) && !hiddenSet.has(uid))
+      const isOnline = onlineSet.has(uid) && !hiddenOnline.has(uid)
+      const lastSeen = hiddenLastSeen.has(uid) ? null : lastSeenMap.get(uid) || null
+      map.set(uid, { isOnline, lastSeen })
     }
     return map
   }
@@ -144,8 +152,13 @@ export class ChatService {
           chat.type === 'DIRECT'
             ? chat.members.find((mm) => mm.userId !== ctx.userId)?.user
             : null
+        const peerStatus = peerUser ? onlineMap.get(peerUser.id) : null
         const peer = peerUser
-          ? { ...peerUser, isOnline: onlineMap.get(peerUser.id) || false }
+          ? {
+              ...peerUser,
+              isOnline: peerStatus?.isOnline || false,
+              lastSeen: peerStatus?.lastSeen || null,
+            }
           : null
         return {
           id: chat.id,
@@ -293,13 +306,17 @@ export class ChatService {
     const memberIds = chat.members.map((m) => m.userId)
     const onlineMap = await this.getOnlineStatusMap(memberIds)
 
-    const membersWithOnline = chat.members.map((m) => ({
-      ...m,
-      user: {
-        ...m.user,
-        isOnline: onlineMap.get(m.userId) || false,
-      },
-    }))
+    const membersWithOnline = chat.members.map((m) => {
+      const s = onlineMap.get(m.userId)
+      return {
+        ...m,
+        user: {
+          ...m.user,
+          isOnline: s?.isOnline || false,
+          lastSeen: s?.lastSeen || null,
+        },
+      }
+    })
 
     // DIRECT uchun peer obyekti
     const peerMember =
@@ -937,7 +954,19 @@ export class ChatService {
           ],
         },
       },
-      include: { participants: true },
+      include: {
+        initiator: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
+        chat: { select: { id: true, type: true, title: true, avatarUrl: true } },
+        participants: {
+          include: {
+            user: {
+              select: { id: true, fullname: true, username: true, avatarUrl: true },
+            },
+          },
+        },
+      },
     })
     return call
   }
@@ -949,7 +978,12 @@ export class ChatService {
   ) {
     const call = await this.prisma.callSession.findFirst({
       where: { id: callId },
-      include: { participants: true },
+      include: {
+        initiator: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
+        participants: true,
+      },
     })
     if (!call) throw new NotFoundException('Qo\'ng\'iroq topilmadi')
 
@@ -970,7 +1004,7 @@ export class ChatService {
           data: { status: 'ACTIVE', startedAt: new Date() },
         })
       }
-      return { success: true, action }
+      return { success: true, action, callId, chatId: call.chatId, initiator: call.initiator }
     }
 
     if (action === 'reject') {
@@ -990,7 +1024,7 @@ export class ChatService {
           },
         })
       }
-      return { success: true, action }
+      return { success: true, action, callId, chatId: call.chatId, initiator: call.initiator }
     }
 
     // end
@@ -1007,7 +1041,14 @@ export class ChatService {
       where: { callId, leftAt: null },
       data: { leftAt: endedAt },
     })
-    return { success: true, action, duration }
+    return {
+      success: true,
+      action,
+      duration,
+      callId,
+      chatId: call.chatId,
+      initiator: call.initiator,
+    }
   }
 
   // ============ FAZA 2: MUTE / PIN / ARCHIVE ============

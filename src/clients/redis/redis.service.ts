@@ -126,6 +126,36 @@ export class RedisService implements OnModuleDestroy {
     return result
   }
 
+  /** Foydalanuvchining so'nggi faollik vaqtini saqlash */
+  async setLastSeen(userId: string, ts: Date = new Date()): Promise<void> {
+    await this.client.set(
+      `user:lastseen:${userId}`,
+      ts.toISOString(),
+      'EX',
+      60 * 60 * 24 * 30, // 30 kun
+    )
+  }
+
+  /** Foydalanuvchining so'nggi faollik vaqtini olish */
+  async getLastSeen(userId: string): Promise<Date | null> {
+    const iso = await this.client.get(`user:lastseen:${userId}`)
+    return iso ? new Date(iso) : null
+  }
+
+  /** Bir nechta foydalanuvchining lastSeen vaqtini olish */
+  async getLastSeenBatch(userIds: string[]): Promise<Map<string, Date>> {
+    const map = new Map<string, Date>()
+    if (!userIds.length) return map
+    const pipeline = this.client.pipeline()
+    for (const uid of userIds) pipeline.get(`user:lastseen:${uid}`)
+    const results = await pipeline.exec()
+    for (let i = 0; i < userIds.length; i++) {
+      const val = results?.[i]?.[1] as string | null
+      if (val) map.set(userIds[i], new Date(val))
+    }
+    return map
+  }
+
   /**
    * Barcha socket kalitlarini tozalash — server startup'da chaqiriladi.
    * Restart bo'lgach eski socketlar o'lgan, lekin Redis'da qolib ketgan bo'lsa,
