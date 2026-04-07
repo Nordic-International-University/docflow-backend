@@ -29,8 +29,13 @@ export class TaskController {
 
   @Get()
   @Permissions(PERMISSIONS.TASK.LIST)
-  async taskRetrieveAll(@Query() payload: TaskRetrieveQueryDto) {
-    return await this.taskService.taskRetrieveAll(payload)
+  async taskRetrieveAll(@Query() payload: TaskRetrieveQueryDto, @Req() req: any) {
+    return await this.taskService.taskRetrieveAll({
+      ...payload,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+      userDepartmentId: req.user.departmentId,
+    })
   }
 
   @Get(':id')

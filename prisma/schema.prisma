@@ -62,6 +62,12 @@ enum ProjectStatus {
   ARCHIVED
 }
 
+enum ProjectVisibility {
+  PRIVATE       // Faqat memberlar va yaratuvchi
+  DEPARTMENT    // Bo'lim hammasi + memberlar
+  PUBLIC        // Hamma kompaniya xodimlari
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -595,6 +601,8 @@ model Project {
   description         String?                     @map("description")         @db.Text
   key                 String                      @map("key")                 @db.VarChar(10)     @unique
   status              ProjectStatus               @map("status")              @default(PLANNING)
+  visibility          ProjectVisibility           @map("visibility")          @default(PRIVATE)
+  createdById         String?                     @map("created_by_id")       @db.Uuid
   departmentId        String?                     @map("department_id")       @db.Uuid
   startDate           DateTime?                   @map("start_date")          @db.Date
   endDate             DateTime?                   @map("end_date")            @db.Date

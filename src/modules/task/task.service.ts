@@ -275,26 +275,42 @@ export class TaskService {
     }
   }
 
-  async taskRetrieveAll(payload: TaskRetrieveQueryDto) {
+  async taskRetrieveAll(
+    payload: TaskRetrieveQueryDto & { userId?: string; roleName?: string; userDepartmentId?: string },
+  ) {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
     const skip = (pageNumber - 1) * pageSize
     const take = pageSize
 
+    // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
+    const isAdmin =
+      payload.roleName === 'Super Administrator' ||
+      payload.roleName === 'Admin'
+
+    const projectAccessFilter: any = isAdmin
+      ? {}
+      : {
+          project: {
+            OR: [
+              { visibility: 'PUBLIC' },
+              { createdById: payload.userId },
+              { members: { some: { userId: payload.userId } } },
+              ...(payload.userDepartmentId
+                ? [{ visibility: 'DEPARTMENT', departmentId: payload.userDepartmentId }]
+                : []),
+            ],
+          },
+        }
+
     const where: any = {
       deletedAt: null,
       isArchived: false,
+      ...projectAccessFilter,
       ...(payload.search && {
         OR: [
-          {
-            title: { contains: payload.search, mode: 'insensitive' as const },
-          },
-          {
-            description: {
-              contains: payload.search,
-              mode: 'insensitive' as const,
-            },
-          },
+          { title: { contains: payload.search, mode: 'insensitive' as const } },
+          { description: { contains: payload.search, mode: 'insensitive' as const } },
         ],
       }),
       ...(payload.projectId && { projectId: payload.projectId }),

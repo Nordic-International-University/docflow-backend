@@ -3,8 +3,11 @@ import {
   IsString,
   IsNumber,
   IsDateString,
+  IsEnum,
+  IsUUID,
   Length,
 } from 'class-validator'
+import { ProjectVisibility } from './project-create.dto'
 
 export class ProjectUpdateDto {
   @IsString()
@@ -25,7 +28,11 @@ export class ProjectUpdateDto {
   @IsOptional()
   status?: string
 
-  @IsString()
+  @IsEnum(ProjectVisibility)
+  @IsOptional()
+  visibility?: ProjectVisibility
+
+  @IsUUID()
   @IsOptional()
   departmentId?: string
 

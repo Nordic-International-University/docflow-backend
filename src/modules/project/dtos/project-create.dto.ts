@@ -3,9 +3,17 @@ import {
   IsString,
   IsNumber,
   IsDateString,
+  IsEnum,
+  IsUUID,
   Length,
   Matches,
 } from 'class-validator'
+
+export enum ProjectVisibility {
+  PRIVATE = 'PRIVATE',
+  DEPARTMENT = 'DEPARTMENT',
+  PUBLIC = 'PUBLIC',
+}
 
 export class ProjectCreateDto {
   @IsString()
@@ -27,9 +35,17 @@ export class ProjectCreateDto {
   @IsOptional()
   status?: string
 
-  @IsString()
+  @IsEnum(ProjectVisibility)
+  @IsOptional()
+  visibility?: ProjectVisibility
+
+  @IsUUID()
   @IsOptional()
   departmentId?: string
+
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  initialMemberIds?: string[]
 
   @IsDateString()
   @IsOptional()

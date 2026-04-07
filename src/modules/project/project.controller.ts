@@ -33,14 +33,27 @@ export class ProjectController {
 
   @Get()
   @Permissions(PERMISSIONS.PROJECT.LIST)
-  async projectRetrieveAll(@Query() payload: ProjectRetrieveQueryDto) {
-    return await this.projectService.projectRetrieveAll(payload)
+  async projectRetrieveAll(
+    @Query() payload: ProjectRetrieveQueryDto,
+    @Req() req: any,
+  ) {
+    return await this.projectService.projectRetrieveAll({
+      ...payload,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+      userDepartmentId: req.user.departmentId,
+    })
   }
 
   @Get(':id')
   @Permissions(PERMISSIONS.PROJECT.READ)
-  async projectRetrieveOne(@Param('id') id: string) {
-    return await this.projectService.projectRetrieveOne({ id })
+  async projectRetrieveOne(@Param('id') id: string, @Req() req: any) {
+    return await this.projectService.projectRetrieveOne({
+      id,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+      userDepartmentId: req.user.departmentId,
+    })
   }
 
   @Post()

@@ -1,12 +1,14 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
-import { ProjectStatus } from '@prisma/client'
+import { ProjectStatus, ProjectVisibility } from '@prisma/client'
+import { ROLE_NAMES } from '@constants'
 import {
   ProjectCreateDto,
   ProjectUpdateDto,
@@ -21,6 +23,57 @@ export class ProjectService {
   constructor(prisma: PrismaService, auditLogService: AuditLogService) {
     this.#_prisma = prisma
     this.#_auditLogService = auditLogService
+  }
+
+  /**
+   * Build visibility filter — kim qaysi loyihalarni ko'ra oladi
+   *
+   * Admin/Direktor → hammasini
+   * Boshqalar → PUBLIC | (DEPARTMENT && o'z bo'limi) | (PRIVATE && member) | createdBy
+   */
+  private buildVisibilityFilter(userId: string, roleName?: string, departmentId?: string): any {
+    const isAdmin =
+      roleName === ROLE_NAMES.SUPER_ADMIN ||
+      roleName === ROLE_NAMES.ADMIN
+
+    if (isAdmin) return {}
+
+    const orConditions: any[] = [
+      // PUBLIC — hammaga ko'rinadi
+      { visibility: 'PUBLIC' },
+      // Yaratuvchi har doim ko'radi
+      { createdById: userId },
+      // Member bo'lsa har qanday visibility'da ko'radi
+      { members: { some: { userId } } },
+    ]
+
+    // DEPARTMENT — o'z bo'limining loyihalari
+    if (departmentId) {
+      orConditions.push({
+        visibility: 'DEPARTMENT',
+        departmentId,
+      })
+    }
+
+    return { OR: orConditions }
+  }
+
+  /**
+   * Check if user has access to a specific project
+   */
+  async checkProjectAccess(projectId: string, userId: string, roleName?: string, departmentId?: string): Promise<void> {
+    const project = await this.#_prisma.project.findFirst({
+      where: {
+        id: projectId,
+        deletedAt: null,
+        ...this.buildVisibilityFilter(userId, roleName, departmentId),
+      },
+      select: { id: true },
+    })
+
+    if (!project) {
+      throw new ForbiddenException('Bu loyihaga kirish huquqingiz yo\'q')
+    }
   }
 
   async projectCreate(
@@ -38,12 +91,19 @@ export class ProjectService {
       throw new ConflictException('Project key must be unique')
     }
 
+    // Visibility default — DEPARTMENT bo'lim tanlangan bo'lsa, aks holda PRIVATE
+    const visibility =
+      (payload.visibility as ProjectVisibility) ||
+      (payload.departmentId ? ProjectVisibility.DEPARTMENT : ProjectVisibility.PRIVATE)
+
     const project = await this.#_prisma.project.create({
       data: {
         name: payload.name,
         description: payload.description,
         key: payload.key.toUpperCase(),
         status: (payload.status as ProjectStatus) || ProjectStatus.PLANNING,
+        visibility,
+        createdById: payload.createdBy,
         departmentId: payload.departmentId,
         startDate: payload.startDate ? new Date(payload.startDate) : undefined,
         endDate: payload.endDate ? new Date(payload.endDate) : undefined,
@@ -53,6 +113,34 @@ export class ProjectService {
         penaltyPerDay: payload.penaltyPerDay,
       },
     })
+
+    // Yaratuvchi avtomatik OWNER bo'ladi
+    if (payload.createdBy) {
+      await this.#_prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId: payload.createdBy,
+          role: 'OWNER',
+        },
+      })
+    }
+
+    // Boshlang'ich a'zolarni qo'shish (boshqa bo'limdan ham mumkin)
+    if (payload.initialMemberIds?.length) {
+      const memberData = payload.initialMemberIds
+        .filter((uid) => uid !== payload.createdBy)
+        .map((userId) => ({
+          projectId: project.id,
+          userId,
+          role: 'MEMBER' as const,
+        }))
+      if (memberData.length > 0) {
+        await this.#_prisma.projectMember.createMany({
+          data: memberData,
+          skipDuplicates: true,
+        })
+      }
+    }
 
     // Create default board columns
     const defaultColumns = [
@@ -110,30 +198,37 @@ export class ProjectService {
     }
   }
 
-  async projectRetrieveAll(payload: ProjectRetrieveQueryDto) {
+  async projectRetrieveAll(
+    payload: ProjectRetrieveQueryDto & { userId?: string; roleName?: string; userDepartmentId?: string },
+  ) {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
     const skip = (pageNumber - 1) * pageSize
     const take = pageSize
 
-    const where: any = {
-      deletedAt: null,
-      isArchived: false,
-      ...(payload.search && {
+    const visibilityFilter = payload.userId
+      ? this.buildVisibilityFilter(payload.userId, payload.roleName, payload.userDepartmentId)
+      : {}
+
+    const andConditions: any[] = [
+      { deletedAt: null },
+      { isArchived: false },
+    ]
+
+    if (payload.search) {
+      andConditions.push({
         OR: [
           { name: { contains: payload.search, mode: 'insensitive' as const } },
-          {
-            description: {
-              contains: payload.search,
-              mode: 'insensitive' as const,
-            },
-          },
+          { description: { contains: payload.search, mode: 'insensitive' as const } },
           { key: { contains: payload.search, mode: 'insensitive' as const } },
         ],
-      }),
-      ...(payload.status && { status: payload.status as ProjectStatus }),
-      ...(payload.departmentId && { departmentId: payload.departmentId }),
+      })
     }
+    if (payload.status) andConditions.push({ status: payload.status as ProjectStatus })
+    if (payload.departmentId) andConditions.push({ departmentId: payload.departmentId })
+    if (Object.keys(visibilityFilter).length > 0) andConditions.push(visibilityFilter)
+
+    const where: any = { AND: andConditions }
 
     const projectList = await this.#_prisma.project.findMany({
       where,
@@ -186,7 +281,21 @@ export class ProjectService {
     }
   }
 
-  async projectRetrieveOne(payload: { id: string }) {
+  async projectRetrieveOne(payload: {
+    id: string
+    userId?: string
+    roleName?: string
+    userDepartmentId?: string
+  }) {
+    if (payload.userId) {
+      await this.checkProjectAccess(
+        payload.id,
+        payload.userId,
+        payload.roleName,
+        payload.userDepartmentId,
+      )
+    }
+
     const project = await this.#_prisma.project.findFirst({
       where: {
         id: payload.id,
