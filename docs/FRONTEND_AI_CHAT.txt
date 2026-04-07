@@ -1,0 +1,180 @@
+================================================================
+DOCFLOW AI CHAT — FRONTEND UCHUN YANGI QOIDALAR
+================================================================
+
+
+1. XABARLAR KETMA-KETLIGINI SAQLASH (MUHIM!)
+================================================================
+
+MUAMMO:
+  Tezkor yuborilgan xabarlar (user yozib, darhol javob kelganda)
+  frontend'da noto'g'ri tartibda ko'rinayotgan edi. Buning sababi —
+  bir xil millisekundda yaratilgan xabarlar createdAt bo'yicha
+  shuffle bo'lishi mumkin.
+
+BACKEND TOMONIDAN TUZATILDI:
+  - GET /ai/history endi orderBy: [createdAt ASC, id ASC]
+  - POST /ai/chat ham bir xil tartiblashdan foydalanadi
+  - Response'da "timestamp" aniq createdAt qaytariladi
+
+FRONTEND NIMA QILISH KERAK:
+  a) LOKAL STATE — xabarlarni MASSIV tartibida tut, sort qilma.
+     Backend allaqachon to'g'ri tartibda qaytaradi.
+
+  b) OPTIMISTIC UPDATE:
+     User xabarini yuborganda darhol chat'ga qo'sh (tempId bilan),
+     API javobi kelgach — tempId ni real id ga almashtir.
+     MUHIM: user xabarini localgi array oxiriga push qil, keyin
+     assistant javobini ham shu array oxiriga push qil. HECH QACHON
+     ularni timestamp bo'yicha qayta saralash shart emas.
+
+     const [messages, setMessages] = useState([])
+
+     async function send(text) {
+       const tempId = `temp-${Date.now()}`
+       // 1) darhol user message
+       setMessages(prev => [...prev, {
+         id: tempId, role: 'user', content: text,
+         timestamp: new Date().toISOString(), pending: true
+       }])
+
+       try {
+         const res = await api.post('/ai/chat', { message: text })
+         // 2) pending user'ni confirmed qil + assistant javobini qo'sh
+         setMessages(prev => [
+           ...prev.filter(m => m.id !== tempId),
+           { id: `${res.data.id}-user`, role: 'user', content: text,
+             timestamp: res.data.timestamp },
+           { id: res.data.id, role: 'assistant',
+             content: res.data.message,
+             cards: res.data.cards || [],
+             timestamp: res.data.timestamp,
+             error: res.data.error }
+         ])
+       } catch (e) {
+         // error handling
+       }
+     }
+
+  c) SEND NAVBATI — foydalanuvchi ketma-ket 2 ta xabar yuborsa,
+     2-xabar 1-javob kelgunga qadar kutishi kerak. Aks holda tool
+     call natijalari aralashib ketishi mumkin.
+
+     Holat bilan boshqarish:
+     const [isSending, setIsSending] = useState(false)
+     <button disabled={isSending} onClick={send}>Yuborish</button>
+
+
+2. GROQ 429 (RATE LIMIT) XATOSI
+================================================================
+
+BACKEND TOMONIDAN TUZATILDI:
+  - Avtomatik retry: 3 marta exponential backoff bilan
+  - Retry-After header'iga amal qilinadi
+  - Fallback modellar: 70b → 8b-instant → llama3-70b
+  - Agar hech narsa ishlamasa — foydalanuvchiga do'stona xabar
+
+RESPONSE FORMATI (xato holatida):
+{
+  "id": "...",
+  "message": "AI xizmati hozir band (limit). Iltimos, bir necha soniyadan keyin qayta urining.",
+  "cards": [],
+  "timestamp": "...",
+  "error": "RATE_LIMIT"  // yoki "AI_ERROR"
+}
+
+FRONTEND NIMA QILISH KERAK:
+  - response.error === 'RATE_LIMIT' bo'lsa, xabarni sariq (warning)
+    rangda ko'rsat va "Qayta urinish" tugmasini qo'sh
+  - response.error === 'AI_ERROR' bo'lsa, qizil (error) ko'rsat
+  - Oddiy javoblar uchun error maydoni bo'lmaydi (undefined)
+
+  function MessageBubble({ msg }) {
+    if (msg.error === 'RATE_LIMIT') {
+      return <WarningBubble>
+        {msg.content}
+        <button onClick={retry}>Qayta urinish</button>
+      </WarningBubble>
+    }
+    if (msg.error === 'AI_ERROR') {
+      return <ErrorBubble>{msg.content}</ErrorBubble>
+    }
+    return <NormalBubble>{msg.content}</NormalBubble>
+  }
+
+
+3. YANGI TOOL CARDS — FRONTEND RENDER
+================================================================
+
+Yangi card type'lari qo'shildi. Frontend har birini qo'llab-
+quvvatlashi kerak:
+
+  type: 'stats'        — Statistika kartasi (KPI, umumiy, bo'lim)
+                         meta: barcha sonli ko'rsatkichlar
+  type: 'pdf'          — PDF fayl kartasi (yuklab olish + hujjat)
+                         meta.fileUrl, meta.fileName, meta.fileSize
+  type: 'task_created' — Yangi yaratilgan topshiriq (success)
+                         Yashil badge + "Ochish" tugmasi
+  type: 'action_result'— Amal natijasi (comment, complete)
+                         meta.success: true, subtitle: ref
+  type: 'user'         — User kartasi (findUserByName'dan)
+                         avatar, fullname, role, department
+  type: 'workflow'     — Workflow holati + bosqichlar
+                         meta.steps: [{order, status, assignedTo}]
+
+Umumiy card strukturasi:
+{
+  type: string,
+  id: string,
+  title: string,
+  subtitle: string,
+  meta: { ... },        // type ga qarab o'zgaradi
+  actions: [            // ixtiyoriy
+    { label: string, url: string, external?: boolean }
+  ]
+}
+
+action.external === true bo'lsa — yangi tab'da ochish (target="_blank")
+action.url '/' bilan boshlansa — internal router.push ishlat
+
+
+4. STATISTIKA SO'ROVLARI — MISOLLAR
+================================================================
+
+Frontend'da "tez tugmalar" sifatida qo'shsa bo'ladi:
+
+  "Mening umumiy statistikam"    → getMyOverallStats
+  "Bo'limimning statistikasi"    → getDepartmentFullStats
+  "Bugungi tasklarim"            → getMyTasks (dueToday)
+  "Muddati o'tgan tasklar"       → getMyTasks (overdue)
+  "IB-2026-0005 faylini ber"     → getDocumentLatestFile
+  "IB-2026-0005 aylanishi"       → getWorkflowStatusForDocument
+  "So'nggi 7 kunlik hujjatlar"   → getRecentDocuments
+
+
+5. XAVFSIZLIK
+================================================================
+
+Frontend HECH QACHON:
+  - Foydalanuvchidan parol/token so'ramasin
+  - AI javobini HTML sifatida render qilmasin (XSS!) — faqat text
+  - Cards'dagi URL'larni sanitize qilib ishlatsin
+  - External URL'larni rel="noopener noreferrer" bilan ochsin
+
+Backend mas'uliyati:
+  - Permission tekshirish (har bir tool'da)
+  - Maxfiy ma'lumotlarni filter qilish
+  - Rate limiting (Groq 429)
+
+
+6. TEKSHIRISH CHECKLIST
+================================================================
+
+[ ] User xabarini yuborgach tartib buzilmaydi
+[ ] 2 ta xabarni ketma-ket yuborish block qilingan (isSending)
+[ ] 429 xatosi warning bubble bilan ko'rsatiladi
+[ ] "Qayta urinish" tugmasi ishlaydi
+[ ] Yangi card type'lari to'g'ri render bo'ladi (stats, pdf, user)
+[ ] getHistory tartibi doim bir xil
+[ ] PDF cards'da external URL yangi tab'da ochiladi
+[ ] Stats card meta maydonlari grid/list bo'lib ko'rsatiladi
