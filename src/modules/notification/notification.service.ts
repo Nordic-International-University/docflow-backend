@@ -191,23 +191,47 @@ export class NotificationService {
     workflowStepId: string,
     workflowStep: any,
   ): Promise<NotificationResponseDto> {
-    console.log('workflowStep', workflowStep)
-    const documentNumber =
-      workflowStep.workflow?.document?.documentNumber || "Noma'lum raqam"
-    const actionTypeUz = translateActionTypeToUzbek(workflowStep.actionType)
-    const deadline = formatDateToUzbek(workflowStep.dueDate)
+    // Always fetch full context from DB to avoid "Noma'lum raqam"
+    const step = await this.prisma.workflowStep.findFirst({
+      where: { id: workflowStepId },
+      include: {
+        workflow: {
+          include: {
+            document: {
+              include: {
+                documentType: { select: { name: true } },
+                createdBy: { select: { fullname: true, username: true } },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!step) return null
+
+    const doc = step.workflow?.document
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
+    const documentType = doc?.documentType?.name || 'Hujjat'
+    const senderName = doc?.createdBy?.fullname || 'Tizim'
+    const actionTypeUz = translateActionTypeToUzbek(step.actionType)
+    const deadline = formatDateToUzbek(step.dueDate)
 
     return this.createNotification({
       userId,
       type: NotificationType.WORKFLOW_STEP_ASSIGNED,
-      title: 'Yangi Ish Oqimi Bosqichi Tayinlandi',
-      message: `${documentNumber} raqamli hujjat uchun sizga ${actionTypeUz} bosqichi tayinlandi. Muddat: ${deadline}`,
+      title: `Yangi vazifa: ${actionTypeUz}`,
+      message:
+        `Hurmatli foydalanuvchi, sizga ${documentType.toLowerCase()} bo'yicha "${documentTitle}" ` +
+        `${documentNumber ? `(${documentNumber})` : ''} hujjatining ${step.order}-bosqichida ` +
+        `"${actionTypeUz}" amali yuklatildi. Yuboruvchi: ${senderName}. Muddat: ${deadline}.`,
       metadata: {
         workflowStepId,
-        workflowId: workflowStep.workflowId,
-        documentId: workflowStep.workflow?.documentId,
-        actionType: workflowStep.actionType,
-        order: workflowStep.order,
+        workflowId: step.workflowId,
+        documentId: step.workflow?.documentId,
+        actionType: step.actionType,
+        order: step.order,
       },
     })
   }
@@ -222,32 +246,35 @@ export class NotificationService {
       where: { id: workflowStepId },
       include: {
         workflow: {
-          include: { document: true },
+          include: {
+            document: {
+              include: { documentType: { select: { name: true } } },
+            },
+          },
         },
       },
     })
 
-    if (!workflowStep) {
-      this.logger.warn(
-        `Workflow step ${workflowStepId} not found for completed notification`,
-      )
-      return null
-    }
+    if (!workflowStep) return null
 
     const user = await this.prisma.user.findFirst({
       where: { id: completedByUserId },
       select: { fullname: true, username: true },
     })
 
-    const completedBy = user?.fullname || user?.username || 'Foydalanuvchi'
-    const documentNumber =
-      workflowStep.workflow?.document?.documentNumber || "Noma'lum raqam"
+    const completedBy = user?.fullname || 'Foydalanuvchi'
+    const doc = workflowStep.workflow?.document
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
+    const actionTypeUz = translateActionTypeToUzbek(workflowStep.actionType)
 
     return this.createNotification({
       userId,
       type: NotificationType.WORKFLOW_STEP_COMPLETED,
-      title: 'Ish Oqimi Bosqichi Bajarildi',
-      message: `${completedBy} ${documentNumber} raqamli hujjat uchun ish oqimi bosqichini bajarib bo'ldi`,
+      title: `Bosqich bajarildi: ${actionTypeUz}`,
+      message:
+        `${completedBy} "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
+        `hujjatining ${workflowStep.order}-bosqichidagi "${actionTypeUz}" amalini muvaffaqiyatli yakunladi.`,
       metadata: {
         workflowStepId,
         workflowId: workflowStep.workflowId,
@@ -267,34 +294,28 @@ export class NotificationService {
   ): Promise<NotificationResponseDto> {
     const workflowStep = await this.prisma.workflowStep.findFirst({
       where: { id: workflowStepId },
-      include: {
-        workflow: {
-          include: { document: true },
-        },
-      },
+      include: { workflow: { include: { document: true } } },
     })
-
-    if (!workflowStep) {
-      this.logger.warn(
-        `Workflow step ${workflowStepId} not found for rejected notification`,
-      )
-      return null
-    }
+    if (!workflowStep) return null
 
     const user = await this.prisma.user.findFirst({
       where: { id: rejectedByUserId },
-      select: { fullname: true, username: true },
+      select: { fullname: true },
     })
 
-    const rejectedBy = user?.fullname || user?.username || 'Foydalanuvchi'
-    const documentNumber =
-      workflowStep.workflow?.document?.documentNumber || "Noma'lum raqam"
+    const rejectedBy = user?.fullname || 'Foydalanuvchi'
+    const doc = workflowStep.workflow?.document
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
+    const actionTypeUz = translateActionTypeToUzbek(workflowStep.actionType)
 
     return this.createNotification({
       userId,
       type: NotificationType.WORKFLOW_STEP_REJECTED,
-      title: 'Ish Oqimi Bosqichi Rad Etildi',
-      message: `${rejectedBy} ${documentNumber} raqamli hujjat uchun ish oqimi bosqichini rad etdi`,
+      title: `Bosqich rad etildi: ${actionTypeUz}`,
+      message:
+        `Diqqat! ${rejectedBy} "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
+        `hujjatining ${workflowStep.order}-bosqichini rad etdi. Sabab: "${rejectionReason || 'ko\'rsatilmagan'}".`,
       metadata: {
         workflowStepId,
         workflowId: workflowStep.workflowId,
@@ -334,18 +355,20 @@ export class NotificationService {
       select: { fullname: true, username: true },
     })
 
-    const reassignedBy =
-      user?.fullname || user?.username || 'Ish oqimi yaratuvchisi'
-    const documentNumber =
-      workflowStep.workflow?.document?.documentNumber || "Noma'lum raqam"
+    const reassignedBy = user?.fullname || 'Ish jarayoni yaratuvchisi'
+    const doc = workflowStep.workflow?.document as any
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
     const actionTypeUz = translateActionTypeToUzbek(workflowStep.actionType)
     const deadline = formatDateToUzbek(workflowStep.dueDate)
 
     return this.createNotification({
       userId: newAssignedUserId,
       type: NotificationType.WORKFLOW_STEP_REASSIGNED,
-      title: 'Ish Oqimi Bosqichi Qayta Tayinlandi',
-      message: `${reassignedBy} ${documentNumber} raqamli hujjat uchun ${actionTypeUz} bosqichini sizga qayta tayinladi. Muddat: ${deadline}`,
+      title: `Bosqich qayta tayinlandi: ${actionTypeUz}`,
+      message:
+        `${reassignedBy} sizga "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
+        `hujjatining ${workflowStep.order}-bosqichidagi "${actionTypeUz}" amalini qayta yukladi. Muddat: ${deadline}.`,
       metadata: {
         workflowStepId,
         workflowId: workflowStep.workflowId,
@@ -366,19 +389,19 @@ export class NotificationService {
       where: { id: workflowId },
       include: { document: true },
     })
+    if (!workflow) return null
 
-    if (!workflow) {
-      this.logger.warn(`Workflow ${workflowId} not found for notification`)
-      return null
-    }
-
-    const documentNumber = workflow.document?.documentNumber || "Noma'lum raqam"
+    const doc = workflow.document as any
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
 
     return this.createNotification({
       userId,
       type: NotificationType.WORKFLOW_COMPLETED,
-      title: 'Ish Oqimi Yakunlandi',
-      message: `${documentNumber} raqamli hujjat uchun ish oqimi yakunlandi`,
+      title: 'Hujjat tasdiqlandi',
+      message:
+        `Tabriklaymiz! "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
+        `hujjati barcha bosqichlarni muvaffaqiyatli o'tib, rasman tasdiqlandi.`,
       metadata: {
         workflowId,
         documentId: workflow.documentId,
@@ -414,15 +437,19 @@ export class NotificationService {
       select: { fullname: true, username: true },
     })
 
-    const commentedBy = user?.fullname || user?.username || 'Foydalanuvchi'
-    const documentNumber =
-      workflowStep.workflow?.document?.documentNumber || "Noma'lum raqam"
+    const commentedBy = user?.fullname || 'Foydalanuvchi'
+    const doc = workflowStep.workflow?.document as any
+    const documentTitle = doc?.title || 'hujjat'
+    const documentNumber = doc?.documentNumber || ''
+    const shortComment = comment.length > 100 ? comment.substring(0, 100) + '...' : comment
 
     return this.createNotification({
       userId,
       type: NotificationType.WORKFLOW_STEP_COMMENT,
-      title: 'Ish Oqimi Bosqichiga Yangi Izoh',
-      message: `${commentedBy} ${documentNumber} raqamli hujjat uchun ish oqimi bosqichiga izoh qoldirdi`,
+      title: 'Yangi izoh',
+      message:
+        `${commentedBy} "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
+        `hujjati bo'yicha izoh qoldirdi: "${shortComment}"`,
       metadata: {
         workflowStepId,
         workflowId: workflowStep.workflowId,
@@ -449,16 +476,18 @@ export class NotificationService {
       select: { fullname: true, username: true },
     })
 
-    const assignerName =
-      assignedBy?.fullname || assignedBy?.username || 'Foydalanuvchi'
+    const assignerName = assignedBy?.fullname || 'Loyiha rahbari'
     const taskRef = `${params.projectKey}-${params.taskNumber}`
-    const scoreText = params.score != null ? ` (${params.score} ball)` : ''
+    const scoreText = params.score != null ? `, ${params.score} ball` : ''
 
     return this.createNotification({
       userId: params.userId,
       type: NotificationType.TASK_ASSIGNED,
-      title: 'Yangi vazifa biriktirildi',
-      message: `${assignerName} sizga "${params.taskTitle}" vazifasini biriktirdi — ${taskRef}${scoreText}`,
+      title: 'Yangi topshiriq',
+      message:
+        `Hurmatli foydalanuvchi, ${assignerName} sizga yangi topshiriq biriktirdi: ` +
+        `"${params.taskTitle}" (${taskRef}${scoreText}). ` +
+        `Iltimos, topshiriqni belgilangan muddatda bajarishingizni so'raymiz.`,
       metadata: {
         taskId: params.taskId,
         taskNumber: params.taskNumber,
