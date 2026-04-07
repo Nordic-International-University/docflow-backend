@@ -1203,6 +1203,24 @@
       ]
     },
     {
+      "module": "chat",
+      "description": "Chat tizimi: shaxsiy va guruh xabarlar, qo'ng'iroqlar, forwarding",
+      "permissions": [
+        { "key": "chat:list", "name": "Chatlar ro'yxatini ko'rish", "description": "Foydalanuvchi chatlarini ro'yxat qilib ko'rish" },
+        { "key": "chat:read", "name": "Chat xabarlarini o'qish", "description": "Chat ichidagi xabarlarni ko'rish" },
+        { "key": "chat:send", "name": "Xabar yuborish", "description": "Chatga xabar yuborish" },
+        { "key": "chat:create_direct", "name": "Shaxsiy chat yaratish", "description": "Boshqa foydalanuvchi bilan to'g'ridan-to'g'ri chat ochish" },
+        { "key": "chat:create_group", "name": "Guruh yaratish", "description": "Yangi guruh chat yaratish" },
+        { "key": "chat:manage_group", "name": "Guruhni boshqarish", "description": "Guruh a'zolari, sozlamalari va rollarini o'zgartirish" },
+        { "key": "chat:delete_any_message", "name": "Istalgan xabarni o'chirish", "description": "Boshqa foydalanuvchilarning xabarlarini o'chirish (admin)" },
+        { "key": "chat:forward", "name": "Xabarni forward qilish", "description": "Xabarlarni boshqa chatlarga yo'naltirish" },
+        { "key": "chat:forward_document", "name": "Hujjat/workflow/topshiriq yuborish", "description": "DocFlow obyektlarini (hujjat, workflow, topshiriq) chatda yuborish" },
+        { "key": "chat:call_audio", "name": "Ovozli qo'ng'iroq", "description": "Ovozli qo'ng'iroqlar qilish" },
+        { "key": "chat:call_video", "name": "Video qo'ng'iroq", "description": "Video qo'ng'iroqlar qilish" },
+        { "key": "chat:settings", "name": "Chat sozlamalari", "description": "Shaxsiy chat sozlamalarini o'zgartirish" }
+      ]
+    },
+    {
       "module": "admin",
       "description": "Tizim administratori moduli",
       "permissions": [

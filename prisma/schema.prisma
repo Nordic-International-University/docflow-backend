@@ -129,6 +129,15 @@ model User {
   taskActivities                TaskActivity[]                  @relation("TaskActivityUser")
   taskTimeEntries               TaskTimeEntry[]                 @relation("TaskTimeEntryUser")
 
+  // Chat relations
+  chatMemberships       ChatMember[]
+  sentChatMessages      ChatMessage[]           @relation("ChatMessageSender")
+  chatMessageReads      ChatMessageRead[]       @relation("ChatMessageReader")
+  chatMessageReactions  ChatMessageReaction[]   @relation("ChatMessageReactor")
+  chatSettings          UserChatSettings?       @relation("UserChatSettingsOwner")
+  initiatedCalls        CallSession[]           @relation("CallInitiator")
+  callParticipations    CallParticipant[]       @relation("CallUserParticipant")
+
   createdAt           DateTime                   @map("created_at")     @db.Timestamp       @default(now())
   updatedAt           DateTime                   @map("updated_at")     @db.Timestamp       @updatedAt
   deletedAt           DateTime?                  @map("deleted_at")     @db.Timestamp
@@ -1382,4 +1391,219 @@ model AiMessage {
   @@id([id])
   @@index([userId, createdAt])
   @@map("ai_message")
+}
+
+// ============ CHAT SYSTEM ============
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+enum ChatMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  VOICE
+  FILE
+  SYSTEM
+  FORWARD
+  WORKFLOW
+  DOCUMENT
+  TASK
+  CALL
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  RINGING
+  ACTIVE
+  ENDED
+  MISSED
+  REJECTED
+}
+
+model Chat {
+  id            String        @map("id")             @db.Uuid        @default(dbgenerated("GEN_RANDOM_UUID()"))
+  type          ChatType      @map("type")
+  title         String?       @map("title")          @db.VarChar(255)
+  description   String?       @map("description")    @db.Text
+  avatarUrl     String?       @map("avatar_url")     @db.VarChar(500)
+  createdById   String?       @map("created_by_id")  @db.Uuid
+  lastMessageAt DateTime?     @map("last_message_at") @db.Timestamp
+
+  members       ChatMember[]
+  messages      ChatMessage[]
+  calls         CallSession[]
+
+  createdAt     DateTime      @map("created_at")     @db.Timestamp   @default(now())
+  updatedAt     DateTime      @map("updated_at")     @db.Timestamp   @updatedAt
+  deletedAt     DateTime?     @map("deleted_at")     @db.Timestamp
+
+  @@id([id])
+  @@index([type, lastMessageAt])
+  @@map("chat")
+}
+
+model ChatMember {
+  id         String         @map("id")           @db.Uuid          @default(dbgenerated("GEN_RANDOM_UUID()"))
+  chatId     String         @map("chat_id")      @db.Uuid
+  userId     String         @map("user_id")      @db.Uuid
+  role       ChatMemberRole @map("role")                           @default(MEMBER)
+  joinedAt   DateTime       @map("joined_at")    @db.Timestamp     @default(now())
+  lastReadAt DateTime?      @map("last_read_at") @db.Timestamp
+  mutedUntil DateTime?      @map("muted_until")  @db.Timestamp
+  isArchived Boolean        @map("is_archived")                    @default(false)
+  isPinned   Boolean        @map("is_pinned")                      @default(false)
+  leftAt     DateTime?      @map("left_at")      @db.Timestamp
+
+  chat       Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([id])
+  @@unique([chatId, userId])
+  @@index([userId])
+  @@map("chat_member")
+}
+
+model ChatMessage {
+  id              String                 @map("id")                @db.Uuid          @default(dbgenerated("GEN_RANDOM_UUID()"))
+  chatId          String                 @map("chat_id")           @db.Uuid
+  senderId        String                 @map("sender_id")         @db.Uuid
+  type            ChatMessageType        @map("type")                                 @default(TEXT)
+  content         String?                @map("content")           @db.Text
+  replyToId       String?                @map("reply_to_id")       @db.Uuid
+  forwardedFromId String?                @map("forwarded_from_id") @db.Uuid
+
+  fileUrl         String?                @map("file_url")          @db.VarChar(500)
+  fileName        String?                @map("file_name")         @db.VarChar(255)
+  fileSize        Int?                   @map("file_size")
+  mimeType        String?                @map("mime_type")         @db.VarChar(100)
+  duration        Int?                   @map("duration")
+  thumbnailUrl    String?                @map("thumbnail_url")     @db.VarChar(500)
+  width           Int?                   @map("width")
+  height          Int?                   @map("height")
+
+  refType         String?                @map("ref_type")          @db.VarChar(50)
+  refId           String?                @map("ref_id")            @db.Uuid
+  refSnapshot     Json?                  @map("ref_snapshot")      @db.JsonB
+
+  editedAt        DateTime?              @map("edited_at")         @db.Timestamp
+
+  chat            Chat                   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender          User                   @relation("ChatMessageSender", fields: [senderId], references: [id])
+  replyTo         ChatMessage?           @relation("ChatMessageReply", fields: [replyToId], references: [id])
+  replies         ChatMessage[]          @relation("ChatMessageReply")
+  forwardedFrom   ChatMessage?           @relation("ChatMessageForward", fields: [forwardedFromId], references: [id])
+  forwards        ChatMessage[]          @relation("ChatMessageForward")
+  reads           ChatMessageRead[]
+  reactions       ChatMessageReaction[]
+
+  createdAt       DateTime               @map("created_at")        @db.Timestamp     @default(now())
+  updatedAt       DateTime               @map("updated_at")        @db.Timestamp     @updatedAt
+  deletedAt       DateTime?              @map("deleted_at")        @db.Timestamp
+
+  @@id([id])
+  @@index([chatId, createdAt])
+  @@index([senderId])
+  @@map("chat_message")
+}
+
+model ChatMessageRead {
+  id        String      @map("id")         @db.Uuid      @default(dbgenerated("GEN_RANDOM_UUID()"))
+  messageId String      @map("message_id") @db.Uuid
+  userId    String      @map("user_id")    @db.Uuid
+  readAt    DateTime    @map("read_at")    @db.Timestamp @default(now())
+
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatMessageReader", fields: [userId], references: [id])
+
+  @@id([id])
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@map("chat_message_read")
+}
+
+model ChatMessageReaction {
+  id        String      @map("id")         @db.Uuid        @default(dbgenerated("GEN_RANDOM_UUID()"))
+  messageId String      @map("message_id") @db.Uuid
+  userId    String      @map("user_id")    @db.Uuid
+  emoji     String      @map("emoji")      @db.VarChar(20)
+  createdAt DateTime    @map("created_at") @db.Timestamp   @default(now())
+
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatMessageReactor", fields: [userId], references: [id])
+
+  @@id([id])
+  @@unique([messageId, userId, emoji])
+  @@map("chat_message_reaction")
+}
+
+model UserChatSettings {
+  id                String   @map("id")                 @db.Uuid      @default(dbgenerated("GEN_RANDOM_UUID()"))
+  userId            String   @map("user_id")            @db.Uuid      @unique
+  allowCalls        Boolean  @map("allow_calls")                      @default(true)
+  allowVideoCalls   Boolean  @map("allow_video_calls")                @default(true)
+  allowGroupInvites Boolean  @map("allow_group_invites")              @default(true)
+  showOnlineStatus  Boolean  @map("show_online_status")               @default(true)
+  showLastSeen      Boolean  @map("show_last_seen")                   @default(true)
+  showReadReceipts  Boolean  @map("show_read_receipts")               @default(true)
+  notifySound       Boolean  @map("notify_sound")                     @default(true)
+  notifyPreview     Boolean  @map("notify_preview")                   @default(true)
+
+  user              User     @relation("UserChatSettingsOwner", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @map("created_at")         @db.Timestamp @default(now())
+  updatedAt         DateTime @map("updated_at")         @db.Timestamp @updatedAt
+
+  @@id([id])
+  @@map("user_chat_settings")
+}
+
+model CallSession {
+  id          String            @map("id")           @db.Uuid      @default(dbgenerated("GEN_RANDOM_UUID()"))
+  chatId      String            @map("chat_id")      @db.Uuid
+  initiatorId String            @map("initiator_id") @db.Uuid
+  type        CallType          @map("type")
+  status      CallStatus        @map("status")                    @default(RINGING)
+  startedAt   DateTime?         @map("started_at")   @db.Timestamp
+  endedAt     DateTime?         @map("ended_at")     @db.Timestamp
+  duration    Int?              @map("duration")
+
+  chat        Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  initiator   User              @relation("CallInitiator", fields: [initiatorId], references: [id])
+  participants CallParticipant[]
+
+  createdAt   DateTime          @map("created_at")   @db.Timestamp @default(now())
+  updatedAt   DateTime          @map("updated_at")   @db.Timestamp @updatedAt
+
+  @@id([id])
+  @@index([chatId, createdAt])
+  @@map("call_session")
+}
+
+model CallParticipant {
+  id       String      @map("id")        @db.Uuid      @default(dbgenerated("GEN_RANDOM_UUID()"))
+  callId   String      @map("call_id")   @db.Uuid
+  userId   String      @map("user_id")   @db.Uuid
+  joinedAt DateTime?   @map("joined_at") @db.Timestamp
+  leftAt   DateTime?   @map("left_at")   @db.Timestamp
+  accepted Boolean     @map("accepted")                @default(false)
+
+  call     CallSession @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user     User        @relation("CallUserParticipant", fields: [userId], references: [id])
+
+  @@id([id])
+  @@unique([callId, userId])
+  @@map("call_participant")
 }
