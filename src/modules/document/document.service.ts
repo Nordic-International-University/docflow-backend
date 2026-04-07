@@ -22,6 +22,7 @@ import {
   DocumentGeneratorUtil,
   DocumentNumberGenerator,
   removeWatermark,
+  translateActionTypeToUzbek,
 } from '@common'
 import { WorkflowPermissionService } from '../wopi/workflow-permission.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
