@@ -29,12 +29,16 @@ import {
   ForwardEntityDto,
   ForwardMessageDto,
   InitiateCallDto,
+  JoinByInviteDto,
+  JoinByUsernameDto,
   MuteChatDto,
   PinChatDto,
   SearchMessagesDto,
   SendMessageDto,
   UpdateChatSettingsDto,
   UpdateGroupChatDto,
+  UpdateGroupPermissionsDto,
+  UpdateGroupVisibilityDto,
 } from './dtos'
 
 @ApiBearerAuth()
@@ -107,6 +111,48 @@ export class ChatController {
     @Req() req: any,
   ) {
     return this.chat.getMessageReads(messageId, this.ctx(req))
+  }
+
+  // ============ BLOCK / PUBLIC SEARCH (Faza 3) ============
+
+  @Post('block/:userId')
+  @Permissions(PERMISSIONS.CHAT.SETTINGS)
+  async blockUser(@Param('userId') userId: string, @Req() req: any) {
+    return this.chat.blockUser(userId, this.ctx(req))
+  }
+
+  @Delete('block/:userId')
+  @Permissions(PERMISSIONS.CHAT.SETTINGS)
+  async unblockUser(@Param('userId') userId: string, @Req() req: any) {
+    return this.chat.unblockUser(userId, this.ctx(req))
+  }
+
+  @Get('block/list')
+  @Permissions(PERMISSIONS.CHAT.SETTINGS)
+  async listBlocked(@Req() req: any) {
+    return this.chat.getBlockedUsers(this.ctx(req))
+  }
+
+  @Get('public/search')
+  @Permissions(PERMISSIONS.CHAT.LIST)
+  async publicSearch(@Query('q') q: string) {
+    return this.chat.searchPublicChats(q || '')
+  }
+
+  @Post('join/invite')
+  @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
+  async joinByInvite(@Body() payload: JoinByInviteDto, @Req() req: any) {
+    const result = await this.chat.joinByInviteCode(payload.code, this.ctx(req))
+    this.gateway.emitChatCreated(result.chatId, [req.user.userId])
+    return result
+  }
+
+  @Post('join/username')
+  @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
+  async joinByUsername(@Body() payload: JoinByUsernameDto, @Req() req: any) {
+    const result = await this.chat.joinByUsername(payload.username, this.ctx(req))
+    this.gateway.emitChatCreated(result.chatId, [req.user.userId])
+    return result
   }
 
   // ============ CHAT BY ID ============
@@ -375,6 +421,44 @@ export class ChatController {
     @Req() req: any,
   ) {
     return this.chat.archiveChat(id, payload.archived, this.ctx(req))
+  }
+
+  @Post(':id/clear-history')
+  @Permissions(PERMISSIONS.CHAT.READ)
+  async clearHistory(@Param('id') id: string, @Req() req: any) {
+    return this.chat.clearChatHistory(id, this.ctx(req))
+  }
+
+  // ============ GROUP VISIBILITY / INVITE / PERMISSIONS (Faza 3) ============
+
+  @Post(':id/visibility')
+  @Permissions(PERMISSIONS.CHAT.MANAGE_GROUP)
+  async updateVisibility(
+    @Param('id') id: string,
+    @Body() payload: UpdateGroupVisibilityDto,
+    @Req() req: any,
+  ) {
+    const result = await this.chat.updateGroupVisibility(id, payload, this.ctx(req))
+    this.gateway.emitChatUpdated(id, { visibility: result.visibility })
+    return result
+  }
+
+  @Post(':id/permissions')
+  @Permissions(PERMISSIONS.CHAT.MANAGE_GROUP)
+  async updatePermissions(
+    @Param('id') id: string,
+    @Body() payload: UpdateGroupPermissionsDto,
+    @Req() req: any,
+  ) {
+    const result = await this.chat.updateGroupPermissions(id, payload, this.ctx(req))
+    this.gateway.emitChatUpdated(id, { permissions: result })
+    return result
+  }
+
+  @Post(':id/invite/regenerate')
+  @Permissions(PERMISSIONS.CHAT.MANAGE_GROUP)
+  async regenerateInvite(@Param('id') id: string, @Req() req: any) {
+    return this.chat.regenerateInviteCode(id, this.ctx(req))
   }
 
   // ============ CALLS ============

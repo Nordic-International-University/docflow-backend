@@ -235,6 +235,54 @@ export class SearchMessagesDto {
   chatId?: string
 }
 
+export enum GroupVisibilityDto {
+  PRIVATE = 'PRIVATE',
+  PUBLIC = 'PUBLIC',
+}
+
+export class UpdateGroupVisibilityDto {
+  @ApiProperty({ enum: GroupVisibilityDto })
+  @IsEnum(GroupVisibilityDto)
+  visibility: GroupVisibilityDto
+
+  @ApiPropertyOptional({ description: "Public guruh uchun unique username" })
+  @IsOptional()
+  @IsString()
+  @Length(3, 32)
+  username?: string
+}
+
+export class UpdateGroupPermissionsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  allowMemberInvite?: boolean
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  allowMemberSendMedia?: boolean
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  allowMemberPin?: boolean
+}
+
+export class JoinByInviteDto {
+  @ApiProperty()
+  @IsString()
+  @Length(4, 64)
+  code: string
+}
+
+export class JoinByUsernameDto {
+  @ApiProperty()
+  @IsString()
+  @Length(3, 32)
+  username: string
+}
+
 export class InitiateCallDto {
   @ApiProperty({ enum: ['AUDIO', 'VIDEO'] })
   @IsEnum(['AUDIO', 'VIDEO'])

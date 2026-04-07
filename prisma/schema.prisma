@@ -137,6 +137,8 @@ model User {
   chatSettings          UserChatSettings?       @relation("UserChatSettingsOwner")
   initiatedCalls        CallSession[]           @relation("CallInitiator")
   callParticipations    CallParticipant[]       @relation("CallUserParticipant")
+  blocksMade            UserBlock[]             @relation("UserBlockBlocker")
+  blocksReceived        UserBlock[]             @relation("UserBlockBlocked")
 
   createdAt           DateTime                   @map("created_at")     @db.Timestamp       @default(now())
   updatedAt           DateTime                   @map("updated_at")     @db.Timestamp       @updatedAt
@@ -1400,6 +1402,11 @@ enum ChatType {
   GROUP
 }
 
+enum GroupVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 enum ChatMemberRole {
   OWNER
   ADMIN
@@ -1434,13 +1441,21 @@ enum CallStatus {
 }
 
 model Chat {
-  id            String        @map("id")             @db.Uuid        @default(dbgenerated("GEN_RANDOM_UUID()"))
-  type          ChatType      @map("type")
-  title         String?       @map("title")          @db.VarChar(255)
-  description   String?       @map("description")    @db.Text
-  avatarUrl     String?       @map("avatar_url")     @db.VarChar(500)
-  createdById   String?       @map("created_by_id")  @db.Uuid
-  lastMessageAt DateTime?     @map("last_message_at") @db.Timestamp
+  id            String           @map("id")             @db.Uuid        @default(dbgenerated("GEN_RANDOM_UUID()"))
+  type          ChatType         @map("type")
+  title         String?          @map("title")          @db.VarChar(255)
+  description   String?          @map("description")    @db.Text
+  avatarUrl     String?          @map("avatar_url")     @db.VarChar(500)
+  createdById   String?          @map("created_by_id")  @db.Uuid
+  lastMessageAt DateTime?        @map("last_message_at") @db.Timestamp
+
+  // GROUP-only fields
+  visibility             GroupVisibility? @map("visibility")             @default(PRIVATE)
+  username               String?          @map("username")               @db.VarChar(100) @unique
+  inviteCode             String?          @map("invite_code")            @db.VarChar(64)  @unique
+  allowMemberInvite      Boolean          @map("allow_member_invite")    @default(false)
+  allowMemberSendMedia   Boolean          @map("allow_member_send_media") @default(true)
+  allowMemberPin         Boolean          @map("allow_member_pin")       @default(false)
 
   members       ChatMember[]
   messages      ChatMessage[]
@@ -1452,6 +1467,7 @@ model Chat {
 
   @@id([id])
   @@index([type, lastMessageAt])
+  @@index([username])
   @@map("chat")
 }
 
@@ -1460,12 +1476,13 @@ model ChatMember {
   chatId     String         @map("chat_id")      @db.Uuid
   userId     String         @map("user_id")      @db.Uuid
   role       ChatMemberRole @map("role")                           @default(MEMBER)
-  joinedAt   DateTime       @map("joined_at")    @db.Timestamp     @default(now())
-  lastReadAt DateTime?      @map("last_read_at") @db.Timestamp
-  mutedUntil DateTime?      @map("muted_until")  @db.Timestamp
-  isArchived Boolean        @map("is_archived")                    @default(false)
-  isPinned   Boolean        @map("is_pinned")                      @default(false)
-  leftAt     DateTime?      @map("left_at")      @db.Timestamp
+  joinedAt         DateTime       @map("joined_at")          @db.Timestamp  @default(now())
+  lastReadAt       DateTime?      @map("last_read_at")       @db.Timestamp
+  mutedUntil       DateTime?      @map("muted_until")        @db.Timestamp
+  isArchived       Boolean        @map("is_archived")                       @default(false)
+  isPinned         Boolean        @map("is_pinned")                         @default(false)
+  historyClearedAt DateTime?      @map("history_cleared_at") @db.Timestamp
+  leftAt           DateTime?      @map("left_at")            @db.Timestamp
 
   chat       Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1481,9 +1498,13 @@ model ChatMessage {
   chatId          String                 @map("chat_id")           @db.Uuid
   senderId        String                 @map("sender_id")         @db.Uuid
   type            ChatMessageType        @map("type")                                 @default(TEXT)
-  content         String?                @map("content")           @db.Text
-  replyToId       String?                @map("reply_to_id")       @db.Uuid
-  forwardedFromId String?                @map("forwarded_from_id") @db.Uuid
+  content               String?          @map("content")                  @db.Text
+  replyToId             String?          @map("reply_to_id")              @db.Uuid
+  forwardedFromId       String?          @map("forwarded_from_id")        @db.Uuid
+  forwardedFromUserId   String?          @map("forwarded_from_user_id")   @db.Uuid
+  forwardedFromChatId   String?          @map("forwarded_from_chat_id")   @db.Uuid
+  forwardedFromName     String?          @map("forwarded_from_name")      @db.VarChar(255)
+  forwardedFromChatTitle String?         @map("forwarded_from_chat_title") @db.VarChar(255)
 
   fileUrl         String?                @map("file_url")          @db.VarChar(500)
   fileName        String?                @map("file_name")         @db.VarChar(255)
@@ -1606,4 +1627,19 @@ model CallParticipant {
   @@id([id])
   @@unique([callId, userId])
   @@map("call_participant")
+}
+
+model UserBlock {
+  id         String   @map("id")          @db.Uuid      @default(dbgenerated("GEN_RANDOM_UUID()"))
+  blockerId  String   @map("blocker_id")  @db.Uuid
+  blockedId  String   @map("blocked_id")  @db.Uuid
+  createdAt  DateTime @map("created_at")  @db.Timestamp @default(now())
+
+  blocker    User     @relation("UserBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("UserBlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([id])
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_block")
 }

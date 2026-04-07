@@ -332,12 +332,27 @@ export class ChatService {
         : null
     const peer = peerMember ? peerMember.user : null
 
+    // DIRECT chatda peer bloklanganmi
+    let blockStatus: { iBlocked: boolean; blockedMe: boolean } | null = null
+    if (chat.type === 'DIRECT' && peer) {
+      const [a, b] = await Promise.all([
+        this.prisma.userBlock.findFirst({
+          where: { blockerId: ctx.userId, blockedId: peer.id },
+        }),
+        this.prisma.userBlock.findFirst({
+          where: { blockerId: peer.id, blockedId: ctx.userId },
+        }),
+      ])
+      blockStatus = { iBlocked: !!a, blockedMe: !!b }
+    }
+
     return {
       ...chat,
       members: membersWithOnline,
       membersCount: chat.members.length,
       peer,
-      // DIRECT uchun title'ni peer nomiga aylantirish (ro'yxat bilan mos kelishi uchun)
+      blockStatus,
+      // DIRECT uchun title'ni peer nomiga aylantirish
       title: chat.type === 'DIRECT' ? peer?.fullname || null : chat.title,
       avatarUrl: chat.type === 'DIRECT' ? peer?.avatarUrl || null : chat.avatarUrl,
     }
@@ -456,15 +471,24 @@ export class ChatService {
     ctx: Ctx,
     query: { before?: string; limit?: number },
   ) {
-    await this.ensureMember(chatId, ctx.userId)
+    const member = await this.ensureMember(chatId, ctx.userId)
     const limit = Math.min(query.limit || 50, 100)
     const where: any = { chatId, deletedAt: null }
+    // "Clear history" — foydalanuvchi tarixni tozalagan bo'lsa undan oldingisini yashirish
+    if (member.historyClearedAt) {
+      where.createdAt = { gt: member.historyClearedAt }
+    }
     if (query.before) {
       const anchor = await this.prisma.chatMessage.findFirst({
         where: { id: query.before },
         select: { createdAt: true },
       })
-      if (anchor) where.createdAt = { lt: anchor.createdAt }
+      if (anchor) {
+        where.createdAt = {
+          ...(where.createdAt || {}),
+          lt: anchor.createdAt,
+        }
+      }
     }
 
     const messages = await this.prisma.chatMessage.findMany({
@@ -491,16 +515,85 @@ export class ChatService {
       },
     })
 
+    // Forward attribution — original user/chat ma'lumotlarini to'plash
+    const fwdUserIds = Array.from(
+      new Set(messages.map((m) => m.forwardedFromUserId).filter(Boolean) as string[]),
+    )
+    const fwdChatIds = Array.from(
+      new Set(messages.map((m) => m.forwardedFromChatId).filter(Boolean) as string[]),
+    )
+    const [fwdUsers, fwdChats] = await Promise.all([
+      fwdUserIds.length
+        ? this.prisma.user.findMany({
+            where: { id: { in: fwdUserIds } },
+            select: { id: true, fullname: true, username: true, avatarUrl: true, deletedAt: true },
+          })
+        : Promise.resolve([]),
+      fwdChatIds.length
+        ? this.prisma.chat.findMany({
+            where: { id: { in: fwdChatIds } },
+            select: {
+              id: true,
+              type: true,
+              title: true,
+              username: true,
+              avatarUrl: true,
+              visibility: true,
+              deletedAt: true,
+            },
+          })
+        : Promise.resolve([]),
+    ])
+    const userMap = new Map(fwdUsers.map((u) => [u.id, u]))
+    const chatMap = new Map(fwdChats.map((c) => [c.id, c]))
+
     return {
       count: messages.length,
       messages: messages
-        .map((m) => ({
-          ...m,
-          content: this.crypto.decrypt(m.content),
-          replyTo: m.replyTo
-            ? { ...m.replyTo, content: this.crypto.decrypt(m.replyTo.content) }
-            : null,
-        }))
+        .map((m) => {
+          // Forward attribution
+          let forwardedFrom: any = null
+          if (m.forwardedFromUserId || m.forwardedFromChatId || m.forwardedFromName) {
+            const user = m.forwardedFromUserId
+              ? userMap.get(m.forwardedFromUserId)
+              : null
+            const chat = m.forwardedFromChatId
+              ? chatMap.get(m.forwardedFromChatId)
+              : null
+            forwardedFrom = {
+              user: user && !user.deletedAt
+                ? {
+                    id: user.id,
+                    fullname: user.fullname,
+                    username: user.username,
+                    avatarUrl: user.avatarUrl,
+                  }
+                : m.forwardedFromName
+                  ? { fullname: m.forwardedFromName, deleted: true }
+                  : null,
+              chat: chat && !chat.deletedAt
+                ? {
+                    id: chat.id,
+                    type: chat.type,
+                    title: chat.title,
+                    username: chat.username,
+                    avatarUrl: chat.avatarUrl,
+                    visibility: chat.visibility,
+                  }
+                : m.forwardedFromChatTitle
+                  ? { title: m.forwardedFromChatTitle, deleted: true }
+                  : null,
+            }
+          }
+          return {
+            ...m,
+            content: this.crypto.decrypt(m.content),
+            replyTo: m.replyTo
+              ? { ...m.replyTo, content: this.crypto.decrypt(m.replyTo.content) }
+              : null,
+            forwardedFrom,
+          }
+        })
         .reverse(),
     }
   }
@@ -542,6 +635,39 @@ export class ChatService {
 
     if (type === 'TEXT' && !payload.content?.trim()) {
       throw new BadRequestException('Bo\'sh xabar yuborib bo\'lmaydi')
+    }
+
+    // DIRECT chatda peer bloklamaganligini tekshirish
+    const chatInfo = await this.prisma.chat.findFirst({
+      where: { id: chatId },
+      select: {
+        type: true,
+        allowMemberSendMedia: true,
+        members: {
+          where: { leftAt: null },
+          select: { userId: true, role: true },
+        },
+      },
+    })
+    if (chatInfo?.type === 'DIRECT') {
+      const peer = chatInfo.members.find((mm) => mm.userId !== ctx.userId)
+      if (peer) {
+        const blocked = await this.prisma.userBlock.findFirst({
+          where: { blockerId: peer.userId, blockedId: ctx.userId },
+        })
+        if (blocked) {
+          throw new ForbiddenException('Sizni bu foydalanuvchi bloklagan')
+        }
+      }
+    }
+    // GROUP: media yuborish cheklangan bo'lsa faqat admin/owner
+    if (chatInfo?.type === 'GROUP' && type !== 'TEXT' && !chatInfo.allowMemberSendMedia) {
+      const myRole = chatInfo.members.find((m) => m.userId === ctx.userId)?.role
+      if (myRole !== 'OWNER' && myRole !== 'ADMIN' && !this.isAdmin(ctx)) {
+        throw new ForbiddenException(
+          "Bu guruhda faqat adminlar media yubora oladi",
+        )
+      }
     }
 
     // Reply tekshirish
@@ -752,9 +878,23 @@ export class ChatService {
   async forwardMessage(messageId: string, payload: ForwardMessageDto, ctx: Ctx) {
     const source = await this.prisma.chatMessage.findFirst({
       where: { id: messageId, deletedAt: null },
+      include: {
+        sender: { select: { id: true, fullname: true } },
+        chat: { select: { id: true, type: true, title: true } },
+      },
     })
     if (!source) throw new NotFoundException('Xabar topilmadi')
     await this.ensureMember(source.chatId, ctx.userId)
+
+    // Agar source o'zi forward bo'lsa — original manbani saqlaymiz (Telegram kabi)
+    const origUserId = source.forwardedFromUserId || source.senderId
+    const origName = source.forwardedFromName || source.sender?.fullname || null
+    const origChatId =
+      source.forwardedFromChatId ||
+      (source.chat?.type === 'GROUP' ? source.chatId : null)
+    const origChatTitle =
+      source.forwardedFromChatTitle ||
+      (source.chat?.type === 'GROUP' ? source.chat.title : null)
 
     const results: any[] = []
     for (const toChatId of payload.toChatIds) {
@@ -766,6 +906,10 @@ export class ChatService {
           type: source.type,
           content: source.content, // already encrypted
           forwardedFromId: source.id,
+          forwardedFromUserId: origUserId,
+          forwardedFromChatId: origChatId,
+          forwardedFromName: origName,
+          forwardedFromChatTitle: origChatTitle,
           fileUrl: source.fileUrl,
           fileName: source.fileName,
           fileSize: source.fileSize,
@@ -1333,6 +1477,224 @@ export class ChatService {
       }
     } catch (err: any) {
       this.logger.error(`pushTelegramNotification failed: ${err.message}`)
+    }
+  }
+
+  // ============ FAZA 3: BLOCK / CLEAR HISTORY / PUBLIC GROUPS ============
+
+  async blockUser(targetUserId: string, ctx: Ctx) {
+    if (targetUserId === ctx.userId) {
+      throw new BadRequestException("O'zingizni bloklay olmaysiz")
+    }
+    const target = await this.prisma.user.findFirst({
+      where: { id: targetUserId, deletedAt: null },
+      select: { id: true },
+    })
+    if (!target) throw new NotFoundException('Foydalanuvchi topilmadi')
+    await this.prisma.userBlock.upsert({
+      where: { blockerId_blockedId: { blockerId: ctx.userId, blockedId: targetUserId } },
+      create: { blockerId: ctx.userId, blockedId: targetUserId },
+      update: {},
+    })
+    return { success: true, blocked: true, userId: targetUserId }
+  }
+
+  async unblockUser(targetUserId: string, ctx: Ctx) {
+    await this.prisma.userBlock.deleteMany({
+      where: { blockerId: ctx.userId, blockedId: targetUserId },
+    })
+    return { success: true, blocked: false, userId: targetUserId }
+  }
+
+  async getBlockedUsers(ctx: Ctx) {
+    const blocks = await this.prisma.userBlock.findMany({
+      where: { blockerId: ctx.userId },
+      include: {
+        blocked: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
+      },
+    })
+    return {
+      count: blocks.length,
+      users: blocks.map((b) => ({ ...b.blocked, blockedAt: b.createdAt })),
+    }
+  }
+
+  async clearChatHistory(chatId: string, ctx: Ctx) {
+    await this.ensureMember(chatId, ctx.userId)
+    await this.prisma.chatMember.updateMany({
+      where: { chatId, userId: ctx.userId, leftAt: null },
+      data: { historyClearedAt: new Date() },
+    })
+    return { success: true }
+  }
+
+  // ============ GROUP VISIBILITY / INVITE / PUBLIC ============
+
+  private generateInviteCode(): string {
+    return (
+      Math.random().toString(36).slice(2, 10) +
+      Math.random().toString(36).slice(2, 8)
+    )
+  }
+
+  async updateGroupVisibility(
+    chatId: string,
+    payload: { visibility: 'PRIVATE' | 'PUBLIC'; username?: string },
+    ctx: Ctx,
+  ) {
+    await this.ensureGroupAdmin(chatId, ctx.userId, ctx)
+    const chat = await this.prisma.chat.findFirst({
+      where: { id: chatId, deletedAt: null },
+    })
+    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+
+    const data: any = { visibility: payload.visibility }
+
+    if (payload.visibility === 'PUBLIC') {
+      if (!payload.username) {
+        throw new BadRequestException('Public guruh uchun username kerak')
+      }
+      if (!/^[a-z0-9_]{3,32}$/i.test(payload.username)) {
+        throw new BadRequestException(
+          "Username 3-32 belgi, faqat harflar/raqamlar/_ bo'lishi kerak",
+        )
+      }
+      const existing = await this.prisma.chat.findFirst({
+        where: { username: payload.username.toLowerCase(), id: { not: chatId } },
+      })
+      if (existing) throw new BadRequestException('Bu username band')
+      data.username = payload.username.toLowerCase()
+    } else {
+      data.username = null
+      if (!chat.inviteCode) data.inviteCode = this.generateInviteCode()
+    }
+
+    const updated = await this.prisma.chat.update({
+      where: { id: chatId },
+      data,
+    })
+    return {
+      id: updated.id,
+      visibility: updated.visibility,
+      username: updated.username,
+      inviteCode: updated.inviteCode,
+    }
+  }
+
+  async updateGroupPermissions(
+    chatId: string,
+    payload: {
+      allowMemberInvite?: boolean
+      allowMemberSendMedia?: boolean
+      allowMemberPin?: boolean
+    },
+    ctx: Ctx,
+  ) {
+    await this.ensureGroupAdmin(chatId, ctx.userId, ctx)
+    const chat = await this.prisma.chat.findFirst({
+      where: { id: chatId, deletedAt: null },
+    })
+    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    return await this.prisma.chat.update({
+      where: { id: chatId },
+      data: {
+        allowMemberInvite: payload.allowMemberInvite ?? undefined,
+        allowMemberSendMedia: payload.allowMemberSendMedia ?? undefined,
+        allowMemberPin: payload.allowMemberPin ?? undefined,
+      },
+      select: {
+        id: true,
+        allowMemberInvite: true,
+        allowMemberSendMedia: true,
+        allowMemberPin: true,
+      },
+    })
+  }
+
+  async regenerateInviteCode(chatId: string, ctx: Ctx) {
+    await this.ensureGroupAdmin(chatId, ctx.userId, ctx)
+    return await this.prisma.chat.update({
+      where: { id: chatId },
+      data: { inviteCode: this.generateInviteCode() },
+      select: { id: true, inviteCode: true },
+    })
+  }
+
+  async joinByInviteCode(code: string, ctx: Ctx) {
+    const chat = await this.prisma.chat.findFirst({
+      where: { inviteCode: code, deletedAt: null, type: 'GROUP' },
+    })
+    if (!chat) throw new NotFoundException('Taklif havolasi yaroqsiz')
+    return this.addSelfToGroup(chat.id, ctx)
+  }
+
+  async joinByUsername(username: string, ctx: Ctx) {
+    const chat = await this.prisma.chat.findFirst({
+      where: {
+        username: username.toLowerCase(),
+        deletedAt: null,
+        type: 'GROUP',
+        visibility: 'PUBLIC',
+      },
+    })
+    if (!chat) throw new NotFoundException('Public guruh topilmadi')
+    return this.addSelfToGroup(chat.id, ctx)
+  }
+
+  private async addSelfToGroup(chatId: string, ctx: Ctx) {
+    const existing = await this.prisma.chatMember.findFirst({
+      where: { chatId, userId: ctx.userId },
+    })
+    if (existing) {
+      if (existing.leftAt) {
+        await this.prisma.chatMember.update({
+          where: { id: existing.id },
+          data: { leftAt: null, joinedAt: new Date() },
+        })
+      }
+      return { success: true, chatId, joined: true, alreadyMember: !existing.leftAt }
+    }
+    await this.prisma.chatMember.create({
+      data: { chatId, userId: ctx.userId, role: 'MEMBER' },
+    })
+    return { success: true, chatId, joined: true, alreadyMember: false }
+  }
+
+  async searchPublicChats(q: string) {
+    const query = q.trim()
+    if (query.length < 2) return { count: 0, chats: [] }
+    const chats = await this.prisma.chat.findMany({
+      where: {
+        deletedAt: null,
+        type: 'GROUP',
+        visibility: 'PUBLIC',
+        OR: [
+          { username: { contains: query.toLowerCase(), mode: 'insensitive' } },
+          { title: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: 20,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        avatarUrl: true,
+        username: true,
+        _count: { select: { members: { where: { leftAt: null } } } },
+      },
+    })
+    return {
+      count: chats.length,
+      chats: chats.map((c) => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        avatarUrl: c.avatarUrl,
+        username: c.username,
+        membersCount: c._count.members,
+      })),
     }
   }
 
