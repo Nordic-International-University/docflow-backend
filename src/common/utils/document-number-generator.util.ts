@@ -48,7 +48,6 @@ export class DocumentNumberGenerator {
   ): Promise<string> {
     const date = customDate || new Date()
 
-    // Check if format has any sequence placeholder
     const hasSequence = this.hasSequencePlaceholder(config.format)
 
     if (!hasSequence) {
@@ -64,9 +63,84 @@ export class DocumentNumberGenerator {
       return result
     }
 
-    // Find next sequence number
-    const nextSeq = await this.getNextSequence(prisma, config, date)
-    return this.buildNumber(config, date, nextSeq)
+    // RACE CONDITION FIX: Postgres advisory lock + retry
+    // Advisory lock bir vaqtda faqat bitta transaction'ga ruxsat beradi
+    // (prefix kalitiga ko'ra), shuning uchun parallel so'rovlar navbat bilan ishlaydi.
+    // + Unique constraint xatosi yuz bersa qayta urinish (manual inserts bilan
+    // yoki boshqa instance bilan safety net sifatida).
+
+    const prefix = this.buildPrefix(config, date)
+    const lockKey = `docnum:${config.journalId || 'global'}:${prefix}`
+
+    const MAX_RETRIES = 5
+    let lastError: any = null
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          // Advisory lock shu tranzaksiya davomida ushlab turiladi
+          await tx.$executeRawUnsafe(
+            `SELECT pg_advisory_xact_lock(hashtext($1))`,
+            lockKey,
+          )
+
+          // Endi xavfsiz — lockni kutayotgan boshqa so'rovlar bu yerda navbat tutadi
+          const nextSeq = await this.getNextSequenceInTx(
+            tx as any,
+            config,
+            date,
+          )
+          return this.buildNumber(config, date, nextSeq)
+        })
+      } catch (err: any) {
+        lastError = err
+        // Unique constraint xatosi — qayta urinish (boshqa instance kirgan bo'lishi mumkin)
+        if (err?.code === 'P2002' || /unique constraint/i.test(err?.message || '')) {
+          await new Promise((r) => setTimeout(r, 50 * (attempt + 1)))
+          continue
+        }
+        throw err
+      }
+    }
+
+    throw lastError || new Error('Document number generation failed')
+  }
+
+  /** Transaction ichida ishlatiladigan versiya */
+  private static async getNextSequenceInTx(
+    tx: PrismaService,
+    config: DocumentNumberFormat,
+    date: Date,
+  ): Promise<number> {
+    const prefix = this.buildPrefix(config, date)
+
+    const whereClause: any = {
+      documentNumber: { startsWith: prefix },
+    }
+    if (config.journalId) {
+      whereClause.journalId = config.journalId
+    }
+
+    // Faqat eng katta raqamni olish yetarli (hammasini emas)
+    const existingDocs = await tx.document.findMany({
+      where: whereClause,
+      select: { documentNumber: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+
+    if (existingDocs.length === 0) return 1
+
+    const sequences: number[] = []
+    for (const doc of existingDocs) {
+      if (!doc.documentNumber) continue
+      const suffix = doc.documentNumber.substring(prefix.length)
+      const num = parseInt(suffix, 10)
+      if (!isNaN(num) && num > 0) sequences.push(num)
+    }
+
+    if (sequences.length === 0) return 1
+    return Math.max(...sequences) + 1
   }
 
   private static hasSequencePlaceholder(format: string): boolean {
