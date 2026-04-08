@@ -172,9 +172,16 @@ export class WopiController {
 
       res.setHeader('Content-Type', 'application/octet-stream')
       res.setHeader('Content-Length', fileContent.length.toString())
+
+      // RFC 5987: filename'da non-ASCII (kirill, parantez) bo'lsa
+      // HTTP header'ga to'g'ridan-to'g'ri yozib bo'lmaydi.
+      // ASCII fallback + UTF-8 encoded versiya bilan.
+      const rawName = fileInfo.BaseFileName || 'document'
+      const asciiFallback = rawName.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '')
+      const utf8Encoded = encodeURIComponent(rawName)
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${fileInfo.BaseFileName}"`,
+        `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`,
       )
 
       return res.status(HttpStatus.OK).send(fileContent)
