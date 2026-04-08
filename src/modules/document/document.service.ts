@@ -252,13 +252,82 @@ export class DocumentService {
       throw new NotFoundException('Document not found')
     }
 
-    // Faqat eng yangi PDF fayl qaytariladi (DOCX yashirin)
+    // Frontend uchun aniq ko'rsatma: qaysi faylni ochish kerak va qanday rejimda
     const atts = (document as any).attachments || []
+    const OFFICE_MIMES = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-powerpoint',
+    ]
+    const latestDocx = atts.find((a: any) => OFFICE_MIMES.includes(a.mimeType)) || null
     const latestPdf = atts.find((a: any) => a.mimeType === 'application/pdf') || null
+
+    // Foydalanuvchi roli
+    const isCreator = document.createdBy?.id === payload.userId
+    const isPlatformAdmin =
+      payload.roleName === ROLE_NAMES.SUPER_ADMIN ||
+      payload.roleName === ROLE_NAMES.ADMIN
+
+    // Mantiq:
+    //  - DRAFT/REJECTED + creator/admin → DOCX edit (Collabora full edit)
+    //  - PENDING/IN_REVIEW + workflow ishtirokchi → PDF + XFDF annotation
+    //  - APPROVED/ARCHIVED yoki boshqalar → PDF read-only
+    let primaryAttachment: any = null
+    let displayMode:
+      | 'EDIT_DOCX'
+      | 'ANNOTATE_PDF'
+      | 'VIEW_PDF'
+      | 'NONE' = 'NONE'
+    let canEdit = false
+
+    const status = document.status
+    const isDraft = status === 'DRAFT' || status === 'REJECTED'
+    const isWorkflowActive = status === 'PENDING' || status === 'IN_REVIEW'
+    const isFinal = status === 'APPROVED' || status === 'ARCHIVED'
+
+    if (isDraft && (isCreator || isPlatformAdmin) && latestDocx) {
+      // Yaratuvchi DOCX'ni Collabora'da to'liq tahrirlay oladi
+      primaryAttachment = latestDocx
+      displayMode = 'EDIT_DOCX'
+      canEdit = true
+    } else if (isWorkflowActive && latestPdf) {
+      // Workflow active — PDF'ni ochish (annotation user huquqiga bog'liq)
+      primaryAttachment = latestPdf
+      // canEdit'ni aniqlash uchun WOPI permission service kerak,
+      // hozircha frontend WOPI token olganda CheckFileInfo'dan UserCanWrite'ni oladi
+      displayMode = 'ANNOTATE_PDF'
+      canEdit = false // frontend WOPI orqali aniqlaydi
+    } else if (isFinal && latestPdf) {
+      primaryAttachment = latestPdf
+      displayMode = 'VIEW_PDF'
+      canEdit = false
+    } else if (latestPdf) {
+      // Fallback: PDF mavjud bo'lsa view-only
+      primaryAttachment = latestPdf
+      displayMode = 'VIEW_PDF'
+      canEdit = false
+    } else if (latestDocx && (isCreator || isPlatformAdmin)) {
+      // PDF hali yaratilmagan, lekin DOCX bor
+      primaryAttachment = latestDocx
+      displayMode = 'EDIT_DOCX'
+      canEdit = true
+    }
 
     return {
       ...document,
-      attachments: latestPdf ? [latestPdf] : [],
+      // Eski API uyumi: attachments PDFni qaytaradi, lekin DOCX ham mavjud (frontend kerak bo'lsa)
+      attachments: latestPdf ? [latestPdf] : latestDocx ? [latestDocx] : [],
+      // YANGI maydonlar — frontend shu asosida qaror qiladi
+      primaryAttachment,
+      displayMode,
+      canEdit,
+      hasDocx: !!latestDocx,
+      hasPdf: !!latestPdf,
+      docxAttachment: latestDocx,
+      pdfAttachment: latestPdf,
     } as any
   }
 
