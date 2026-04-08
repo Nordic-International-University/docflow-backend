@@ -4,8 +4,9 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common'
-import { Response } from 'express'
+import { Request, Response } from 'express'
 
 const ERROR_TRANSLATIONS: Record<string, string> = {
   // ==================== AUTH & GUARDS ====================
@@ -261,16 +262,150 @@ function translateMessage(message: string): string {
   return message
 }
 
+/**
+ * Prisma xatolarini foydalanuvchi tushunadigan xabarga aylantirish.
+ * Internal ma'lumotlar (table nomi, SQL, stack trace) foydalanuvchiga ko'rinmaydi.
+ */
+function translatePrismaError(exception: any): { status: number; message: string } | null {
+  const code = exception?.code
+  const name = exception?.constructor?.name
+
+  if (!code && !name?.includes('Prisma')) return null
+
+  const meta = exception?.meta || {}
+  const target = Array.isArray(meta.target) ? meta.target.join(', ') : meta.target
+
+  // Prisma error kodlari: https://www.prisma.io/docs/reference/api-reference/error-reference
+  switch (code) {
+    case 'P2002':
+      // Unique constraint violation
+      if (target?.includes('document_number')) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: "Bu raqamli hujjat allaqachon mavjud. Iltimos qayta urining.",
+        }
+      }
+      if (target?.includes('username')) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: 'Bu foydalanuvchi nomi band.',
+        }
+      }
+      if (target?.includes('email')) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: 'Bu email allaqachon ro\'yxatdan o\'tgan.',
+        }
+      }
+      if (target?.includes('key')) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: 'Bu kalit (key) allaqachon band.',
+        }
+      }
+      if (target?.includes('slug')) {
+        return {
+          status: HttpStatus.CONFLICT,
+          message: 'Bu nom allaqachon band, boshqa variant tanlang.',
+        }
+      }
+      return {
+        status: HttpStatus.CONFLICT,
+        message: "Bu ma'lumot allaqachon mavjud.",
+      }
+
+    case 'P2003':
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: "Bog'liq ma'lumot topilmadi. Avval tegishli yozuvni yarating.",
+      }
+
+    case 'P2025':
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: "So'ralgan ma'lumot topilmadi.",
+      }
+
+    case 'P2014':
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: "Bu yozuvni o'chirib bo'lmaydi — unga bog'liq boshqa ma'lumotlar mavjud.",
+      }
+
+    case 'P2000':
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: "Kiritilgan qiymat juda uzun.",
+      }
+
+    case 'P2001':
+      return {
+        status: HttpStatus.NOT_FOUND,
+        message: "So'ralgan ma'lumot topilmadi.",
+      }
+
+    case 'P2011':
+    case 'P2012':
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: "Majburiy maydon to'ldirilmagan.",
+      }
+
+    case 'P2034':
+      return {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        message: "Tizim band, iltimos qayta urining.",
+      }
+  }
+
+  // Prisma validation yoki boshqa kutilmagan xatolar
+  if (name === 'PrismaClientValidationError') {
+    return {
+      status: HttpStatus.BAD_REQUEST,
+      message: "Kiritilgan ma'lumot noto'g'ri formatda.",
+    }
+  }
+  if (name === 'PrismaClientKnownRequestError' || name === 'PrismaClientUnknownRequestError') {
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: "Ma'lumotlar bazasi bilan ishlashda xatolik. Iltimos qayta urining.",
+    }
+  }
+  if (name === 'PrismaClientInitializationError') {
+    return {
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      message: "Tizim vaqtinchalik ishlamayapti. Biroz kuting.",
+    }
+  }
+
+  return null
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('HttpExceptionFilter')
+
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
+    const request = ctx.getRequest<Request>()
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR
     let message: string | string[] = 'Ichki server xatosi'
 
-    if (exception instanceof HttpException) {
+    // 1. Prisma error tekshirish
+    const prismaError = translatePrismaError(exception)
+    if (prismaError) {
+      status = prismaError.status
+      message = prismaError.message
+
+      // Internal errorlarni log qilish (lekin foydalanuvchiga yubormaslik)
+      this.logger.error(
+        `Prisma error [${exception?.code}] on ${request?.method} ${request?.url}: ${exception?.message?.split('\n')[0]}`,
+      )
+    }
+    // 2. HttpException
+    else if (exception instanceof HttpException) {
       status = exception.getStatus()
       const exceptionResponse = exception.getResponse()
 
@@ -284,8 +419,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = translateMessage(resp.message)
         }
       }
-    } else if (exception?.message) {
-      message = translateMessage(exception.message)
+    }
+    // 3. Internal/noma'lum xato — foydalanuvchiga stack trace KO'RSATILMAYDI
+    else {
+      status = HttpStatus.INTERNAL_SERVER_ERROR
+      message = "Ichki server xatosi. Iltimos qayta urining yoki administratorga murojaat qiling."
+
+      // Lekin serverda to'liq log
+      this.logger.error(
+        `Unhandled error on ${request?.method} ${request?.url}: ${exception?.message || exception}`,
+        exception?.stack,
+      )
     }
 
     response.status(status).json({

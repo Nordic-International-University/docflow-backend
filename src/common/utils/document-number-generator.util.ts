@@ -63,52 +63,84 @@ export class DocumentNumberGenerator {
       return result
     }
 
-    // RACE CONDITION FIX: Postgres advisory lock + retry
-    // Advisory lock bir vaqtda faqat bitta transaction'ga ruxsat beradi
-    // (prefix kalitiga ko'ra), shuning uchun parallel so'rovlar navbat bilan ishlaydi.
-    // + Unique constraint xatosi yuz bersa qayta urinish (manual inserts bilan
-    // yoki boshqa instance bilan safety net sifatida).
+    // ATOMIC SEQUENCE: document_sequence jadvali orqali
+    // Postgres INSERT ... ON CONFLICT DO UPDATE atomic operatsiya.
+    // Ikki parallel so'rov kelganda Postgres ularni navbatga qo'yadi va
+    // har biriga UNIQUE counter qaytaradi. Application lock kerak emas.
+    //
+    // Safety net: agar document.create() baribir unique xato bersa
+    // (masalan, seeding yoki manual insert bilan), 5 marta qayta urinamiz.
 
     const prefix = this.buildPrefix(config, date)
-    const lockKey = `docnum:${config.journalId || 'global'}:${prefix}`
+    const key = `${config.journalId || 'global'}:${prefix}`
 
-    const MAX_RETRIES = 5
-    let lastError: any = null
+    const MAX_RETRIES = 10
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        return await prisma.$transaction(async (tx) => {
-          // Advisory lock shu tranzaksiya davomida ushlab turiladi
-          await tx.$executeRawUnsafe(
-            `SELECT pg_advisory_xact_lock(hashtext($1))`,
-            lockKey,
-          )
+      // Atomic increment va qiymatni olish
+      const rows: Array<{ counter: number }> = await prisma.$queryRawUnsafe(
+        `INSERT INTO document_sequence (key, counter, updated_at)
+         VALUES ($1, 1, NOW())
+         ON CONFLICT (key)
+         DO UPDATE SET counter = document_sequence.counter + 1, updated_at = NOW()
+         RETURNING counter`,
+        key,
+      )
 
-          // Endi xavfsiz — lockni kutayotgan boshqa so'rovlar bu yerda navbat tutadi
-          const nextSeq = await this.getNextSequenceInTx(
-            tx as any,
-            config,
-            date,
+      let nextSeq = rows[0]?.counter || 1
+
+      // Birinchi ishlatilganda — mavjud hujjatlar bo'lishi mumkin.
+      // Counter 1 qaytarsa, haqiqiy max'ni topib counter'ni uning ustiga ko'tarish.
+      if (nextSeq === 1) {
+        const existingMax = await this.findMaxExistingSequence(
+          prisma,
+          config,
+          date,
+        )
+        if (existingMax >= 1) {
+          // Counter'ni mavjud max'dan keyingi qiymatga o'rnatish
+          const updated: Array<{ counter: number }> = await prisma.$queryRawUnsafe(
+            `UPDATE document_sequence
+             SET counter = GREATEST(counter, $2) + 1, updated_at = NOW()
+             WHERE key = $1
+             RETURNING counter`,
+            key,
+            existingMax,
           )
-          return this.buildNumber(config, date, nextSeq)
-        })
-      } catch (err: any) {
-        lastError = err
-        // Unique constraint xatosi — qayta urinish (boshqa instance kirgan bo'lishi mumkin)
-        if (err?.code === 'P2002' || /unique constraint/i.test(err?.message || '')) {
-          await new Promise((r) => setTimeout(r, 50 * (attempt + 1)))
-          continue
+          nextSeq = updated[0]?.counter || existingMax + 1
         }
-        throw err
       }
+
+      const candidate = this.buildNumber(config, date, nextSeq)
+
+      // Yakuniy tekshirish — bu raqam aynan mavjud emasmi
+      // (manual insert bilan conflict ehtimoli)
+      const existing = await prisma.document.findFirst({
+        where: { documentNumber: candidate, deletedAt: null },
+        select: { id: true },
+      })
+
+      if (!existing) {
+        return candidate
+      }
+
+      // Conflict — counter'ni ko'tarib qayta urinish
+      await prisma.$queryRawUnsafe(
+        `UPDATE document_sequence
+         SET counter = counter + 1, updated_at = NOW()
+         WHERE key = $1`,
+        key,
+      )
     }
 
-    throw lastError || new Error('Document number generation failed')
+    throw new Error(
+      "Hujjat raqami generatsiya qilib bo'lmadi. Iltimos qayta urining.",
+    )
   }
 
-  /** Transaction ichida ishlatiladigan versiya */
-  private static async getNextSequenceInTx(
-    tx: PrismaService,
+  /** Mavjud hujjatlardan eng katta sequence raqamini topish */
+  private static async findMaxExistingSequence(
+    prisma: PrismaService,
     config: DocumentNumberFormat,
     date: Date,
   ): Promise<number> {
@@ -116,31 +148,29 @@ export class DocumentNumberGenerator {
 
     const whereClause: any = {
       documentNumber: { startsWith: prefix },
+      deletedAt: null,
     }
     if (config.journalId) {
       whereClause.journalId = config.journalId
     }
 
-    // Faqat eng katta raqamni olish yetarli (hammasini emas)
-    const existingDocs = await tx.document.findMany({
+    const existingDocs = await prisma.document.findMany({
       where: whereClause,
       select: { documentNumber: true },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 200,
     })
 
-    if (existingDocs.length === 0) return 1
+    if (existingDocs.length === 0) return 0
 
-    const sequences: number[] = []
+    let max = 0
     for (const doc of existingDocs) {
       if (!doc.documentNumber) continue
       const suffix = doc.documentNumber.substring(prefix.length)
       const num = parseInt(suffix, 10)
-      if (!isNaN(num) && num > 0) sequences.push(num)
+      if (!isNaN(num) && num > max) max = num
     }
-
-    if (sequences.length === 0) return 1
-    return Math.max(...sequences) + 1
+    return max
   }
 
   private static hasSequencePlaceholder(format: string): boolean {
