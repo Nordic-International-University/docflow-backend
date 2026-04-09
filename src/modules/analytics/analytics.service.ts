@@ -97,26 +97,22 @@ export class AnalyticsService {
       previousPeriod,
     )
 
-    // Count active workflows (ACTIVE or PAUSED status)
+    // Active workflows
     const activeWorkflows = await this.prisma.workflow.count({
       where: {
         deletedAt: null,
-        status: {
-          in: ['ACTIVE', 'PAUSED'],
-        },
+        status: { in: ['ACTIVE', 'PAUSED'] },
       },
     })
 
-    // Count pending tasks (workflow steps not completed)
-    const pendingTasks = await this.getMetricWithChange(
+    // Pending workflow steps (nom o'zgardi: pendingTasks → pendingWorkflowSteps)
+    const pendingWorkflowSteps = await this.getMetricWithChange(
       async (startDate, endDate) => {
         return this.prisma.workflowStep.count({
           where: {
             deletedAt: null,
             completedAt: null,
-            status: {
-              in: ['NOT_STARTED', 'IN_PROGRESS'],
-            },
+            status: { in: ['NOT_STARTED', 'IN_PROGRESS'] },
             ...(startDate && endDate
               ? { createdAt: { gte: startDate, lte: endDate } }
               : {}),
@@ -127,13 +123,91 @@ export class AnalyticsService {
       previousPeriod,
     )
 
+    // ============ YANGI: Task, Project, Chat statistika ============
+
+    // Haqiqiy tasklar (task moduli)
+    const totalTasks = await this.getMetricWithChange(
+      async (startDate, endDate) => {
+        return this.prisma.task.count({
+          where: {
+            deletedAt: null,
+            isArchived: false,
+            ...(startDate && endDate
+              ? { createdAt: { gte: startDate, lte: endDate } }
+              : {}),
+          },
+        })
+      },
+      currentPeriod,
+      previousPeriod,
+    )
+
+    // Bajarilgan tasklar
+    const completedTasks = await this.prisma.task.count({
+      where: {
+        deletedAt: null,
+        completedAt: { not: null },
+      },
+    })
+
+    // Muddati o'tgan tasklar
+    const overdueTasks = await this.prisma.task.count({
+      where: {
+        deletedAt: null,
+        completedAt: null,
+        dueDate: { lt: new Date() },
+      },
+    })
+
+    // Loyihalar
+    const totalProjects = await this.prisma.project.count({
+      where: { deletedAt: null, isArchived: false },
+    })
+
+    // Chat xabarlari (bugun)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const chatMessagesToday = await this.prisma.chatMessage.count({
+      where: {
+        deletedAt: null,
+        createdAt: { gte: todayStart },
+      },
+    })
+
+    // Jami chat xabarlari
+    const totalChatMessages = await this.prisma.chatMessage.count({
+      where: { deletedAt: null },
+    })
+
+    // Hujjatlar holati taqsimoti
+    const documentsByStatus = await this.prisma.document.groupBy({
+      by: ['status'],
+      _count: { id: true },
+      where: { deletedAt: null },
+    })
+
+    const statusDistribution: Record<string, number> = {}
+    for (const row of documentsByStatus) {
+      statusDistribution[row.status] = row._count.id
+    }
+
     return {
+      // Eski maydonlar (frontend buzilmasin)
       totalDocuments,
       activeUsers,
       totalDepartments,
       totalJournals,
       activeWorkflows,
-      pendingTasks,
+      pendingTasks: pendingWorkflowSteps, // eski nom saqlandi
+      // Yangi maydonlar
+      pendingWorkflowSteps,
+      totalTasks,
+      completedTasks,
+      overdueTasks,
+      totalProjects,
+      chatMessagesToday,
+      totalChatMessages,
+      documentsByStatus: statusDistribution,
     }
   }
 

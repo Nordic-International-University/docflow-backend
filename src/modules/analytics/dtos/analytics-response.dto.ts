@@ -86,9 +86,33 @@ export class DashboardAnalyticsResponseDto {
 
   @ApiProperty({
     type: MetricWithChange,
-    description: 'Number of pending tasks/workflow steps',
+    description: 'Number of pending workflow steps (eski nom)',
   })
   pendingTasks: MetricWithChange
+
+  @ApiProperty({ type: MetricWithChange, description: 'Pending workflow steps' })
+  pendingWorkflowSteps?: MetricWithChange
+
+  @ApiProperty({ type: MetricWithChange, description: 'Jami topshiriqlar' })
+  totalTasks?: MetricWithChange
+
+  @ApiProperty({ description: 'Bajarilgan topshiriqlar' })
+  completedTasks?: number
+
+  @ApiProperty({ description: "Muddati o'tgan topshiriqlar" })
+  overdueTasks?: number
+
+  @ApiProperty({ description: 'Jami loyihalar' })
+  totalProjects?: number
+
+  @ApiProperty({ description: 'Bugungi chat xabarlari' })
+  chatMessagesToday?: number
+
+  @ApiProperty({ description: 'Jami chat xabarlari' })
+  totalChatMessages?: number
+
+  @ApiProperty({ description: "Hujjatlar holati taqsimoti: { DRAFT: 57, APPROVED: 13, ... }" })
+  documentsByStatus?: Record<string, number>
 }
 
 // Document Analytics Response
