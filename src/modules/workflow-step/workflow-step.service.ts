@@ -30,6 +30,7 @@ import { MinioService } from '@clients'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
+import { isAdmin } from '@common/helpers'
 
 @Injectable()
 export class WorkflowStepService {
@@ -129,9 +130,7 @@ export class WorkflowStepService {
     userId?: string
     roleName?: string
   }): Promise<WorkflowStepResponseDto> {
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const workflowStep = await this.prisma.workflowStep.findFirst({
       where: {

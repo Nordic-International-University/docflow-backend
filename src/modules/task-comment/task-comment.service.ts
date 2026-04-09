@@ -16,6 +16,7 @@ import {
   TaskCommentRetrieveOneResponse,
   TaskCommentUpdateRequest,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 // Reusable select for comment with all nested data
 const COMMENT_SELECT = {
@@ -221,10 +222,7 @@ export class TaskCommentService {
   async taskCommentRetrieveAll(
     payload: TaskCommentRetrieveAllRequest,
   ): Promise<TaskCommentRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.taskId, deletedAt: null },
@@ -276,7 +274,7 @@ export class TaskCommentService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: { createdAt: 'asc' }, // Eski → yangi (chat style)
     })
 
@@ -316,8 +314,8 @@ export class TaskCommentService {
     return {
       data,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

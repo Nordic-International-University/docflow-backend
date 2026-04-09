@@ -7,6 +7,7 @@ import {
   AuditLogRetrieveAllResponse,
   AuditLogRetrieveOneResponse,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class AuditLogService {
@@ -42,10 +43,7 @@ export class AuditLogService {
   async auditLogRetrieveAll(
     payload: AuditLogRetrieveAllRequest,
   ): Promise<AuditLogRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
 
     const auditLogList = await this.#_prisma.auditLog.findMany({
@@ -90,7 +88,7 @@ export class AuditLogService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: {
         performedAt: 'desc',
       },
@@ -133,9 +131,9 @@ export class AuditLogService {
     return {
       data: auditLogList,
       count: count,
-      pageNumber,
-      pageSize,
-      pageCount: Math.ceil(count / pageSize),
+      pageNumber: page,
+      pageSize: limit,
+      pageCount: Math.ceil(count / limit),
     }
   }
 

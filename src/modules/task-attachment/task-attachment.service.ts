@@ -15,6 +15,7 @@ import {
   TaskAttachmentRetrieveOneResponse,
   TaskAttachmentUpdateRequest,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class TaskAttachmentService {
@@ -94,10 +95,7 @@ export class TaskAttachmentService {
   async taskAttachmentRetrieveAll(
     payload: TaskAttachmentRetrieveAllRequest,
   ): Promise<TaskAttachmentRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const where: any = {
       deletedAt: null,
@@ -131,7 +129,7 @@ export class TaskAttachmentService {
         updatedAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: { createdAt: 'desc' },
     })
 
@@ -140,8 +138,8 @@ export class TaskAttachmentService {
     return {
       data: attachments,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

@@ -15,6 +15,7 @@ import {
   DocumentTemplateUpdateRequest,
   DocumentTemplateRetrieveOneResponse,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class DocumentTemplateService {
@@ -89,10 +90,7 @@ export class DocumentTemplateService {
   async documentTemplateRetrieveAll(
     payload: DocumentTemplateRetrieveAllRequest,
   ): Promise<any> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
 
     const templateList = await this.#_prisma.documentTemplate.findMany({
@@ -138,7 +136,7 @@ export class DocumentTemplateService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: {
         createdAt: 'desc',
       },
@@ -165,13 +163,13 @@ export class DocumentTemplateService {
       },
     })
 
-    const pageCount = Math.ceil(count / pageSize)
+    const pageCount = Math.ceil(count / limit)
 
     return {
       data: templateList,
       count: count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
       pageCount,
     }
   }

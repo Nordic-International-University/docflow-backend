@@ -16,6 +16,7 @@ import {
   DepartmentRetrieveOneResponse,
 } from './interfaces'
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class DepartmentService {
   readonly #_prisma: PrismaService
@@ -105,10 +106,7 @@ export class DepartmentService {
   async departmentRetrieveAll(
     payload: DepartmentRetrieveAllRequest,
   ): Promise<DepartmentRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
 
     const departmentList = await this.#_prisma.department.findMany({
@@ -133,7 +131,7 @@ export class DepartmentService {
         location: true,
       },
       skip,
-      take,
+      take: limit,
     })
 
     const count = await this.#_prisma.department.count({
@@ -151,8 +149,8 @@ export class DepartmentService {
     return {
       data: departmentList,
       count: count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

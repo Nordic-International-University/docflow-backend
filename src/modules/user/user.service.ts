@@ -21,6 +21,7 @@ import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import * as argon2 from 'argon2'
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name)
@@ -41,10 +42,7 @@ export class UserService {
   async userRetrieveAll(
     payload: UserRetrieveAllRequest & { projectId?: string },
   ): Promise<UserRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const search = payload.search ? payload.search : undefined
     const departmentId = payload.departmentId ? payload.departmentId : undefined
@@ -116,7 +114,7 @@ export class UserService {
       orderBy: {
         createdAt: 'desc',
       },
-      take,
+      take: limit,
       skip,
     })
 
@@ -124,9 +122,9 @@ export class UserService {
 
     return {
       count: total,
-      pageNumber,
-      pageSize,
-      pageCount: Math.ceil(total / pageSize),
+      pageNumber: page,
+      pageSize: limit,
+      pageCount: Math.ceil(total / limit),
       data: userList.map((user) => ({
         ...user,
         lastLogin: user.lastLogin,

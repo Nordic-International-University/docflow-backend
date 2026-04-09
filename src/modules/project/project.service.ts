@@ -9,12 +9,14 @@ import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
 import { ProjectStatus, ProjectVisibility } from '@prisma/client'
 import { ROLE_NAMES } from '@constants'
+import { isAdmin } from '@common/helpers'
 import {
   ProjectCreateDto,
   ProjectUpdateDto,
   ProjectRetrieveQueryDto,
 } from './dtos'
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class ProjectService {
   readonly #_prisma: PrismaService
@@ -36,10 +38,9 @@ export class ProjectService {
     roleName?: string,
     departmentId?: string,
   ): any {
-    const isAdmin =
-      roleName === ROLE_NAMES.SUPER_ADMIN || roleName === ROLE_NAMES.ADMIN
+    const admin = isAdmin(roleName)
 
-    if (isAdmin) return {}
+    if (admin) return {}
 
     const orConditions: any[] = [
       // PUBLIC — hammaga ko'rinadi
@@ -215,10 +216,7 @@ export class ProjectService {
       userDepartmentId?: string
     },
   ) {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const visibilityFilter = payload.userId
       ? this.buildVisibilityFilter(
@@ -285,7 +283,7 @@ export class ProjectService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: {
         createdAt: 'desc',
       },
@@ -299,8 +297,8 @@ export class ProjectService {
         budget: p.budget ? Number(p.budget) : undefined,
       })),
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

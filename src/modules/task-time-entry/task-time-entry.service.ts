@@ -12,6 +12,7 @@ import {
   TaskTimeEntryUpdateRequest,
 } from './interfaces'
 import { Prisma } from '@prisma/client'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class TaskTimeEntryService {
@@ -72,10 +73,7 @@ export class TaskTimeEntryService {
   async taskTimeEntryRetrieveAll(
     payload: TaskTimeEntryRetrieveAllRequest,
   ): Promise<TaskTimeEntryRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const where: any = {
       deletedAt: null,
@@ -120,7 +118,7 @@ export class TaskTimeEntryService {
         updatedAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: { date: 'desc' },
     })
 
@@ -134,8 +132,8 @@ export class TaskTimeEntryService {
     return {
       data,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

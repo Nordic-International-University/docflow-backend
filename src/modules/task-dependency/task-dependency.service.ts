@@ -15,6 +15,7 @@ import {
   TaskDependencyRetrieveOneRequest,
   TaskDependencyRetrieveOneResponse,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class TaskDependencyService {
@@ -139,10 +140,7 @@ export class TaskDependencyService {
   async taskDependencyRetrieveAll(
     payload: TaskDependencyRetrieveAllRequest,
   ): Promise<TaskDependencyRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const where: any = {
       ...(payload.taskId && { taskId: payload.taskId }),
@@ -174,7 +172,7 @@ export class TaskDependencyService {
         createdAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: { createdAt: 'desc' },
     })
 
@@ -183,8 +181,8 @@ export class TaskDependencyService {
     return {
       data: dependencies,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

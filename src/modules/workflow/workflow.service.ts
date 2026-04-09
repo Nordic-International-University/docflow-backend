@@ -24,6 +24,7 @@ import { TelegramService } from '../telegram/telegram.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
+import { isAdmin } from '@common/helpers'
 
 const OFFICE_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -169,7 +170,6 @@ export class WorkflowService {
     if (status) andConditions.push({ status })
     if (type) andConditions.push({ type })
 
-    // Search by document title, number, or description
     if (search) {
       andConditions.push({
         document: {
@@ -226,11 +226,6 @@ export class WorkflowService {
       })
     }
 
-    // User access filter (non-admin)
-    // Foydalanuvchi ko'rishi mumkin bo'lgan workflowlar:
-    //  1) o'zi yaratgan hujjat workflow'lari
-    //  2) istalgan bosqichida (status'dan qat'iy nazar — PENDING/IN_PROGRESS/APPROVED/REJECTED)
-    //     assignee sifatida qatnashgan workflowlar
     if (!isAdmin && userId) {
       andConditions.push({
         OR: [
@@ -333,16 +328,14 @@ export class WorkflowService {
     userId?: string
     roleName?: string
   }): Promise<WorkflowResponseDto> {
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const workflow = await this.prisma.workflow.findFirst({
       where: {
         id: payload.id,
         deletedAt: null,
         // Filter by user access: user created document OR assigned to any workflow step (for viewing details)
-        ...(!isAdmin &&
+        ...(!admin &&
           payload.userId && {
             OR: [
               { document: { createdById: payload.userId } },

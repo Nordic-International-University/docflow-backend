@@ -9,6 +9,7 @@ import {
   RoleUpdateRequest,
 } from './interfaces'
 import { PrismaService } from '@prisma'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class RoleService {
@@ -21,10 +22,7 @@ export class RoleService {
   async roleRetrieveAll(
     payload: RoleRetrieveAllRequest,
   ): Promise<RoleRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const roleList = await this.#_prisma.role.findMany({
       where: {
@@ -56,8 +54,8 @@ export class RoleService {
       orderBy: {
         createdAt: 'desc',
       },
-      take: take,
-      skip: skip,
+      take: limit,
+      skip,
     })
 
     const total = await this.#_prisma.role.count({
@@ -68,9 +66,9 @@ export class RoleService {
 
     return {
       count: total,
-      pageNumber: pageNumber,
-      pageSize: pageSize,
-      pageCount: Math.ceil(total / pageSize),
+      pageNumber: page,
+      pageSize: limit,
+      pageCount: Math.ceil(total / limit),
       data: roleList.map((role) => {
         return {
           id: role.id,

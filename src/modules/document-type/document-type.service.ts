@@ -15,6 +15,7 @@ import {
   DocumentTypeUpdateRequest,
   DocumentTypeRetrieveOneResponse,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class DocumentTypeService {
@@ -65,10 +66,7 @@ export class DocumentTypeService {
   async documentTypeRetrieveAll(
     payload: DocumentTypeRetrieveAllRequest,
   ): Promise<DocumentTypeRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
     const isActive =
       payload.isActive !== undefined ? Boolean(payload.isActive) : undefined
@@ -94,7 +92,7 @@ export class DocumentTypeService {
         deletedAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: {
         createdAt: 'desc',
       },
@@ -116,8 +114,8 @@ export class DocumentTypeService {
     return {
       data: documentTypeList,
       count: count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

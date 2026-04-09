@@ -19,7 +19,9 @@ import {
 import { PrismaService } from '@prisma'
 import { MinioService } from '@clients'
 import { ROLE_NAMES } from '@constants'
+import { isAdmin } from '@common/helpers'
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class AttachmentService {
   private readonly logger = new Logger(AttachmentService.name)
@@ -106,14 +108,9 @@ export class AttachmentService {
       roleName?: string
     },
   ): Promise<AttachmentRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const search = payload.search ? payload.search : undefined
 
@@ -126,7 +123,7 @@ export class AttachmentService {
         ...(payload.documentId && { documentId: payload.documentId }),
         ...(payload.uploadedById && { uploadedById: payload.uploadedById }),
         // Filter by user access: user uploaded it OR has access to the document
-        ...(!isAdmin &&
+        ...(!admin &&
           payload.userId && {
             OR: [
               { uploadedById: payload.userId },
@@ -178,7 +175,7 @@ export class AttachmentService {
       orderBy: {
         createdAt: 'desc',
       },
-      take,
+      take: limit,
       skip,
     })
 
@@ -191,7 +188,7 @@ export class AttachmentService {
         ...(payload.documentId && { documentId: payload.documentId }),
         ...(payload.uploadedById && { uploadedById: payload.uploadedById }),
         // Filter by user access: user uploaded it OR has access to the document
-        ...(!isAdmin &&
+        ...(!admin &&
           payload.userId && {
             OR: [
               { uploadedById: payload.userId },
@@ -222,9 +219,9 @@ export class AttachmentService {
 
     return {
       count: total,
-      pageNumber,
-      pageSize,
-      pageCount: Math.ceil(total / pageSize),
+      pageNumber: page,
+      pageSize: limit,
+      pageCount: Math.ceil(total / limit),
       data: attachmentList.map((attachment) => ({
         ...attachment,
         createdAt: attachment.createdAt,
@@ -238,16 +235,14 @@ export class AttachmentService {
       roleName?: string
     },
   ): Promise<AttachmentRetrieveOneResponse> {
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const attachment = await this.#_prisma.attachment.findFirst({
       where: {
         id: payload.id,
         deletedAt: null,
         // Filter by user access: user uploaded it OR has access to the document
-        ...(!isAdmin &&
+        ...(!admin &&
           payload.userId && {
             OR: [
               { uploadedById: payload.userId },

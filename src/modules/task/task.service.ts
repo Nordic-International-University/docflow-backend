@@ -11,6 +11,7 @@ import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 
 const VALID_PRIORITIES = Object.values(TaskPriority)
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class TaskService {
   private readonly logger = new Logger(TaskService.name)
@@ -318,10 +319,7 @@ export class TaskService {
       userDepartmentId?: string
     },
   ) {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
     const isAdmin =
@@ -435,7 +433,7 @@ export class TaskService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: [{ position: 'asc' }, { createdAt: 'desc' }],
     })
 
@@ -448,8 +446,8 @@ export class TaskService {
         actualHours: t.actualHours ? Number(t.actualHours) : undefined,
       })),
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 

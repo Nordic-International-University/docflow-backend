@@ -29,7 +29,9 @@ import { WorkflowPermissionService } from '../wopi/workflow-permission.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { ROLE_NAMES } from '@constants'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
+import { isAdmin } from '@common/helpers'
 
+import { parsePagination } from '@common/helpers'
 @Injectable()
 export class DocumentService {
   private readonly logger = new Logger(DocumentService.name)
@@ -53,15 +55,10 @@ export class DocumentService {
   async documentRetrieveAll(
     payload: DocumentRetrieveAllRequest,
   ): Promise<DocumentRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
 
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const searchCondition = search
       ? [
@@ -77,7 +74,7 @@ export class DocumentService {
     //  1) O'zi yaratgan hujjatlarni
     //  2) Workflow'da ishtirok etgan (step assignee) hujjatlarni ko'radi
     const userAccessFilter =
-      !isAdmin && payload.userId
+      !admin && payload.userId
         ? {
             OR: [
               { createdById: payload.userId },
@@ -166,7 +163,7 @@ export class DocumentService {
         },
       },
       skip,
-      take,
+      take: limit,
       orderBy: {
         createdAt: 'desc',
       },
@@ -189,24 +186,22 @@ export class DocumentService {
     return {
       data: documentList,
       count: count,
-      pageNumber,
-      pageSize,
-      pageCount: Math.ceil(count / pageSize),
+      pageNumber: page,
+      pageSize: limit,
+      pageCount: Math.ceil(count / limit),
     }
   }
 
   async documentRetrieveOne(
     payload: DocumentRetrieveOneRequest,
   ): Promise<DocumentRetrieveOneResponse> {
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const document = await this.#_prisma.document.findFirst({
       where: {
         id: payload.id,
         deletedAt: null,
-        ...(!isAdmin &&
+        ...(!admin &&
           payload.userId && {
             OR: [
               { createdById: payload.userId },
@@ -389,10 +384,8 @@ export class DocumentService {
     }
 
     // Permission check
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN ||
-      payload.roleName === ROLE_NAMES.ADMIN
-    if (!isAdmin && document.createdById !== payload.userId) {
+    const admin = isAdmin(payload.roleName)
+    if (!admin && document.createdById !== payload.userId) {
       // Workflow step'ga tayinlanganmi tekshirish
       const hasAccess = await this.#_prisma.workflowStep.findFirst({
         where: {
@@ -1144,14 +1137,12 @@ export class DocumentService {
   }
 
   async documentDelete(payload: DocumentDeleteRequest): Promise<void> {
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(payload.roleName)
 
     const existingDocument = await this.#_prisma.document.findFirst({
       where: {
         id: payload.id,
-        ...(!isAdmin && payload.userId && { createdById: payload.userId }),
+        ...(!admin && payload.userId && { createdById: payload.userId }),
         deletedAt: null,
       },
     })

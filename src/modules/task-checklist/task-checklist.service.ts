@@ -18,6 +18,7 @@ import {
   TaskChecklistItemResponse,
   TaskChecklistItemUpdateRequest,
 } from './interfaces'
+import { parsePagination } from '@common/helpers'
 
 @Injectable()
 export class TaskChecklistService {
@@ -71,10 +72,7 @@ export class TaskChecklistService {
   async taskChecklistRetrieveAll(
     payload: TaskChecklistRetrieveAllRequest,
   ): Promise<TaskChecklistRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const where: any = {
       taskId: payload.taskId,
@@ -116,7 +114,7 @@ export class TaskChecklistService {
         updatedAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: { position: 'asc' },
     })
 
@@ -125,8 +123,8 @@ export class TaskChecklistService {
     return {
       data: checklists,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 
@@ -314,10 +312,7 @@ export class TaskChecklistService {
   async taskChecklistItemRetrieveAll(
     payload: TaskChecklistItemRetrieveAllRequest,
   ): Promise<TaskChecklistItemRetrieveAllResponse> {
-    const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
-    const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
-    const skip = (pageNumber - 1) * pageSize
-    const take = pageSize
+    const { page, limit, skip } = parsePagination(payload)
 
     const where: any = {
       checklistId: payload.checklistId,
@@ -347,7 +342,7 @@ export class TaskChecklistService {
         updatedAt: true,
       },
       skip,
-      take,
+      take: limit,
       orderBy: { position: 'asc' },
     })
 
@@ -356,8 +351,8 @@ export class TaskChecklistService {
     return {
       data: items,
       count,
-      pageNumber,
-      pageSize,
+      pageNumber: page,
+      pageSize: limit,
     }
   }
 
