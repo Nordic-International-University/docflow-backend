@@ -128,8 +128,17 @@ export class NotificationGateway
       // Broadcast user online status to all connected clients
       await this.broadcastUserOnlineStatus(user.id, true)
     } catch (error) {
-      this.logger.error(`Connection failed: ${error.message}`)
-      client.emit('error', { message: 'Authentication failed' })
+      const isExpired = error.message?.includes('expired') || error.name === 'TokenExpiredError'
+      if (isExpired) {
+        this.logger.warn(`WS auth: token expired for ${client.id}`)
+        client.emit('auth:token_expired', {
+          message: 'Token muddati tugagan. Iltimos yangilang.',
+          action: 'REFRESH_TOKEN',
+        })
+      } else {
+        this.logger.error(`Connection failed: ${error.message}`)
+        client.emit('error', { message: 'Authentication failed' })
+      }
       client.disconnect()
     }
   }

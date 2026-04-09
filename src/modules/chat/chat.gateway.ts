@@ -208,8 +208,17 @@ export class ChatGateway
         await this.broadcastPresence(user.id, true, null)
       }
     } catch (err: any) {
-      this.logger.warn(`Chat auth failed: ${err.message}`)
-      client.emit('error', { message: 'Authentication failed' })
+      const isExpired = err.message?.includes('expired') || err.name === 'TokenExpiredError'
+      if (isExpired) {
+        this.logger.warn(`Chat WS: token expired for ${client.id}`)
+        client.emit('auth:token_expired', {
+          message: 'Token muddati tugagan',
+          action: 'REFRESH_TOKEN',
+        })
+      } else {
+        this.logger.warn(`Chat auth failed: ${err.message}`)
+        client.emit('error', { message: 'Authentication failed' })
+      }
       client.disconnect()
     }
   }

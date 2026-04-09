@@ -98,11 +98,19 @@ export class DocumentService {
           }
         : {}
 
+    // Status validation — noto'g'ri enum Prisma'ga tushmasdan oldin 400
+    const validStatuses = Object.values(DocumentStatus)
+    if (payload.status && !validStatuses.includes(payload.status as DocumentStatus)) {
+      throw new BadRequestException(
+        `Noto'g'ri status: "${payload.status}". Mavjud: ${validStatuses.join(', ')}`,
+      )
+    }
+
     const documentList = await this.#_prisma.document.findMany({
       where: {
         deletedAt: null,
         ...(searchCondition && { OR: searchCondition }),
-        ...(payload.status && { status: payload.status }),
+        ...(payload.status && { status: payload.status as DocumentStatus }),
         ...(payload.documentTypeId && {
           documentTypeId: payload.documentTypeId,
         }),
