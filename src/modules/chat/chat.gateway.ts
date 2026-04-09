@@ -13,7 +13,6 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
-  UnauthorizedException,
   forwardRef,
   Inject,
 } from '@nestjs/common'
@@ -22,11 +21,11 @@ import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
 import { RedisService } from '@clients'
 import { ChatService } from './chat.service'
-
-interface AuthSocket extends Socket {
-  userId?: string
-  username?: string
-}
+import {
+  authenticateWsClient,
+  handleWsAuthError,
+  type AuthenticatedSocket as AuthSocket,
+} from '@common/ws-auth.helper'
 
 /**
  * Chat WebSocket gateway.
@@ -156,64 +155,37 @@ export class ChatGateway
 
   async handleConnection(client: AuthSocket) {
     try {
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers.authorization?.replace('Bearer ', '')
-      if (!token) throw new UnauthorizedException('Missing token')
+      const user = await authenticateWsClient(
+        client,
+        this.jwtService,
+        this.configService,
+        this.prisma,
+      )
+      client.join(`user:${user.userId}`)
 
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.get<string>('jwt.accessSecret'),
-      })
-
-      const user = await this.prisma.user.findFirst({
-        where: { id: payload.userId, deletedAt: null, isActive: true },
-        select: { id: true, username: true },
-      })
-      if (!user) throw new UnauthorizedException('User not found')
-
-      client.userId = user.id
-      client.username = user.username
-      client.join(`user:${user.id}`)
-
-      // Multi-tab tracking
-      let sockets = this.connectedUsers.get(user.id)
+      let sockets = this.connectedUsers.get(user.userId)
       if (!sockets) {
         sockets = new Set()
-        this.connectedUsers.set(user.id, sockets)
+        this.connectedUsers.set(user.userId, sockets)
       }
       const wasFirst = sockets.size === 0
       sockets.add(client.id)
 
-      // Auto-join barcha chatlarga — keyingi xabarlar va typing darhol kelishi uchun
       const memberships = await this.prisma.chatMember.findMany({
-        where: { userId: user.id, leftAt: null },
+        where: { userId: user.userId, leftAt: null },
         select: { chatId: true },
       })
       for (const m of memberships) {
         client.join(`chat:${m.chatId}`)
       }
 
-      this.logger.log(
-        `Chat connected: ${client.id} user=${user.username} (sockets: ${sockets.size})`,
-      )
+      this.logger.log(`Chat connected: ${client.id} user=${user.username} (${sockets.size})`)
 
       if (wasFirst) {
-        // Birinchi ulanish — online broadcast
-        await this.broadcastPresence(user.id, true, null)
+        await this.broadcastPresence(user.userId, true, null)
       }
     } catch (err: any) {
-      const isExpired = err.message?.includes('expired') || err.name === 'TokenExpiredError'
-      if (isExpired) {
-        this.logger.warn(`Chat WS: token expired for ${client.id}`)
-        client.emit('auth:token_expired', {
-          message: 'Token muddati tugagan',
-          action: 'REFRESH_TOKEN',
-        })
-      } else {
-        this.logger.warn(`Chat auth failed: ${err.message}`)
-        client.emit('error', { message: 'Authentication failed' })
-      }
-      client.disconnect()
+      handleWsAuthError(client, err, this.logger)
     }
   }
 

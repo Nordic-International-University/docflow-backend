@@ -107,9 +107,6 @@ export class PermissionService {
       },
     })
 
-    // TODO: Add audit logging with proper user ID from request context
-    // Log permission creation
-    // await this.#_auditLogService.logAction(
     //   'Permission',
     //   createdPermission.id,
     //   AuditAction.CREATE,
@@ -193,16 +190,6 @@ export class PermissionService {
       }
     }
 
-    // TODO: Add audit logging with proper user ID from request context
-    // if (Object.keys(changes).length > 0) {
-    //   await this.#_auditLogService.logAction(
-    //     'Permission',
-    //     id,
-    //     AuditAction.UPDATE,
-    //     updatedBy || id,
-    //     { changes },
-    //   )
-    // }
   }
 
   async permissionDelete(payload: PermissionDeleteRequest): Promise<void> {
@@ -227,9 +214,6 @@ export class PermissionService {
       },
     })
 
-    // TODO: Add audit logging with proper user ID from request context
-    // Log permission deletion
-    // await this.#_auditLogService.logAction(
     //   'Permission',
     //   payload.id,
     //   AuditAction.DELETE,

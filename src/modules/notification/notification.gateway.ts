@@ -8,21 +8,16 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
 import { RedisService } from '@clients'
-
-interface AuthenticatedSocket extends Socket {
-  userId?: string
-  username?: string
-}
+import {
+  authenticateWsClient,
+  handleWsAuthError,
+  type AuthenticatedSocket,
+} from '@common/ws-auth.helper'
 
 @Injectable()
 @WebSocketGateway({
@@ -65,75 +60,30 @@ export class NotificationGateway
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      // Extract token from handshake
-      const token =
-        client.handshake.auth.token ||
-        client.handshake.headers.authorization?.replace('Bearer ', '')
+      const user = await authenticateWsClient(
+        client,
+        this.jwtService,
+        this.configService,
+        this.prisma,
+      )
 
-      if (!token) {
-        throw new UnauthorizedException('Missing authentication token')
-      }
-
-      // Verify JWT token
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.get<string>('jwt.accessSecret'),
-      })
-
-      // Verify user exists and is active
-      const user = await this.prisma.user.findFirst({
-        where: {
-          id: payload.userId,
-          deletedAt: null,
-          isActive: true,
-        },
-      })
-
-      if (!user) {
-        throw new UnauthorizedException('User not found or inactive')
-      }
-
-      // Attach user info to socket
-      client.userId = user.id
-      client.username = user.username
-
-      // Store user socket mapping in Redis
-      await this.redisService.setUserSocket(user.id, client.id)
+      await this.redisService.setUserSocket(user.userId, client.id)
 
       // Store socket metadata in Redis
       await this.redisService.setSocketMetadata(client.id, {
-        userId: user.id,
+        userId: user.userId,
         username: user.username,
         connectedAt: Date.now(),
       })
 
-      // Join user to their personal room
-      client.join(`user:${user.id}`)
+      client.join(`user:${user.userId}`)
+      this.logger.log(`Connected: ${client.id} user=${user.username}`)
 
-      this.logger.log(
-        `Client connected: ${client.id} - User: ${user.username} (${user.id})`,
-      )
-
-      // Send pending notifications on connection
-      await this.sendPendingNotifications(client, user.id)
-
-      // Send active workflows count on connection
-      await this.sendActiveWorkflowsCount(client, user.id)
-
-      // Broadcast user online status to all connected clients
-      await this.broadcastUserOnlineStatus(user.id, true)
+      await this.sendPendingNotifications(client, user.userId)
+      await this.sendActiveWorkflowsCount(client, user.userId)
+      await this.broadcastUserOnlineStatus(user.userId, true)
     } catch (error) {
-      const isExpired = error.message?.includes('expired') || error.name === 'TokenExpiredError'
-      if (isExpired) {
-        this.logger.warn(`WS auth: token expired for ${client.id}`)
-        client.emit('auth:token_expired', {
-          message: 'Token muddati tugagan. Iltimos yangilang.',
-          action: 'REFRESH_TOKEN',
-        })
-      } else {
-        this.logger.error(`Connection failed: ${error.message}`)
-        client.emit('error', { message: 'Authentication failed' })
-      }
-      client.disconnect()
+      handleWsAuthError(client, error, this.logger)
     }
   }
 

@@ -155,9 +155,6 @@ export class RoleService {
       data: permissions,
     })
 
-    // TODO: Add audit logging with proper user ID from request context
-    // Log role creation
-    // await this.#_auditLogService.logAction(
     //   'Role',
     //   role.id,
     //   AuditAction.CREATE,
@@ -276,16 +273,6 @@ export class RoleService {
       }
     }
 
-    // TODO: Add audit logging with proper user ID from request context
-    // if (Object.keys(changes).length > 0) {
-    //   await this.#_auditLogService.logAction(
-    //     'Role',
-    //     id,
-    //     AuditAction.UPDATE,
-    //     updatedBy || id,
-    //     { changes },
-    //   )
-    // }
   }
 
   async roleDelete(payload: RoleDeleteRequest): Promise<void> {
@@ -317,9 +304,6 @@ export class RoleService {
       },
     })
 
-    // TODO: Add audit logging with proper user ID from request context
-    // Log role deletion
-    // await this.#_auditLogService.logAction(
     //   'Role',
     //   payload.id,
     //   AuditAction.DELETE,

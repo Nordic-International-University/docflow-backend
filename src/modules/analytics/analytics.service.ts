@@ -270,7 +270,6 @@ export class AnalyticsService {
 
     // Count documents by priority
     // NOTE: priority field does not exist in Document model
-    // const priorityCounts = await this.prisma.document.groupBy({
     //   by: ['priority'],
     //   where: {
     //     deletedAt: null,
@@ -398,7 +397,6 @@ export class AnalyticsService {
 
     // Total versions (sum of all document versions)
     // NOTE: version field does not exist in Document model
-    // const versionSum = await this.prisma.document.aggregate({
     //   where: {
     //     deletedAt: null,
     //     ...(currentPeriod.start && currentPeriod.end

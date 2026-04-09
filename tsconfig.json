@@ -11,6 +11,7 @@
       "@auth": ["./auth"],
       "@config": ["./config"],
       "@common": ["./common"],
+      "@common/*": ["./common/*"],
       "@prisma": ["./prisma"],
       "@guards": ["./guards"],
       "@modules": ["./modules"],
