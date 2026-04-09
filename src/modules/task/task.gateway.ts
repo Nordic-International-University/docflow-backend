@@ -21,13 +21,7 @@ interface AuthenticatedSocket extends Socket {
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'https://docverse.uz',
-      'https://www.docverse.uz',
-      'https://e-hujjat.nordicuniversity.org',
-      process.env.CLIENT_URL,
-    ].filter(Boolean),
+    origin: (process.env.CORS_ORIGINS || 'http://localhost:3000,https://docverse.uz').split(',').map(s => s.trim()).filter(Boolean),
     credentials: true,
   },
   namespace: '/tasks',

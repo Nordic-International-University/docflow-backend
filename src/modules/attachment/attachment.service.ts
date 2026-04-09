@@ -328,7 +328,7 @@ export class AttachmentService {
       'attachments/',
     )
 
-    const fileUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedFileName}`
+    const fileUrl = this.#_minio.buildFileUrl(uploadedFileName)
 
     const decodedFileName = this.decodeFileName(payload.file.originalname)
 

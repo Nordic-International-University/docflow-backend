@@ -11,15 +11,13 @@ setImmediate(async (): Promise<void> => {
 
   app.set('trust proxy', true)
 
-  // Configure CORS for production
+  // CORS — .env'dan yoki default qiymatlar
+  const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,https://docverse.uz,https://www.docverse.uz,https://e-hujjat.nordicuniversity.org')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://docverse.uz',
-      'https://www.docverse.uz',
-      'https://e-hujjat.nordicuniversity.org',
-      'https://docflow-back.nordicuniversity.org',
-    ],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -58,5 +56,6 @@ setImmediate(async (): Promise<void> => {
 
   SwaggerModule.setup('docs', app, document)
 
-  await app.listen(5072, '0.0.0.0')
+  const port = parseInt(process.env.PORT || '5072', 10)
+  await app.listen(port, '0.0.0.0')
 })

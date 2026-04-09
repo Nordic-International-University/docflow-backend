@@ -681,7 +681,7 @@ export class ChatService {
 
     if (file) {
       const uploaded = await this.minio.uploadFile(file, 'chat/')
-      fileUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploaded}`
+      fileUrl = this.minio.buildFileUrl(uploaded)
       fileName = file.originalname
       mimeType = file.mimetype
       fileSize = file.size

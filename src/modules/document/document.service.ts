@@ -874,10 +874,7 @@ export class DocumentService {
     try {
       // Extract the file path from the URL
       const templateFileUrl = template.templateFile.fileUrl
-      const templateFileName = templateFileUrl.replace(
-        'https://cdn.nordicuniversity.org/docflow-files/',
-        '',
-      )
+      const templateFileName = this.#_minio.extractFileName(templateFileUrl)
 
       // Download template file from MinIO
       const templateBuffer = await this.#_minio.getFile(templateFileName)
@@ -897,7 +894,7 @@ export class DocumentService {
         template.templateFile.mimeType,
       )
 
-      const generatedFileUrl = `https://cdn.nordicuniversity.org/docflow-files/${generatedFileName}`
+      const generatedFileUrl = this.#_minio.buildFileUrl(generatedFileName)
 
       // Create attachment for generated document
       const generatedAttachment = await this.#_prisma.attachment.create({
@@ -961,10 +958,7 @@ export class DocumentService {
 
       // Extract the file path from the URL
       const fileUrl = docxAttachment.fileUrl
-      const fileName = fileUrl.replace(
-        'https://cdn.nordicuniversity.org/docflow-files/',
-        '',
-      )
+      const fileName = this.#_minio.extractFileName(fileUrl)
 
       // Get the DOCX file from MinIO
       const docxBuffer = await this.#_minio.getFile(fileName)
@@ -1006,7 +1000,7 @@ export class DocumentService {
         'application/pdf',
       )
 
-      const pdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfFileName}`
+      const pdfUrl = this.#_minio.buildFileUrl(uploadedPdfFileName)
 
       // Create attachment for PDF (store original filename for display)
       await this.#_prisma.attachment.create({
@@ -1286,10 +1280,7 @@ export class DocumentService {
 
     try {
       // Extract file paths from URLs
-      const pdfFileName = document.pdfUrl.replace(
-        'https://cdn.nordicuniversity.org/docflow-files/',
-        '',
-      )
+      const pdfFileName = this.#_minio.extractFileName(document.pdfUrl)
 
       // Download original PDF from MinIO
       const pdfBuffer = await this.#_minio.getFile(pdfFileName)
@@ -1349,7 +1340,7 @@ export class DocumentService {
         'application/pdf',
       )
 
-      const mergedPdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfFileName}`
+      const mergedPdfUrl = this.#_minio.buildFileUrl(uploadedPdfFileName)
       this.logger.log('Merged PDF uploaded to MinIO:', mergedPdfUrl)
 
       // Create attachment for merged PDF
@@ -1641,10 +1632,7 @@ export class DocumentService {
 
     try {
       // Extract file path from URL
-      const pdfFileName = document.pdfUrl.replace(
-        'https://cdn.nordicuniversity.org/docflow-files/',
-        '',
-      )
+      const pdfFileName = this.#_minio.extractFileName(document.pdfUrl)
 
       // Download PDF from MinIO
       const pdfBuffer = await this.#_minio.getFile(pdfFileName)
@@ -1726,7 +1714,7 @@ export class DocumentService {
       'documents/',
     )
 
-    const fileUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedFileName}`
+    const fileUrl = this.#_minio.buildFileUrl(uploadedFileName)
 
     // Create attachment record
     const attachment = await this.#_prisma.attachment.create({

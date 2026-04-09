@@ -104,7 +104,7 @@ export class WorkflowService {
       const uploadedPdfName = `attachments/${Date.now()}-${sanitizedName}`
       await this.minio.putFile(uploadedPdfName, pdfBuffer, 'application/pdf')
 
-      const pdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfName}`
+      const pdfUrl = this.minio.buildFileUrl(uploadedPdfName)
 
       await this.prisma.attachment.create({
         data: {

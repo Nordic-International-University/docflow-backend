@@ -246,7 +246,7 @@ export class WopiService {
         'application/pdf',
       )
 
-      const pdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfFileName}`
+      const pdfUrl = this.#_minio.buildFileUrl(uploadedPdfFileName)
       this.logger.log(`New PDF uploaded to MinIO: ${pdfUrl} [${versionedName}]`)
 
       await this.#_prisma.attachment.create({

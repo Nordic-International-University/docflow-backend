@@ -1689,7 +1689,7 @@ export class WorkflowStepService {
           'verification-attachments/',
         )
 
-        const fileUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedFileName}`
+        const fileUrl = this.minioService.buildFileUrl(uploadedFileName)
         const decodedFileName = decodeFileName(file.originalname)
 
         // Create attachment record

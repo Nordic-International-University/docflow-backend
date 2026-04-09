@@ -11,10 +11,10 @@ interface MinIoServiceOptions {
 export const minioConfig = registerAs<MinIoServiceOptions>(
   'minio',
   (): MinIoServiceOptions => ({
-    endPoint: 'cdn.nordicuniversity.org',
-    useSSL: true,
-    accessKey: 'VkZ8kGPGVAILcURlwI62',
-    secretKey: 'rzxgnz300PDlJZKEyqM8mKqOWlJtZ9bmogp2qc6X',
-    bucket: 'tasimo-backend',
+    endPoint: process.env.MINIO_ENDPOINT || 'cdn.nordicuniversity.org',
+    useSSL: process.env.MINIO_USE_SSL !== 'false',
+    accessKey: process.env.MINIO_ACCESS_KEY || '',
+    secretKey: process.env.MINIO_SECRET_KEY || '',
+    bucket: process.env.MINIO_BUCKET || 'docflow-files',
   }),
 )

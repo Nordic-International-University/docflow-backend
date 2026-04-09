@@ -6,16 +6,29 @@ export class MinioService implements OnModuleInit {
   private readonly logger = new Logger(MinioService.name)
   private minioClient: Minio.Client
   private readonly bucketName: string
+  /** CDN base URL — fayl URL'larini yaratishda ishlatiladi */
+  public readonly cdnBaseUrl: string
 
   constructor() {
-    this.bucketName = 'docflow-files'
+    this.bucketName = process.env.MINIO_BUCKET || 'docflow-files'
+    this.cdnBaseUrl = process.env.CDN_BASE_URL || `https://${process.env.MINIO_ENDPOINT || 'cdn.nordicuniversity.org'}/${this.bucketName}`
 
     this.minioClient = new Minio.Client({
-      endPoint: 'cdn.nordicuniversity.org',
-      useSSL: true,
-      accessKey: 'VkZ8kGPGVAILcURlwI62',
-      secretKey: 'rzxgnz300PDlJZKEyqM8mKqOWlJtZ9bmogp2qc6X',
+      endPoint: process.env.MINIO_ENDPOINT || 'cdn.nordicuniversity.org',
+      useSSL: process.env.MINIO_USE_SSL !== 'false',
+      accessKey: process.env.MINIO_ACCESS_KEY || '',
+      secretKey: process.env.MINIO_SECRET_KEY || '',
     })
+  }
+
+  /** Fayl URL'ini yaratish (har joyda hardcode qilmaslik uchun) */
+  buildFileUrl(fileName: string): string {
+    return `${this.cdnBaseUrl}/${fileName}`
+  }
+
+  /** URL'dan fayl nomini ajratish */
+  extractFileName(fileUrl: string): string {
+    return fileUrl.replace(`${this.cdnBaseUrl}/`, '')
   }
 
   async onModuleInit() {
