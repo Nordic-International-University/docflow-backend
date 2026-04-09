@@ -190,7 +190,7 @@ export class WorkflowRetrieveAllDto {
   search?: string
 
   @ApiPropertyOptional({
-    description: 'Hujjat ID bo\'yicha filtrlash',
+    description: "Hujjat ID bo'yicha filtrlash",
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsOptional()
@@ -199,7 +199,7 @@ export class WorkflowRetrieveAllDto {
   documentId?: string
 
   @ApiPropertyOptional({
-    description: 'Ish jarayoni holati bo\'yicha filtrlash',
+    description: "Ish jarayoni holati bo'yicha filtrlash",
     enum: WorkflowStatus,
     example: WorkflowStatus.ACTIVE,
   })
@@ -208,7 +208,7 @@ export class WorkflowRetrieveAllDto {
   status?: WorkflowStatus
 
   @ApiPropertyOptional({
-    description: 'Ish jarayoni turi bo\'yicha filtrlash',
+    description: "Ish jarayoni turi bo'yicha filtrlash",
     enum: WorkflowType,
     example: WorkflowType.CONSECUTIVE,
   })
@@ -217,28 +217,28 @@ export class WorkflowRetrieveAllDto {
   type?: WorkflowType
 
   @ApiPropertyOptional({
-    description: 'Hujjat turi ID bo\'yicha filtrlash',
+    description: "Hujjat turi ID bo'yicha filtrlash",
   })
   @IsOptional()
   @IsUUID()
   documentTypeId?: string
 
   @ApiPropertyOptional({
-    description: 'Tayinlangan foydalanuvchi ID bo\'yicha filtrlash',
+    description: "Tayinlangan foydalanuvchi ID bo'yicha filtrlash",
   })
   @IsOptional()
   @IsUUID()
   assignedToUserId?: string
 
   @ApiPropertyOptional({
-    description: 'Hujjat yaratuvchisi ID bo\'yicha filtrlash',
+    description: "Hujjat yaratuvchisi ID bo'yicha filtrlash",
   })
   @IsOptional()
   @IsUUID()
   createdById?: string
 
   @ApiPropertyOptional({
-    description: 'Bosqich harakatining turi bo\'yicha filtrlash',
+    description: "Bosqich harakatining turi bo'yicha filtrlash",
     enum: StepActionType,
   })
   @IsOptional()
@@ -262,7 +262,8 @@ export class WorkflowRetrieveAllDto {
   dateTo?: string
 
   @ApiPropertyOptional({
-    description: 'Muddati o\'tganlarni ko\'rsatish (deadline < now va status ACTIVE)',
+    description:
+      "Muddati o'tganlarni ko'rsatish (deadline < now va status ACTIVE)",
     example: true,
   })
   @IsOptional()

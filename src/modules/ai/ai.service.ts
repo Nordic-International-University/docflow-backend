@@ -57,12 +57,10 @@ export class AiService {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 10,
     })
-    const history = historyDesc
-      .slice()
-      .sort((a, b) => {
-        const t = a.createdAt.getTime() - b.createdAt.getTime()
-        return t !== 0 ? t : a.id.localeCompare(b.id)
-      })
+    const history = historyDesc.slice().sort((a, b) => {
+      const t = a.createdAt.getTime() - b.createdAt.getTime()
+      return t !== 0 ? t : a.id.localeCompare(b.id)
+    })
 
     // 3. System prompt
     const today = new Date().toLocaleDateString('uz-UZ', {
@@ -250,7 +248,9 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       case 'getDocumentVersions':
         return `${r.versions?.length || 0} ta versiya topildi.`
       case 'getDocumentByNumber':
-        return r.title ? `${r.title} (${r.documentNumber}) - ${r.status}` : 'Hujjat topildi.'
+        return r.title
+          ? `${r.title} (${r.documentNumber}) - ${r.status}`
+          : 'Hujjat topildi.'
       case 'getDocumentsByType':
       case 'searchDocuments':
       case 'getRecentDocuments':
@@ -265,14 +265,21 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
         return `${r.count} ta foydalanuvchi topildi, kerakligini tanlang.`
       case 'findProjectByName':
         if (r.count === 0) return 'Loyiha topilmadi.'
-        if (r.count === 1) return `"${r.projects[0].name}" loyihasi topildi. Vazifa kimga biriktirilsin?`
+        if (r.count === 1)
+          return `"${r.projects[0].name}" loyihasi topildi. Vazifa kimga biriktirilsin?`
         return `${r.count} ta loyiha topildi, kerakligini tanlang.`
       case 'createTask':
-        return r.success ? `Topshiriq yaratildi: ${r.task?.ref}` : r.error || 'Xato'
+        return r.success
+          ? `Topshiriq yaratildi: ${r.task?.ref}`
+          : r.error || 'Xato'
       case 'addTaskComment':
-        return r.success ? `Izoh qo'shildi: ${r.taskRef || ''}` : r.error || 'Xato'
+        return r.success
+          ? `Izoh qo'shildi: ${r.taskRef || ''}`
+          : r.error || 'Xato'
       case 'completeTask':
-        return r.success ? `Topshiriq yakunlandi: ${r.taskRef || ''}` : r.error || 'Xato'
+        return r.success
+          ? `Topshiriq yakunlandi: ${r.taskRef || ''}`
+          : r.error || 'Xato'
       case 'getWorkflowStatusForDocument':
         return r.workflow
           ? `${r.document?.documentNumber}: ${r.workflow.status}, ${r.workflow.currentStep}/${r.workflow.totalSteps}-bosqich.`
@@ -288,9 +295,10 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
    * Groq xatosini foydalanuvchi uchun do'stona javobga aylantirish
    */
   private async handleGroqError(err: any, userId: string) {
-    const is429 = err?.status === 429 || /rate.?limit|429/i.test(err?.message || '')
+    const is429 =
+      err?.status === 429 || /rate.?limit|429/i.test(err?.message || '')
     const message = is429
-      ? "AI xizmati hozir band (limit). Iltimos, bir necha soniyadan keyin qayta urining."
+      ? 'AI xizmati hozir band (limit). Iltimos, bir necha soniyadan keyin qayta urining.'
       : "Kechirasiz, AI javob bera olmadi. Iltimos keyinroq urinib ko'ring."
 
     this.logger.error(`Groq chat failed: ${err?.message}`)
@@ -332,9 +340,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 completed: t.completed,
                 createdBy: t.createdBy,
               },
-              actions: [
-                { label: 'Ochish', url: t.url },
-              ],
+              actions: [{ label: 'Ochish', url: t.url }],
             })
           }
         }
@@ -356,9 +362,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 totalSteps: w.totalSteps,
                 deadline: w.deadline,
               },
-              actions: [
-                { label: 'Ish jarayonini ochish', url: w.url },
-              ],
+              actions: [{ label: 'Ish jarayonini ochish', url: w.url }],
             })
           }
         }
@@ -381,7 +385,9 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
             },
             actions: [
               { label: 'Hujjatni ochish', url: result.url },
-              ...(result.pdfUrl ? [{ label: 'PDF', url: result.pdfUrl, external: true }] : []),
+              ...(result.pdfUrl
+                ? [{ label: 'PDF', url: result.pdfUrl, external: true }]
+                : []),
             ],
           })
         }
@@ -402,9 +408,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 type: d.documentType?.name,
                 createdBy: d.createdBy?.fullname,
               },
-              actions: [
-                { label: 'Ochish', url: d.url },
-              ],
+              actions: [{ label: 'Ochish', url: d.url }],
             })
           }
         }
@@ -424,7 +428,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
             },
             actions: [
               { label: 'PDF yuklab olish', url: result.pdfUrl, external: true },
-              { label: 'Hujjatga o\'tish', url: result.url },
+              { label: "Hujjatga o'tish", url: result.url },
             ],
           })
         }
@@ -445,9 +449,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
               tasksLate: result.tasksLate,
               isFullScore: result.isFullScore,
             },
-            actions: [
-              { label: 'Batafsil', url: '/dashboard/kpi' },
-            ],
+            actions: [{ label: 'Batafsil', url: '/dashboard/kpi' }],
           })
         }
         break
@@ -484,9 +486,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 tasksCount: p.tasksCount,
                 membersCount: p.membersCount,
               },
-              actions: [
-                { label: 'Loyihani ochish', url: p.url },
-              ],
+              actions: [{ label: 'Loyihani ochish', url: p.url }],
             })
           }
         }
@@ -508,8 +508,14 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
               createdAt: result.createdAt,
             },
             actions: [
-              { label: 'PDF yuklab olish', url: result.fileUrl, external: true },
-              ...(result.url ? [{ label: 'Hujjatga o\'tish', url: result.url }] : []),
+              {
+                label: 'PDF yuklab olish',
+                url: result.fileUrl,
+                external: true,
+              },
+              ...(result.url
+                ? [{ label: "Hujjatga o'tish", url: result.url }]
+                : []),
             ],
           })
         }
@@ -557,9 +563,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
               assignees: result.assignees,
               createdBy: result.createdBy,
             },
-            actions: [
-              { label: 'Ochish', url: result.url },
-            ],
+            actions: [{ label: 'Ochish', url: result.url }],
           })
         }
         break
@@ -597,9 +601,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 status: p.status,
                 tasksCount: p.tasksCount,
               },
-              actions: [
-                { label: 'Ochish', url: p.url },
-              ],
+              actions: [{ label: 'Ochish', url: p.url }],
             })
           }
         }
@@ -614,9 +616,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
             title: result.task.title,
             subtitle: `${result.task.ref} yaratildi`,
             meta: { ref: result.task.ref, success: true },
-            actions: [
-              { label: 'Topshiriqqa o\'tish', url: result.task.url },
-            ],
+            actions: [{ label: "Topshiriqqa o'tish", url: result.task.url }],
           })
         }
         break
@@ -627,7 +627,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
           cards.push({
             type: 'action_result',
             id: `comment-${Date.now()}`,
-            title: 'Izoh qo\'shildi',
+            title: "Izoh qo'shildi",
             subtitle: result.taskRef,
             meta: { success: true },
           })
@@ -682,9 +682,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
                 createdAt: d.createdAt,
                 createdBy: d.createdBy?.fullname,
               },
-              actions: [
-                { label: 'Ochish', url: d.url },
-              ],
+              actions: [{ label: 'Ochish', url: d.url }],
             })
           }
         }
@@ -705,7 +703,9 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
               totalSteps: result.workflow.totalSteps,
               steps: result.workflow.steps,
             },
-            actions: result.workflow.url ? [{ label: 'Ochish', url: result.workflow.url }] : [],
+            actions: result.workflow.url
+              ? [{ label: 'Ochish', url: result.workflow.url }]
+              : [],
           })
         }
         break

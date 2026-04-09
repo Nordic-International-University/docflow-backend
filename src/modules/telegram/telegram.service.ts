@@ -6,6 +6,7 @@ import { Telegraf, Context } from 'telegraf'
 export class TelegramService implements OnModuleInit {
   private readonly logger = new Logger(TelegramService.name)
   private bot: Telegraf
+  private _workflowStepId: string
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -164,6 +165,7 @@ export class TelegramService implements OnModuleInit {
     username: string,
     fullName: string,
   ) {
+    this._username = username
     // Check if this Telegram ID is already linked
     const existingUser = await this.prisma.user.findFirst({
       where: { telegramId, deletedAt: null },
@@ -356,7 +358,9 @@ export class TelegramService implements OnModuleInit {
       }
       if (actionUrl) {
         options.reply_markup = {
-          inline_keyboard: [[{ text: buttonText || "🔗 Ochish", url: actionUrl }]],
+          inline_keyboard: [
+            [{ text: buttonText || '🔗 Ochish', url: actionUrl }],
+          ],
         }
       }
       await this.bot.telegram.sendMessage(chatId, text, options)
@@ -375,6 +379,7 @@ export class TelegramService implements OnModuleInit {
     message: string,
     workflowStepId?: string,
   ): Promise<boolean> {
+    this._workflowStepId = workflowStepId
     try {
       if (!this.bot) {
         this.logger.warn('Telegram bot is not initialized')
@@ -431,13 +436,11 @@ export class TelegramService implements OnModuleInit {
         throw new Error('This Telegram ID is already linked to another account')
       }
 
-      // Update user with Telegram ID
       await this.prisma.user.update({
         where: { id: userId },
         data: { telegramId },
       })
 
-      // Send confirmation message
       if (this.bot) {
         await this.bot.telegram.sendMessage(
           telegramId,
@@ -453,9 +456,6 @@ export class TelegramService implements OnModuleInit {
     }
   }
 
-  /**
-   * Unlink Telegram from a user account
-   */
   async unlinkTelegramFromUser(userId: string): Promise<boolean> {
     try {
       const user = await this.prisma.user.findFirst({

@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, Logger, forwardRef, Inject } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  forwardRef,
+  Inject,
+} from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { NotificationGateway } from './notification.gateway'
 import { TelegramService } from '../telegram/telegram.service'
@@ -46,7 +52,9 @@ export class NotificationService {
     try {
       await this.sendRichTelegramNotification(data.userId, data)
     } catch (err) {
-      this.logger.warn(`Telegram notification failed for user ${data.userId}: ${err.message}`)
+      this.logger.warn(
+        `Telegram notification failed for user ${data.userId}: ${err.message}`,
+      )
     }
 
     this.logger.log(
@@ -87,16 +95,16 @@ export class NotificationService {
 
     if (meta.workflowId) {
       actionUrl = `${FRONTEND_URL}/dashboard/workflow/${meta.workflowId}`
-      buttonText = "📋 Ish jarayonini ochish"
+      buttonText = '📋 Ish jarayonini ochish'
     } else if (meta.documentId) {
       actionUrl = `${FRONTEND_URL}/dashboard/document/${meta.documentId}`
-      buttonText = "📄 Hujjatni ochish"
+      buttonText = '📄 Hujjatni ochish'
     } else if (meta.taskId) {
       actionUrl = `${FRONTEND_URL}/dashboard/task/${meta.taskId}`
-      buttonText = "📌 Topshiriqni ochish"
+      buttonText = '📌 Topshiriqni ochish'
     } else if (meta.projectId) {
       actionUrl = `${FRONTEND_URL}/dashboard/project/${meta.projectId}`
-      buttonText = "🚀 Loyihani ochish"
+      buttonText = '🚀 Loyihani ochish'
     }
 
     // Fetch additional context
@@ -122,11 +130,13 @@ export class NotificationService {
 
       if (step?.workflow?.document) {
         const doc = step.workflow.document
-        extraInfo = '\n\n<b>📑 Hujjat ma\'lumotlari:</b>'
+        extraInfo = "\n\n<b>📑 Hujjat ma'lumotlari:</b>"
         extraInfo += `\n• <b>Sarlavha:</b> ${this.escapeHtml(doc.title)}`
         extraInfo += `\n• <b>Raqam:</b> <code>${doc.documentNumber || '—'}</code>`
-        if (doc.documentType?.name) extraInfo += `\n• <b>Turi:</b> ${doc.documentType.name}`
-        if (doc.createdBy) extraInfo += `\n• <b>Yaratuvchi:</b> ${doc.createdBy.fullname}`
+        if (doc.documentType?.name)
+          extraInfo += `\n• <b>Turi:</b> ${doc.documentType.name}`
+        if (doc.createdBy)
+          extraInfo += `\n• <b>Yaratuvchi:</b> ${doc.createdBy.fullname}`
         extraInfo += `\n• <b>Bosqich tartibi:</b> ${step.order}`
         if (step.dueDate) {
           extraInfo += `\n• <b>Muddat:</b> ${formatDateToUzbek(step.dueDate)}`
@@ -142,14 +152,19 @@ export class NotificationService {
         },
       })
       if (task) {
-        extraInfo = '\n\n<b>📌 Topshiriq ma\'lumotlari:</b>'
+        extraInfo = "\n\n<b>📌 Topshiriq ma'lumotlari:</b>"
         extraInfo += `\n• <b>Nomi:</b> ${this.escapeHtml(task.title)}`
         extraInfo += `\n• <b>Loyiha:</b> ${task.project?.name || '—'}`
-        if (task.project?.key) extraInfo += ` (<code>${task.project.key}-${task.taskNumber}</code>)`
-        if (task.priority) extraInfo += `\n• <b>Ustuvorlik:</b> ${task.priority}`
-        if (task.category?.name) extraInfo += `\n• <b>Kategoriya:</b> ${task.category.name}`
-        if (task.createdBy) extraInfo += `\n• <b>Yaratuvchi:</b> ${task.createdBy.fullname}`
-        if (task.dueDate) extraInfo += `\n• <b>Muddat:</b> ${formatDateToUzbek(task.dueDate)}`
+        if (task.project?.key)
+          extraInfo += ` (<code>${task.project.key}-${task.taskNumber}</code>)`
+        if (task.priority)
+          extraInfo += `\n• <b>Ustuvorlik:</b> ${task.priority}`
+        if (task.category?.name)
+          extraInfo += `\n• <b>Kategoriya:</b> ${task.category.name}`
+        if (task.createdBy)
+          extraInfo += `\n• <b>Yaratuvchi:</b> ${task.createdBy.fullname}`
+        if (task.dueDate)
+          extraInfo += `\n• <b>Muddat:</b> ${formatDateToUzbek(task.dueDate)}`
         if (task.score) extraInfo += `\n• <b>Ball:</b> ${task.score}`
       }
     }
@@ -164,8 +179,11 @@ export class NotificationService {
     // Compose message
     const now = new Date().toLocaleString('uz-UZ', {
       timeZone: 'Asia/Tashkent',
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
 
     const text =
@@ -174,7 +192,12 @@ export class NotificationService {
       extraInfo +
       `\n\n🕐 <i>${now}</i>`
 
-    await this.telegramService.sendTelegramMessage(recipient.telegramId, text, actionUrl, buttonText)
+    await this.telegramService.sendTelegramMessage(
+      recipient.telegramId,
+      text,
+      actionUrl,
+      buttonText,
+    )
   }
 
   private escapeHtml(text: string): string {
@@ -315,7 +338,7 @@ export class NotificationService {
       title: `Bosqich rad etildi: ${actionTypeUz}`,
       message:
         `Diqqat! ${rejectedBy} "${documentTitle}" ${documentNumber ? `(${documentNumber})` : ''} ` +
-        `hujjatining ${workflowStep.order}-bosqichini rad etdi. Sabab: "${rejectionReason || 'ko\'rsatilmagan'}".`,
+        `hujjatining ${workflowStep.order}-bosqichini rad etdi. Sabab: "${rejectionReason || "ko'rsatilmagan"}".`,
       metadata: {
         workflowStepId,
         workflowId: workflowStep.workflowId,
@@ -441,7 +464,8 @@ export class NotificationService {
     const doc = workflowStep.workflow?.document as any
     const documentTitle = doc?.title || 'hujjat'
     const documentNumber = doc?.documentNumber || ''
-    const shortComment = comment.length > 100 ? comment.substring(0, 100) + '...' : comment
+    const shortComment =
+      comment.length > 100 ? comment.substring(0, 100) + '...' : comment
 
     return this.createNotification({
       userId,

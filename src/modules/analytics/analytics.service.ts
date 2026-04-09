@@ -1059,7 +1059,8 @@ export class AnalyticsService {
     // ============ 3. KOMPANIYA / DEPARTAMENT REYTINGI ============
     const leaderboard = await this.prisma.userMonthlyKpi.findMany({
       where: {
-        year, month,
+        year,
+        month,
         ...(payload.currentUserDepartmentId && !isAdmin
           ? { departmentId: payload.currentUserDepartmentId }
           : {}),
@@ -1073,7 +1074,10 @@ export class AnalyticsService {
         const u = await this.prisma.user.findFirst({
           where: { id: k.userId },
           select: {
-            id: true, fullname: true, username: true, avatarUrl: true,
+            id: true,
+            fullname: true,
+            username: true,
+            avatarUrl: true,
             department: { select: { id: true, name: true } },
           },
         })
@@ -1101,7 +1105,9 @@ export class AnalyticsService {
         const task = await this.prisma.task.findFirst({
           where: { id: s.taskId },
           select: {
-            id: true, title: true, taskNumber: true,
+            id: true,
+            title: true,
+            taskNumber: true,
             project: { select: { name: true, key: true } },
           },
         })
@@ -1198,7 +1204,10 @@ export class AnalyticsService {
       usersAt100: allKpisThisMonth.filter((k) => k.isFullScore).length,
       usersAbove85: allKpisThisMonth.filter((k) => k.finalScore >= 85).length,
       usersBelow50: allKpisThisMonth.filter((k) => k.finalScore < 50).length,
-      totalTasksCompleted: allKpisThisMonth.reduce((s, k) => s + k.tasksCompleted, 0),
+      totalTasksCompleted: allKpisThisMonth.reduce(
+        (s, k) => s + k.tasksCompleted,
+        0,
+      ),
     }
 
     // ============ 10. SHAXSIY POSITION (kompaniya ichida) ============
@@ -1221,7 +1230,8 @@ export class AnalyticsService {
       averageDaysLate:
         taskScores.length > 0
           ? Math.round(
-              taskScores.reduce((s, t) => s + t.daysLate, 0) / taskScores.length,
+              taskScores.reduce((s, t) => s + t.daysLate, 0) /
+                taskScores.length,
             )
           : 0,
     }
@@ -1246,7 +1256,9 @@ export class AnalyticsService {
         const task = await this.prisma.task.findFirst({
           where: { id: s.taskId },
           select: {
-            id: true, title: true, taskNumber: true,
+            id: true,
+            title: true,
+            taskNumber: true,
             project: { select: { name: true, key: true } },
           },
         })

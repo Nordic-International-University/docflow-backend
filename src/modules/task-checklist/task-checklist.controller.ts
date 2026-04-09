@@ -111,7 +111,10 @@ export class TaskChecklistController {
     description: 'Task checklist deleted successfully',
   })
   async taskChecklistDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.taskChecklistService.taskChecklistDelete({ id, deletedBy: req.user?.userId })
+    return await this.taskChecklistService.taskChecklistDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 
   // ==================== CHECKLIST ITEM ENDPOINTS ====================
@@ -188,7 +191,10 @@ export class TaskChecklistController {
     status: 200,
     description: 'Task checklist item deleted successfully',
   })
-  async taskChecklistItemDelete(@Param('itemId') itemId: string, @Req() req: any) {
+  async taskChecklistItemDelete(
+    @Param('itemId') itemId: string,
+    @Req() req: any,
+  ) {
     return await this.taskChecklistService.taskChecklistItemDelete({
       id: itemId,
       deletedBy: req.user?.userId,

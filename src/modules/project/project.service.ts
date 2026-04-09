@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
-import { AuditLogService } from '../audit-log/audit-log.service'
-import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
+import { AuditLogService } from '../audit-log'
+import { AuditAction } from '../audit-log'
 import { ProjectStatus, ProjectVisibility } from '@prisma/client'
 import { ROLE_NAMES } from '@constants'
 import {
@@ -31,10 +31,13 @@ export class ProjectService {
    * Admin/Direktor → hammasini
    * Boshqalar → PUBLIC | (DEPARTMENT && o'z bo'limi) | (PRIVATE && member) | createdBy
    */
-  private buildVisibilityFilter(userId: string, roleName?: string, departmentId?: string): any {
+  private buildVisibilityFilter(
+    userId: string,
+    roleName?: string,
+    departmentId?: string,
+  ): any {
     const isAdmin =
-      roleName === ROLE_NAMES.SUPER_ADMIN ||
-      roleName === ROLE_NAMES.ADMIN
+      roleName === ROLE_NAMES.SUPER_ADMIN || roleName === ROLE_NAMES.ADMIN
 
     if (isAdmin) return {}
 
@@ -61,7 +64,12 @@ export class ProjectService {
   /**
    * Check if user has access to a specific project
    */
-  async checkProjectAccess(projectId: string, userId: string, roleName?: string, departmentId?: string): Promise<void> {
+  async checkProjectAccess(
+    projectId: string,
+    userId: string,
+    roleName?: string,
+    departmentId?: string,
+  ): Promise<void> {
     const project = await this.#_prisma.project.findFirst({
       where: {
         id: projectId,
@@ -72,7 +80,7 @@ export class ProjectService {
     })
 
     if (!project) {
-      throw new ForbiddenException('Bu loyihaga kirish huquqingiz yo\'q')
+      throw new ForbiddenException("Bu loyihaga kirish huquqingiz yo'q")
     }
   }
 
@@ -94,7 +102,9 @@ export class ProjectService {
     // Visibility default — DEPARTMENT bo'lim tanlangan bo'lsa, aks holda PRIVATE
     const visibility =
       (payload.visibility as ProjectVisibility) ||
-      (payload.departmentId ? ProjectVisibility.DEPARTMENT : ProjectVisibility.PRIVATE)
+      (payload.departmentId
+        ? ProjectVisibility.DEPARTMENT
+        : ProjectVisibility.PRIVATE)
 
     const project = await this.#_prisma.project.create({
       data: {
@@ -199,7 +209,11 @@ export class ProjectService {
   }
 
   async projectRetrieveAll(
-    payload: ProjectRetrieveQueryDto & { userId?: string; roleName?: string; userDepartmentId?: string },
+    payload: ProjectRetrieveQueryDto & {
+      userId?: string
+      roleName?: string
+      userDepartmentId?: string
+    },
   ) {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
@@ -207,26 +221,35 @@ export class ProjectService {
     const take = pageSize
 
     const visibilityFilter = payload.userId
-      ? this.buildVisibilityFilter(payload.userId, payload.roleName, payload.userDepartmentId)
+      ? this.buildVisibilityFilter(
+          payload.userId,
+          payload.roleName,
+          payload.userDepartmentId,
+        )
       : {}
 
-    const andConditions: any[] = [
-      { deletedAt: null },
-      { isArchived: false },
-    ]
+    const andConditions: any[] = [{ deletedAt: null }, { isArchived: false }]
 
     if (payload.search) {
       andConditions.push({
         OR: [
           { name: { contains: payload.search, mode: 'insensitive' as const } },
-          { description: { contains: payload.search, mode: 'insensitive' as const } },
+          {
+            description: {
+              contains: payload.search,
+              mode: 'insensitive' as const,
+            },
+          },
           { key: { contains: payload.search, mode: 'insensitive' as const } },
         ],
       })
     }
-    if (payload.status) andConditions.push({ status: payload.status as ProjectStatus })
-    if (payload.departmentId) andConditions.push({ departmentId: payload.departmentId })
-    if (Object.keys(visibilityFilter).length > 0) andConditions.push(visibilityFilter)
+    if (payload.status)
+      andConditions.push({ status: payload.status as ProjectStatus })
+    if (payload.departmentId)
+      andConditions.push({ departmentId: payload.departmentId })
+    if (Object.keys(visibilityFilter).length > 0)
+      andConditions.push(visibilityFilter)
 
     const where: any = { AND: andConditions }
 
@@ -452,7 +475,10 @@ export class ProjectService {
     await this.#_prisma.project.update({
       where: { id: payload.id },
       data: {
-        key: `${existingProject.key.slice(0, 4)}_${Date.now().toString(36)}`.slice(0, 10),
+        key: `${existingProject.key.slice(0, 4)}_${Date.now().toString(36)}`.slice(
+          0,
+          10,
+        ),
         deletedAt: new Date(),
       },
     })

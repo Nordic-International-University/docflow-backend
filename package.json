@@ -42,6 +42,7 @@
     "@nestjs/platform-express": "^11.0.20",
     "@nestjs/platform-socket.io": "^11.1.11",
     "@nestjs/swagger": "^11.1.0",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.2",
     "@pdftron/pdfnet-node": "^11.8.1-1",
     "@prisma/adapter-pg": "^7.0.1",

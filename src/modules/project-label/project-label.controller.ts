@@ -105,6 +105,9 @@ export class ProjectLabelController {
     description: 'Project label deleted successfully',
   })
   async projectLabelDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.projectLabelService.projectLabelDelete({ id, deletedBy: req.user?.userId })
+    return await this.projectLabelService.projectLabelDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

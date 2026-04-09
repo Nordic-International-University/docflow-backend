@@ -29,7 +29,10 @@ export class TaskController {
 
   @Get()
   @Permissions(PERMISSIONS.TASK.LIST)
-  async taskRetrieveAll(@Query() payload: TaskRetrieveQueryDto, @Req() req: any) {
+  async taskRetrieveAll(
+    @Query() payload: TaskRetrieveQueryDto,
+    @Req() req: any,
+  ) {
     return await this.taskService.taskRetrieveAll({
       ...payload,
       userId: req.user.userId,
@@ -69,16 +72,22 @@ export class TaskController {
 
   @Post(':id/complete')
   @Permissions(PERMISSIONS.TASK.COMPLETE)
-  @ApiOperation({ summary: "Topshiriqni yakunlash — KPI hisoblanadi" })
+  @ApiOperation({ summary: 'Topshiriqni yakunlash — KPI hisoblanadi' })
   async taskComplete(@Param('id') id: string, @Req() req: any) {
-    return await this.taskService.taskComplete({ id, completedBy: req.user.userId })
+    return await this.taskService.taskComplete({
+      id,
+      completedBy: req.user.userId,
+    })
   }
 
   @Post(':id/uncomplete')
   @Permissions(PERMISSIONS.TASK.COMPLETE)
-  @ApiOperation({ summary: "Topshiriqni qayta ochish — KPI bekor qilinadi" })
+  @ApiOperation({ summary: 'Topshiriqni qayta ochish — KPI bekor qilinadi' })
   async taskUncomplete(@Param('id') id: string, @Req() req: any) {
-    return await this.taskService.taskUncomplete({ id, reopenedBy: req.user.userId })
+    return await this.taskService.taskUncomplete({
+      id,
+      reopenedBy: req.user.userId,
+    })
   }
 
   @Delete(':id')

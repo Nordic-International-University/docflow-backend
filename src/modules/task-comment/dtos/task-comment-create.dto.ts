@@ -8,9 +8,10 @@ import {
 } from 'class-validator'
 import { TaskCommentCreateRequest } from '../interfaces'
 
-export class TaskCommentCreateDto
-  implements Omit<TaskCommentCreateRequest, 'userId'>
-{
+export class TaskCommentCreateDto implements Omit<
+  TaskCommentCreateRequest,
+  'userId'
+> {
   @ApiProperty({
     description: 'Task ID',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -20,8 +21,8 @@ export class TaskCommentCreateDto
   taskId: string
 
   @ApiProperty({
-    description: 'Izoh matni (fayl yuborilganda bo\'sh bo\'lishi mumkin)',
-    example: 'Bu topshiriqqa qo\'shimcha ma\'lumot kerak',
+    description: "Izoh matni (fayl yuborilganda bo'sh bo'lishi mumkin)",
+    example: "Bu topshiriqqa qo'shimcha ma'lumot kerak",
   })
   @IsString()
   @IsOptional()

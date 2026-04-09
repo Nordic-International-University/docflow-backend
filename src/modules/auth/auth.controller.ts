@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import { Throttle, SkipThrottle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import {
   ApiBearerAuth,
@@ -34,6 +35,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @Throttle({ short: { ttl: 60000, limit: 5 } })  // Login: faqat 5 urinish / daqiqa
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Login successful' })

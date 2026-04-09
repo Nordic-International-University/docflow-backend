@@ -152,8 +152,14 @@ export class DocumentTemplateController {
     status: 400,
     description: 'Invalid input data',
   })
-  async documentTemplateCreate(@Body() payload: DocumentTemplateCreateDto, @Req() req: any) {
-    return await this.documentTemplateService.documentTemplateCreate({ ...payload, createdBy: req.user?.userId })
+  async documentTemplateCreate(
+    @Body() payload: DocumentTemplateCreateDto,
+    @Req() req: any,
+  ) {
+    return await this.documentTemplateService.documentTemplateCreate({
+      ...payload,
+      createdBy: req.user?.userId,
+    })
   }
 
   @Patch(':id')
@@ -220,6 +226,9 @@ export class DocumentTemplateController {
     description: 'Document template not found',
   })
   async documentTemplateDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.documentTemplateService.documentTemplateDelete({ id, deletedBy: req.user?.userId })
+    return await this.documentTemplateService.documentTemplateDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

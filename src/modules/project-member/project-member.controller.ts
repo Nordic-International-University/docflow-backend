@@ -111,6 +111,9 @@ export class ProjectMemberController {
     description: 'Project member removed successfully',
   })
   async projectMemberDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.projectMemberService.projectMemberDelete({ id, deletedBy: req.user?.userId })
+    return await this.projectMemberService.projectMemberDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

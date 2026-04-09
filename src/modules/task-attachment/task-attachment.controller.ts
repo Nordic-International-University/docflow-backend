@@ -85,7 +85,10 @@ export class TaskAttachmentController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'File uploaded and attached to task' })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded and attached to task',
+  })
   async taskAttachmentUpload(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { taskId: string; description?: string },
@@ -117,7 +120,9 @@ export class TaskAttachmentController {
 
   @Post()
   @Permissions(PERMISSIONS.TASK.UPDATE)
-  @ApiOperation({ summary: 'Task Attachment Create (link existing attachment)' })
+  @ApiOperation({
+    summary: 'Task Attachment Create (link existing attachment)',
+  })
   @ApiResponse({
     status: 201,
     description: 'Task attachment created successfully',
@@ -159,6 +164,9 @@ export class TaskAttachmentController {
     description: 'Task attachment deleted successfully',
   })
   async taskAttachmentDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.taskAttachmentService.taskAttachmentDelete({ id, deletedBy: req.user?.userId })
+    return await this.taskAttachmentService.taskAttachmentDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

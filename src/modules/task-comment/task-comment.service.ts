@@ -106,9 +106,7 @@ export class TaskCommentService {
     this.#_taskGateway = taskGateway
   }
 
-  async taskCommentCreate(
-    payload: TaskCommentCreateRequest,
-  ): Promise<any> {
+  async taskCommentCreate(payload: TaskCommentCreateRequest): Promise<any> {
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.taskId, deletedAt: null },
       select: { id: true, projectId: true, title: true },
@@ -168,7 +166,9 @@ export class TaskCommentService {
               select: { id: true, fullname: true, username: true },
             },
             attachments: {
-              select: { attachment: { select: { mimeType: true, fileName: true } } },
+              select: {
+                attachment: { select: { mimeType: true, fileName: true } },
+              },
               take: 1,
             },
           },
@@ -183,8 +183,12 @@ export class TaskCommentService {
             id: created.parentComment.id,
             content: created.parentComment.content?.substring(0, 100) || '',
             user: created.parentComment.user,
-            attachmentType: created.parentComment.attachments?.[0]?.attachment?.mimeType || null,
-            attachmentName: created.parentComment.attachments?.[0]?.attachment?.fileName || null,
+            attachmentType:
+              created.parentComment.attachments?.[0]?.attachment?.mimeType ||
+              null,
+            attachmentName:
+              created.parentComment.attachments?.[0]?.attachment?.fileName ||
+              null,
           }
         : null,
       parentComment: undefined,
@@ -205,7 +209,11 @@ export class TaskCommentService {
     )
 
     // Real-time broadcast
-    this.#_taskGateway.emitTaskCommentAdded(task.projectId, task.id, fullComment)
+    this.#_taskGateway.emitTaskCommentAdded(
+      task.projectId,
+      task.id,
+      fullComment,
+    )
 
     return fullComment
   }
@@ -289,8 +297,12 @@ export class TaskCommentService {
             id: comment.parentComment.id,
             content: comment.parentComment.content?.substring(0, 100) || '',
             user: comment.parentComment.user,
-            attachmentType: comment.parentComment.attachments?.[0]?.attachment?.mimeType || null,
-            attachmentName: comment.parentComment.attachments?.[0]?.attachment?.fileName || null,
+            attachmentType:
+              comment.parentComment.attachments?.[0]?.attachment?.mimeType ||
+              null,
+            attachmentName:
+              comment.parentComment.attachments?.[0]?.attachment?.fileName ||
+              null,
           }
         : null,
       reactions: comment.reactions,
@@ -324,7 +336,9 @@ export class TaskCommentService {
               select: { id: true, fullname: true, username: true },
             },
             attachments: {
-              select: { attachment: { select: { mimeType: true, fileName: true } } },
+              select: {
+                attachment: { select: { mimeType: true, fileName: true } },
+              },
               take: 1,
             },
           },
@@ -348,8 +362,12 @@ export class TaskCommentService {
             id: comment.parentComment.id,
             content: comment.parentComment.content?.substring(0, 100) || '',
             user: comment.parentComment.user,
-            attachmentType: comment.parentComment.attachments?.[0]?.attachment?.mimeType || null,
-            attachmentName: comment.parentComment.attachments?.[0]?.attachment?.fileName || null,
+            attachmentType:
+              comment.parentComment.attachments?.[0]?.attachment?.mimeType ||
+              null,
+            attachmentName:
+              comment.parentComment.attachments?.[0]?.attachment?.fileName ||
+              null,
           }
         : null,
       parentComment: undefined,

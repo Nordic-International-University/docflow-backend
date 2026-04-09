@@ -194,13 +194,19 @@ export class TaskGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /** Checklist o'zgardi */
-  emitTaskChecklistUpdated(projectId: string, taskId: string, checklists: any[]) {
+  emitTaskChecklistUpdated(
+    projectId: string,
+    taskId: string,
+    checklists: any[],
+  ) {
     this.server.to(`project:${projectId}`).emit('task:checklist-updated', {
       taskId,
       checklists,
       timestamp: new Date().toISOString(),
     })
-    this.logger.log(`[Broadcast] task:checklist-updated in project ${projectId}`)
+    this.logger.log(
+      `[Broadcast] task:checklist-updated in project ${projectId}`,
+    )
   }
 
   /** Task label o'zgardi */

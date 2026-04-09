@@ -76,7 +76,9 @@ export class ChatService {
       // /chat namespace'dagi live ulanish yoki /notifications'dagi ulanish
       const rawOnline = this.gateway.isUserConnected(uid) || onlineSet.has(uid)
       const isOnline = rawOnline && !hiddenOnline.has(uid)
-      const lastSeen = hiddenLastSeen.has(uid) ? null : lastSeenMap.get(uid) || null
+      const lastSeen = hiddenLastSeen.has(uid)
+        ? null
+        : lastSeenMap.get(uid) || null
       map.set(uid, { isOnline, lastSeen })
     }
     return map
@@ -91,7 +93,7 @@ export class ChatService {
     const member = await this.prisma.chatMember.findFirst({
       where: { chatId, userId, leftAt: null },
     })
-    if (!member) throw new ForbiddenException('Siz bu chat a\'zosi emassiz')
+    if (!member) throw new ForbiddenException("Siz bu chat a'zosi emassiz")
     return member
   }
 
@@ -101,7 +103,7 @@ export class ChatService {
     const member = await this.prisma.chatMember.findFirst({
       where: { chatId, userId, leftAt: null, role: { in: ['OWNER', 'ADMIN'] } },
     })
-    if (!member) throw new ForbiddenException('Guruhni boshqarish huquqi yo\'q')
+    if (!member) throw new ForbiddenException("Guruhni boshqarish huquqi yo'q")
   }
 
   /** Chatlar ro'yxati (oxirgi xabari bilan) */
@@ -130,7 +132,9 @@ export class ChatService {
               orderBy: { createdAt: 'desc' },
               take: 1,
               include: {
-                sender: { select: { id: true, fullname: true, username: true } },
+                sender: {
+                  select: { id: true, fullname: true, username: true },
+                },
               },
             },
           },
@@ -210,7 +214,7 @@ export class ChatService {
   /** Direct chat yaratish yoki mavjudini qaytarish */
   async createOrGetDirectChat(payload: CreateDirectChatDto, ctx: Ctx) {
     if (payload.userId === ctx.userId) {
-      throw new BadRequestException('O\'z-o\'zi bilan chat yaratib bo\'lmaydi')
+      throw new BadRequestException("O'z-o'zi bilan chat yaratib bo'lmaydi")
     }
     const peer = await this.prisma.user.findFirst({
       where: { id: payload.userId, deletedAt: null, isActive: true },
@@ -229,10 +233,15 @@ export class ChatService {
         ],
       },
       include: {
-        members: { include: { user: { select: { id: true, fullname: true, avatarUrl: true } } } },
+        members: {
+          include: {
+            user: { select: { id: true, fullname: true, avatarUrl: true } },
+          },
+        },
       },
     })
-    if (existing) return { id: existing.id, type: existing.type, peer, created: false }
+    if (existing)
+      return { id: existing.id, type: existing.type, peer, created: false }
 
     const chat = await this.prisma.chat.create({
       data: {
@@ -258,7 +267,7 @@ export class ChatService {
     const validIds = users.map((u) => u.id)
     if (!validIds.includes(ctx.userId)) validIds.push(ctx.userId)
     if (validIds.length < 2) {
-      throw new BadRequestException('Guruh uchun kamida 1 ta boshqa a\'zo kerak')
+      throw new BadRequestException("Guruh uchun kamida 1 ta boshqa a'zo kerak")
     }
 
     const chat = await this.prisma.chat.create({
@@ -278,12 +287,24 @@ export class ChatService {
       include: {
         members: {
           include: {
-            user: { select: { id: true, fullname: true, username: true, avatarUrl: true } },
+            user: {
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
       },
     })
-    return { id: chat.id, type: chat.type, title: chat.title, members: chat.members }
+    return {
+      id: chat.id,
+      type: chat.type,
+      title: chat.title,
+      members: chat.members,
+    }
   }
 
   async getChat(chatId: string, ctx: Ctx) {
@@ -354,14 +375,18 @@ export class ChatService {
       blockStatus,
       // DIRECT uchun title'ni peer nomiga aylantirish
       title: chat.type === 'DIRECT' ? peer?.fullname || null : chat.title,
-      avatarUrl: chat.type === 'DIRECT' ? peer?.avatarUrl || null : chat.avatarUrl,
+      avatarUrl:
+        chat.type === 'DIRECT' ? peer?.avatarUrl || null : chat.avatarUrl,
     }
   }
 
   async updateGroupChat(chatId: string, payload: UpdateGroupChatDto, ctx: Ctx) {
     await this.ensureGroupAdmin(chatId, ctx.userId, ctx)
-    const chat = await this.prisma.chat.findFirst({ where: { id: chatId, deletedAt: null } })
-    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    const chat = await this.prisma.chat.findFirst({
+      where: { id: chatId, deletedAt: null },
+    })
+    if (!chat || chat.type !== 'GROUP')
+      throw new NotFoundException('Guruh topilmadi')
     return await this.prisma.chat.update({
       where: { id: chatId },
       data: {
@@ -381,7 +406,7 @@ export class ChatService {
     if (!this.isAdmin(ctx)) {
       const m = chat.members[0]
       if (!m || (chat.type === 'GROUP' && m.role !== 'OWNER')) {
-        throw new ForbiddenException('Chatni o\'chirish huquqi yo\'q')
+        throw new ForbiddenException("Chatni o'chirish huquqi yo'q")
       }
     }
     await this.prisma.chat.update({
@@ -393,8 +418,11 @@ export class ChatService {
 
   async addMembers(chatId: string, payload: AddMembersDto, ctx: Ctx) {
     await this.ensureGroupAdmin(chatId, ctx.userId, ctx)
-    const chat = await this.prisma.chat.findFirst({ where: { id: chatId, deletedAt: null } })
-    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    const chat = await this.prisma.chat.findFirst({
+      where: { id: chatId, deletedAt: null },
+    })
+    if (!chat || chat.type !== 'GROUP')
+      throw new NotFoundException('Guruh topilmadi')
 
     const users = await this.prisma.user.findMany({
       where: { id: { in: payload.userIds }, deletedAt: null, isActive: true },
@@ -426,8 +454,11 @@ export class ChatService {
   }
 
   async removeMember(chatId: string, targetUserId: string, ctx: Ctx) {
-    const chat = await this.prisma.chat.findFirst({ where: { id: chatId, deletedAt: null } })
-    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    const chat = await this.prisma.chat.findFirst({
+      where: { id: chatId, deletedAt: null },
+    })
+    if (!chat || chat.type !== 'GROUP')
+      throw new NotFoundException('Guruh topilmadi')
 
     const selfLeaving = targetUserId === ctx.userId
     if (!selfLeaving) {
@@ -437,9 +468,9 @@ export class ChatService {
     const target = await this.prisma.chatMember.findFirst({
       where: { chatId, userId: targetUserId, leftAt: null },
     })
-    if (!target) throw new NotFoundException('A\'zo topilmadi')
+    if (!target) throw new NotFoundException("A'zo topilmadi")
     if (target.role === 'OWNER' && !selfLeaving) {
-      throw new ForbiddenException('Egasini chiqarib bo\'lmaydi')
+      throw new ForbiddenException("Egasini chiqarib bo'lmaydi")
     }
 
     await this.prisma.chatMember.update({
@@ -459,9 +490,13 @@ export class ChatService {
     const target = await this.prisma.chatMember.findFirst({
       where: { chatId, userId: targetUserId, leftAt: null },
     })
-    if (!target) throw new NotFoundException('A\'zo topilmadi')
-    if (target.role === 'OWNER') throw new ForbiddenException('Egasining rolini o\'zgartirib bo\'lmaydi')
-    await this.prisma.chatMember.update({ where: { id: target.id }, data: { role } })
+    if (!target) throw new NotFoundException("A'zo topilmadi")
+    if (target.role === 'OWNER')
+      throw new ForbiddenException("Egasining rolini o'zgartirib bo'lmaydi")
+    await this.prisma.chatMember.update({
+      where: { id: target.id },
+      data: { role },
+    })
     return { success: true }
   }
 
@@ -496,7 +531,9 @@ export class ChatService {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit,
       include: {
-        sender: { select: { id: true, fullname: true, username: true, avatarUrl: true } },
+        sender: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
         replyTo: {
           select: {
             id: true,
@@ -517,16 +554,26 @@ export class ChatService {
 
     // Forward attribution — original user/chat ma'lumotlarini to'plash
     const fwdUserIds = Array.from(
-      new Set(messages.map((m) => m.forwardedFromUserId).filter(Boolean) as string[]),
+      new Set(
+        messages.map((m) => m.forwardedFromUserId).filter(Boolean) as string[],
+      ),
     )
     const fwdChatIds = Array.from(
-      new Set(messages.map((m) => m.forwardedFromChatId).filter(Boolean) as string[]),
+      new Set(
+        messages.map((m) => m.forwardedFromChatId).filter(Boolean) as string[],
+      ),
     )
     const [fwdUsers, fwdChats] = await Promise.all([
       fwdUserIds.length
         ? this.prisma.user.findMany({
             where: { id: { in: fwdUserIds } },
-            select: { id: true, fullname: true, username: true, avatarUrl: true, deletedAt: true },
+            select: {
+              id: true,
+              fullname: true,
+              username: true,
+              avatarUrl: true,
+              deletedAt: true,
+            },
           })
         : Promise.resolve([]),
       fwdChatIds.length
@@ -553,7 +600,11 @@ export class ChatService {
         .map((m) => {
           // Forward attribution
           let forwardedFrom: any = null
-          if (m.forwardedFromUserId || m.forwardedFromChatId || m.forwardedFromName) {
+          if (
+            m.forwardedFromUserId ||
+            m.forwardedFromChatId ||
+            m.forwardedFromName
+          ) {
             const user = m.forwardedFromUserId
               ? userMap.get(m.forwardedFromUserId)
               : null
@@ -561,35 +612,40 @@ export class ChatService {
               ? chatMap.get(m.forwardedFromChatId)
               : null
             forwardedFrom = {
-              user: user && !user.deletedAt
-                ? {
-                    id: user.id,
-                    fullname: user.fullname,
-                    username: user.username,
-                    avatarUrl: user.avatarUrl,
-                  }
-                : m.forwardedFromName
-                  ? { fullname: m.forwardedFromName, deleted: true }
-                  : null,
-              chat: chat && !chat.deletedAt
-                ? {
-                    id: chat.id,
-                    type: chat.type,
-                    title: chat.title,
-                    username: chat.username,
-                    avatarUrl: chat.avatarUrl,
-                    visibility: chat.visibility,
-                  }
-                : m.forwardedFromChatTitle
-                  ? { title: m.forwardedFromChatTitle, deleted: true }
-                  : null,
+              user:
+                user && !user.deletedAt
+                  ? {
+                      id: user.id,
+                      fullname: user.fullname,
+                      username: user.username,
+                      avatarUrl: user.avatarUrl,
+                    }
+                  : m.forwardedFromName
+                    ? { fullname: m.forwardedFromName, deleted: true }
+                    : null,
+              chat:
+                chat && !chat.deletedAt
+                  ? {
+                      id: chat.id,
+                      type: chat.type,
+                      title: chat.title,
+                      username: chat.username,
+                      avatarUrl: chat.avatarUrl,
+                      visibility: chat.visibility,
+                    }
+                  : m.forwardedFromChatTitle
+                    ? { title: m.forwardedFromChatTitle, deleted: true }
+                    : null,
             }
           }
           return {
             ...m,
             content: this.crypto.decrypt(m.content),
             replyTo: m.replyTo
-              ? { ...m.replyTo, content: this.crypto.decrypt(m.replyTo.content) }
+              ? {
+                  ...m.replyTo,
+                  content: this.crypto.decrypt(m.replyTo.content),
+                }
               : null,
             forwardedFrom,
           }
@@ -617,7 +673,9 @@ export class ChatService {
     let type = payload.type || 'TEXT'
     // Multipart form'da raqamlar string bo'lib keladi — cast qilish
     const duration =
-      payload.duration != null ? Math.round(Number(payload.duration)) : undefined
+      payload.duration != null
+        ? Math.round(Number(payload.duration))
+        : undefined
 
     if (file) {
       const uploaded = await this.minio.uploadFile(file, 'chat/')
@@ -634,7 +692,7 @@ export class ChatService {
     }
 
     if (type === 'TEXT' && !payload.content?.trim()) {
-      throw new BadRequestException('Bo\'sh xabar yuborib bo\'lmaydi')
+      throw new BadRequestException("Bo'sh xabar yuborib bo'lmaydi")
     }
 
     // DIRECT chatda peer bloklamaganligini tekshirish
@@ -661,11 +719,15 @@ export class ChatService {
       }
     }
     // GROUP: media yuborish cheklangan bo'lsa faqat admin/owner
-    if (chatInfo?.type === 'GROUP' && type !== 'TEXT' && !chatInfo.allowMemberSendMedia) {
+    if (
+      chatInfo?.type === 'GROUP' &&
+      type !== 'TEXT' &&
+      !chatInfo.allowMemberSendMedia
+    ) {
       const myRole = chatInfo.members.find((m) => m.userId === ctx.userId)?.role
       if (myRole !== 'OWNER' && myRole !== 'ADMIN' && !this.isAdmin(ctx)) {
         throw new ForbiddenException(
-          "Bu guruhda faqat adminlar media yubora oladi",
+          'Bu guruhda faqat adminlar media yubora oladi',
         )
       }
     }
@@ -675,7 +737,8 @@ export class ChatService {
       const replyTo = await this.prisma.chatMessage.findFirst({
         where: { id: payload.replyToId, chatId, deletedAt: null },
       })
-      if (!replyTo) throw new NotFoundException('Javob berilayotgan xabar topilmadi')
+      if (!replyTo)
+        throw new NotFoundException('Javob berilayotgan xabar topilmadi')
     }
 
     const message = await this.prisma.chatMessage.create({
@@ -693,7 +756,9 @@ export class ChatService {
         thumbnailUrl: payload.thumbnailUrl,
       },
       include: {
-        sender: { select: { id: true, fullname: true, username: true, avatarUrl: true } },
+        sender: {
+          select: { id: true, fullname: true, username: true, avatarUrl: true },
+        },
         replyTo: {
           select: {
             id: true,
@@ -744,7 +809,10 @@ export class ChatService {
       ...message,
       content: this.crypto.decrypt(message.content),
       replyTo: message.replyTo
-        ? { ...message.replyTo, content: this.crypto.decrypt(message.replyTo.content) }
+        ? {
+            ...message.replyTo,
+            content: this.crypto.decrypt(message.replyTo.content),
+          }
         : null,
     }
   }
@@ -754,8 +822,10 @@ export class ChatService {
       where: { id: messageId, deletedAt: null },
     })
     if (!msg) throw new NotFoundException('Xabar topilmadi')
-    if (msg.senderId !== ctx.userId) throw new ForbiddenException('Faqat o\'z xabaringizni tahrirlay olasiz')
-    if (msg.type !== 'TEXT') throw new BadRequestException('Faqat matnli xabarlarni tahrirlash mumkin')
+    if (msg.senderId !== ctx.userId)
+      throw new ForbiddenException("Faqat o'z xabaringizni tahrirlay olasiz")
+    if (msg.type !== 'TEXT')
+      throw new BadRequestException('Faqat matnli xabarlarni tahrirlash mumkin')
 
     const updated = await this.prisma.chatMessage.update({
       where: { id: messageId },
@@ -785,7 +855,7 @@ export class ChatService {
       }))
 
     if (msg.senderId !== ctx.userId && !canDeleteAny) {
-      throw new ForbiddenException('Xabarni o\'chirish huquqi yo\'q')
+      throw new ForbiddenException("Xabarni o'chirish huquqi yo'q")
     }
 
     await this.prisma.chatMessage.update({
@@ -832,7 +902,9 @@ export class ChatService {
         })
         for (const m of msgs) {
           await this.prisma.chatMessageRead.upsert({
-            where: { messageId_userId: { messageId: m.id, userId: ctx.userId } },
+            where: {
+              messageId_userId: { messageId: m.id, userId: ctx.userId },
+            },
             create: { messageId: m.id, userId: ctx.userId },
             update: {},
           })
@@ -875,7 +947,11 @@ export class ChatService {
     return { success: true, chatId: msg.chatId }
   }
 
-  async forwardMessage(messageId: string, payload: ForwardMessageDto, ctx: Ctx) {
+  async forwardMessage(
+    messageId: string,
+    payload: ForwardMessageDto,
+    ctx: Ctx,
+  ) {
     const source = await this.prisma.chatMessage.findFirst({
       where: { id: messageId, deletedAt: null },
       include: {
@@ -931,12 +1007,18 @@ export class ChatService {
   }
 
   /** Workflow'ni chatga yuborish */
-  async forwardWorkflow(workflowId: string, payload: ForwardEntityDto, ctx: Ctx) {
+  async forwardWorkflow(
+    workflowId: string,
+    payload: ForwardEntityDto,
+    ctx: Ctx,
+  ) {
     await this.ensureMember(payload.toChatId, ctx.userId)
     const workflow = await this.prisma.workflow.findFirst({
       where: { id: workflowId, deletedAt: null },
       include: {
-        document: { select: { id: true, title: true, documentNumber: true, status: true } },
+        document: {
+          select: { id: true, title: true, documentNumber: true, status: true },
+        },
       },
     })
     if (!workflow) throw new NotFoundException('Workflow topilmadi')
@@ -967,7 +1049,11 @@ export class ChatService {
     return { id: msg.id, chatId: payload.toChatId, ref: snapshot }
   }
 
-  async forwardDocument(documentId: string, payload: ForwardEntityDto, ctx: Ctx) {
+  async forwardDocument(
+    documentId: string,
+    payload: ForwardEntityDto,
+    ctx: Ctx,
+  ) {
     await this.ensureMember(payload.toChatId, ctx.userId)
     const doc = await this.prisma.document.findFirst({
       where: { id: documentId, deletedAt: null },
@@ -1089,7 +1175,9 @@ export class ChatService {
         return payload.type === 'VIDEO' ? !s.allowVideoCalls : !s.allowCalls
       })
     if (blockedByAll) {
-      throw new ForbiddenException('Bu foydalanuvchilar qo\'ng\'iroqlarni o\'chirib qo\'yishgan')
+      throw new ForbiddenException(
+        "Bu foydalanuvchilar qo'ng'iroqlarni o'chirib qo'yishgan",
+      )
     }
 
     const call = await this.prisma.callSession.create({
@@ -1109,11 +1197,18 @@ export class ChatService {
         initiator: {
           select: { id: true, fullname: true, username: true, avatarUrl: true },
         },
-        chat: { select: { id: true, type: true, title: true, avatarUrl: true } },
+        chat: {
+          select: { id: true, type: true, title: true, avatarUrl: true },
+        },
         participants: {
           include: {
             user: {
-              select: { id: true, fullname: true, username: true, avatarUrl: true },
+              select: {
+                id: true,
+                fullname: true,
+                username: true,
+                avatarUrl: true,
+              },
             },
           },
         },
@@ -1136,14 +1231,15 @@ export class ChatService {
         participants: true,
       },
     })
-    if (!call) throw new NotFoundException('Qo\'ng\'iroq topilmadi')
+    if (!call) throw new NotFoundException("Qo'ng'iroq topilmadi")
 
     const part = call.participants.find((p) => p.userId === ctx.userId)
-    if (!part) throw new ForbiddenException('Siz bu qo\'ng\'iroq ishtirokchisi emassiz')
+    if (!part)
+      throw new ForbiddenException("Siz bu qo'ng'iroq ishtirokchisi emassiz")
 
     if (action === 'accept') {
       if (call.status !== 'RINGING' && call.status !== 'ACTIVE') {
-        throw new BadRequestException('Qo\'ng\'iroq allaqachon tugagan')
+        throw new BadRequestException("Qo'ng'iroq allaqachon tugagan")
       }
       await this.prisma.callParticipant.update({
         where: { id: part.id },
@@ -1155,7 +1251,13 @@ export class ChatService {
           data: { status: 'ACTIVE', startedAt: new Date() },
         })
       }
-      return { success: true, action, callId, chatId: call.chatId, initiator: call.initiator }
+      return {
+        success: true,
+        action,
+        callId,
+        chatId: call.chatId,
+        initiator: call.initiator,
+      }
     }
 
     if (action === 'reject') {
@@ -1164,8 +1266,12 @@ export class ChatService {
         data: { leftAt: new Date() },
       })
       // Agar barcha non-initiator'lar rad etgan bo'lsa — REJECTED
-      const others = call.participants.filter((p) => p.userId !== call.initiatorId)
-      const allRejected = others.every((p) => p.userId === ctx.userId || p.leftAt)
+      const others = call.participants.filter(
+        (p) => p.userId !== call.initiatorId,
+      )
+      const allRejected = others.every(
+        (p) => p.userId === ctx.userId || p.leftAt,
+      )
       if (allRejected) {
         await this.prisma.callSession.update({
           where: { id: callId },
@@ -1175,7 +1281,13 @@ export class ChatService {
           },
         })
       }
-      return { success: true, action, callId, chatId: call.chatId, initiator: call.initiator }
+      return {
+        success: true,
+        action,
+        callId,
+        chatId: call.chatId,
+        initiator: call.initiator,
+      }
     }
 
     // end
@@ -1295,9 +1407,7 @@ export class ChatService {
       where: {
         chatId: { in: chatIds },
         deletedAt: null,
-        OR: [
-          { fileName: { contains: query, mode: 'insensitive' } },
-        ],
+        OR: [{ fileName: { contains: query, mode: 'insensitive' } }],
       },
       take: 50,
       orderBy: { createdAt: 'desc' },
@@ -1340,12 +1450,17 @@ export class ChatService {
       seen.add(m.id)
       combined.push({
         ...m,
-        content: m.content && typeof m.content === 'string' && !m.content.startsWith('enc:v1:')
-          ? m.content
-          : this.crypto.decrypt(m.content),
+        content:
+          m.content &&
+          typeof m.content === 'string' &&
+          !m.content.startsWith('enc:v1:')
+            ? m.content
+            : this.crypto.decrypt(m.content),
       })
     }
-    combined.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+    combined.sort(
+      (a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0),
+    )
 
     return { count: combined.length, messages: combined.slice(0, 50) }
   }
@@ -1472,7 +1587,9 @@ export class ChatService {
         try {
           await this.telegram.sendWorkflowNotification(m.userId, text)
         } catch (err: any) {
-          this.logger.warn(`Telegram push failed for ${m.userId}: ${err.message}`)
+          this.logger.warn(
+            `Telegram push failed for ${m.userId}: ${err.message}`,
+          )
         }
       }
     } catch (err: any) {
@@ -1492,7 +1609,9 @@ export class ChatService {
     })
     if (!target) throw new NotFoundException('Foydalanuvchi topilmadi')
     await this.prisma.userBlock.upsert({
-      where: { blockerId_blockedId: { blockerId: ctx.userId, blockedId: targetUserId } },
+      where: {
+        blockerId_blockedId: { blockerId: ctx.userId, blockedId: targetUserId },
+      },
       create: { blockerId: ctx.userId, blockedId: targetUserId },
       update: {},
     })
@@ -1548,7 +1667,8 @@ export class ChatService {
     const chat = await this.prisma.chat.findFirst({
       where: { id: chatId, deletedAt: null },
     })
-    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    if (!chat || chat.type !== 'GROUP')
+      throw new NotFoundException('Guruh topilmadi')
 
     const data: any = { visibility: payload.visibility }
 
@@ -1562,7 +1682,10 @@ export class ChatService {
         )
       }
       const existing = await this.prisma.chat.findFirst({
-        where: { username: payload.username.toLowerCase(), id: { not: chatId } },
+        where: {
+          username: payload.username.toLowerCase(),
+          id: { not: chatId },
+        },
       })
       if (existing) throw new BadRequestException('Bu username band')
       data.username = payload.username.toLowerCase()
@@ -1596,7 +1719,8 @@ export class ChatService {
     const chat = await this.prisma.chat.findFirst({
       where: { id: chatId, deletedAt: null },
     })
-    if (!chat || chat.type !== 'GROUP') throw new NotFoundException('Guruh topilmadi')
+    if (!chat || chat.type !== 'GROUP')
+      throw new NotFoundException('Guruh topilmadi')
     return await this.prisma.chat.update({
       where: { id: chatId },
       data: {
@@ -1654,7 +1778,12 @@ export class ChatService {
           data: { leftAt: null, joinedAt: new Date() },
         })
       }
-      return { success: true, chatId, joined: true, alreadyMember: !existing.leftAt }
+      return {
+        success: true,
+        chatId,
+        joined: true,
+        alreadyMember: !existing.leftAt,
+      }
     }
     await this.prisma.chatMember.create({
       data: { chatId, userId: ctx.userId, role: 'MEMBER' },

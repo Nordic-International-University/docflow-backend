@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
-import { AuditLogService } from '../audit-log/audit-log.service'
-import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
+import { AuditLogService } from '../audit-log'
+import { AuditAction } from '../audit-log'
 import { TaskPriority } from '@prisma/client'
-import { NotificationService } from '../notification/notification.service'
-import { KpiCalculationService } from '../user-monthly-kpi/kpi-calculation.service'
+import { NotificationService } from '../notification'
+import { KpiCalculationService } from '../user-monthly-kpi'
 import { TaskGateway } from './task.gateway'
 import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 
@@ -32,15 +32,10 @@ export class TaskService {
     this.#_taskGateway = taskGateway
   }
 
-  /**
-   * Resolve score: scoreConfigId → config.baseScore, else manual score, else 0.
-   * Frontend sends scoreConfigId (dropdown), backend looks up baseScore.
-   */
   private async resolveScore(
     scoreConfigId?: string | null,
     manualScore?: number | null,
   ): Promise<number> {
-    // 1. scoreConfigId tanlangan bo'lsa — config'dan ball olish
     if (scoreConfigId) {
       const config = await this.#_prisma.taskScoreConfig.findFirst({
         where: { id: scoreConfigId, isActive: true, deletedAt: null },
@@ -49,17 +44,9 @@ export class TaskService {
       if (config) return config.baseScore
     }
 
-    // 2. Qo'lda score kiritilgan bo'lsa
     if (manualScore != null && manualScore > 0) return manualScore
-
-    // 3. Hech biri yo'q — 0 (KPI hisoblanmaydi)
     return 0
   }
-
-  /**
-   * Score KPI for all assignees when task completes.
-   * Uses upsert for idempotency. Auto-updates monthly KPI.
-   */
   private async scoreTaskKpi(
     taskId: string,
     score: number,
@@ -71,7 +58,10 @@ export class TaskService {
 
     const now = new Date()
     const daysLate = dueDate
-      ? Math.max(0, Math.floor((now.getTime() - dueDate.getTime()) / 86_400_000))
+      ? Math.max(
+          0,
+          Math.floor((now.getTime() - dueDate.getTime()) / 86_400_000),
+        )
       : 0
     const penalty = daysLate > 0 ? daysLate * penaltyPerDay : 0
     const earnedScore = Math.max(0, score - penalty)
@@ -82,20 +72,51 @@ export class TaskService {
       await this.#_prisma.taskKpiScore.upsert({
         where: { taskId_userId: { taskId, userId } },
         create: {
-          taskId, userId,
-          baseScore: score, earnedScore, penaltyApplied: penalty,
-          dueDate: dueDate ?? now, completedDate: now, daysLate,
-          periodYear, periodMonth,
-          breakdown: { baseScore: score, daysLate, penaltyPerDay, totalPenalty: penalty, earned: earnedScore },
+          taskId,
+          userId,
+          baseScore: score,
+          earnedScore,
+          penaltyApplied: penalty,
+          dueDate: dueDate ?? now,
+          completedDate: now,
+          daysLate,
+          periodYear,
+          periodMonth,
+          breakdown: {
+            baseScore: score,
+            daysLate,
+            penaltyPerDay,
+            totalPenalty: penalty,
+            earned: earnedScore,
+          },
         },
         update: {
-          baseScore: score, earnedScore, penaltyApplied: penalty,
-          completedDate: now, daysLate, periodYear, periodMonth,
-          breakdown: { baseScore: score, daysLate, penaltyPerDay, totalPenalty: penalty, earned: earnedScore },
+          baseScore: score,
+          earnedScore,
+          penaltyApplied: penalty,
+          completedDate: now,
+          daysLate,
+          periodYear,
+          periodMonth,
+          breakdown: {
+            baseScore: score,
+            daysLate,
+            penaltyPerDay,
+            totalPenalty: penalty,
+            earned: earnedScore,
+          },
         },
       })
       // Auto-update monthly KPI
-      try { await this.#_kpiService.updateUserMonthlyKpi(userId, periodYear, periodMonth) } catch {}
+      try {
+        await this.#_kpiService.updateUserMonthlyKpi(
+          userId,
+          periodYear,
+          periodMonth,
+        )
+      } catch {
+        /* empty */
+      }
     }
   }
 
@@ -114,7 +135,15 @@ export class TaskService {
 
     // Re-aggregate monthly KPI for affected users
     for (const score of existing) {
-      try { await this.#_kpiService.updateUserMonthlyKpi(score.userId, score.periodYear, score.periodMonth) } catch {}
+      try {
+        await this.#_kpiService.updateUserMonthlyKpi(
+          score.userId,
+          score.periodYear,
+          score.periodMonth,
+        )
+      } catch {
+        /* empty */
+      }
     }
   }
 
@@ -145,7 +174,10 @@ export class TaskService {
     }
 
     // Resolve score from config or manual input
-    const resolvedScore = await this.resolveScore(payload.scoreConfigId, payload.score)
+    const resolvedScore = await this.resolveScore(
+      payload.scoreConfigId,
+      payload.score,
+    )
 
     // Everything inside transaction for data integrity
     const task = await this.#_prisma.$transaction(async (tx) => {
@@ -276,7 +308,11 @@ export class TaskService {
   }
 
   async taskRetrieveAll(
-    payload: TaskRetrieveQueryDto & { userId?: string; roleName?: string; userDepartmentId?: string },
+    payload: TaskRetrieveQueryDto & {
+      userId?: string
+      roleName?: string
+      userDepartmentId?: string
+    },
   ) {
     const pageNumber = payload.pageNumber ? Number(payload.pageNumber) : 1
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
@@ -285,8 +321,7 @@ export class TaskService {
 
     // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
     const isAdmin =
-      payload.roleName === 'Super Administrator' ||
-      payload.roleName === 'Admin'
+      payload.roleName === 'Super Administrator' || payload.roleName === 'Admin'
 
     const projectAccessFilter: any = isAdmin
       ? {}
@@ -297,7 +332,12 @@ export class TaskService {
               { createdById: payload.userId },
               { members: { some: { userId: payload.userId } } },
               ...(payload.userDepartmentId
-                ? [{ visibility: 'DEPARTMENT', departmentId: payload.userDepartmentId }]
+                ? [
+                    {
+                      visibility: 'DEPARTMENT',
+                      departmentId: payload.userDepartmentId,
+                    },
+                  ]
                 : []),
             ],
           },
@@ -310,7 +350,12 @@ export class TaskService {
       ...(payload.search && {
         OR: [
           { title: { contains: payload.search, mode: 'insensitive' as const } },
-          { description: { contains: payload.search, mode: 'insensitive' as const } },
+          {
+            description: {
+              contains: payload.search,
+              mode: 'insensitive' as const,
+            },
+          },
         ],
       }),
       ...(payload.projectId && { projectId: payload.projectId }),
@@ -742,7 +787,10 @@ export class TaskService {
    * Topshiriqni yakunlash — KPI hisoblanadi.
    * Board column'dan mustaqil ishlaydi.
    */
-  async taskComplete(payload: { id: string; completedBy: string }): Promise<any> {
+  async taskComplete(payload: {
+    id: string
+    completedBy: string
+  }): Promise<any> {
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.id, deletedAt: null },
       include: {
@@ -769,7 +817,7 @@ export class TaskService {
       })
     }
 
-    const subtaskIds = task.subtasks.map(s => s.id)
+    const subtaskIds = task.subtasks.map((s) => s.id)
     if (subtaskIds.length > 0) {
       await this.#_prisma.task.updateMany({
         where: { id: { in: subtaskIds } },
@@ -782,8 +830,11 @@ export class TaskService {
     const penaltyPerDay = task.project?.penaltyPerDay ?? 5
     if (score > 0) {
       await this.scoreTaskKpi(
-        payload.id, score, task.dueDate,
-        task.assignees.map(a => a.userId), penaltyPerDay,
+        payload.id,
+        score,
+        task.dueDate,
+        task.assignees.map((a) => a.userId),
+        penaltyPerDay,
       )
     }
 
@@ -792,35 +843,54 @@ export class TaskService {
       const subScore = (sub as any).score ?? 0
       if (subScore <= 0) continue
       await this.scoreTaskKpi(
-        sub.id, subScore, (sub as any).dueDate,
-        sub.assignees.map(a => a.userId), penaltyPerDay,
+        sub.id,
+        subScore,
+        (sub as any).dueDate,
+        sub.assignees.map((a) => a.userId),
+        penaltyPerDay,
       )
     }
 
     // Activity log
     await this.#_prisma.taskActivity.create({
       data: {
-        taskId: payload.id, userId: payload.completedBy,
+        taskId: payload.id,
+        userId: payload.completedBy,
         action: 'COMPLETED',
         changes: { score, completedAt: now.toISOString() },
       },
     })
 
     await this.#_auditLogService.logAction(
-      'Task', payload.id, AuditAction.UPDATE, payload.completedBy,
+      'Task',
+      payload.id,
+      AuditAction.UPDATE,
+      payload.completedBy,
       { changes: { status: { old: 'in_progress', new: 'completed' } } },
     )
 
     // Real-time
-    this.#_taskGateway.emitTaskUpdated(task.projectId, { ...task, completedAt: now, score }, payload.completedBy)
+    this.#_taskGateway.emitTaskUpdated(
+      task.projectId,
+      { ...task, completedAt: now, score },
+      payload.completedBy,
+    )
 
-    return { message: 'Topshiriq yakunlandi', taskId: payload.id, score, completedAt: now }
+    return {
+      message: 'Topshiriq yakunlandi',
+      taskId: payload.id,
+      score,
+      completedAt: now,
+    }
   }
 
   /**
    * Topshiriqni qayta ochish — KPI bekor qilinadi.
    */
-  async taskUncomplete(payload: { id: string; reopenedBy: string }): Promise<any> {
+  async taskUncomplete(payload: {
+    id: string
+    reopenedBy: string
+  }): Promise<any> {
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.id, deletedAt: null },
       include: {
@@ -838,7 +908,7 @@ export class TaskService {
       })
     }
 
-    const subtaskIds = task.subtasks.map(s => s.id)
+    const subtaskIds = task.subtasks.map((s) => s.id)
     if (subtaskIds.length > 0) {
       await this.#_prisma.task.updateMany({
         where: { id: { in: subtaskIds } },
@@ -856,19 +926,29 @@ export class TaskService {
     // Activity log
     await this.#_prisma.taskActivity.create({
       data: {
-        taskId: payload.id, userId: payload.reopenedBy,
+        taskId: payload.id,
+        userId: payload.reopenedBy,
         action: 'REOPENED',
-        changes: { completedAt: { old: task.completedAt?.toISOString(), new: null } },
+        changes: {
+          completedAt: { old: task.completedAt?.toISOString(), new: null },
+        },
       },
     })
 
     await this.#_auditLogService.logAction(
-      'Task', payload.id, AuditAction.UPDATE, payload.reopenedBy,
+      'Task',
+      payload.id,
+      AuditAction.UPDATE,
+      payload.reopenedBy,
       { changes: { status: { old: 'completed', new: 'reopened' } } },
     )
 
     // Real-time
-    this.#_taskGateway.emitTaskUpdated(task.projectId, { ...task, completedAt: null }, payload.reopenedBy)
+    this.#_taskGateway.emitTaskUpdated(
+      task.projectId,
+      { ...task, completedAt: null },
+      payload.reopenedBy,
+    )
 
     return { message: 'Topshiriq qayta ochildi', taskId: payload.id }
   }

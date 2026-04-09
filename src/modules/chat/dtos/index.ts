@@ -245,7 +245,7 @@ export class UpdateGroupVisibilityDto {
   @IsEnum(GroupVisibilityDto)
   visibility: GroupVisibilityDto
 
-  @ApiPropertyOptional({ description: "Public guruh uchun unique username" })
+  @ApiPropertyOptional({ description: 'Public guruh uchun unique username' })
   @IsOptional()
   @IsString()
   @Length(3, 32)

@@ -67,7 +67,11 @@ interface AuthSocket extends Socket {
   transports: ['websocket', 'polling'],
 })
 export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit,
+    OnModuleDestroy
 {
   @WebSocketServer()
   server: Server
@@ -115,7 +119,9 @@ export class ChatGateway
         userId,
         isOnline,
         lastSeen:
-          settings?.showLastSeen === false ? null : lastSeen?.toISOString() || null,
+          settings?.showLastSeen === false
+            ? null
+            : lastSeen?.toISOString() || null,
       })
     } catch (err: any) {
       this.logger.error(`broadcastPresence failed: ${err.message}`)
@@ -332,14 +338,20 @@ export class ChatGateway
   emitMessageUpdated(chatId: string, memberIds: string[], message: any) {
     this.server.to(`chat:${chatId}`).emit('message:updated', message)
     for (const uid of memberIds) {
-      this.server.to(`user:${uid}`).emit('chat:message-updated', { chatId, message })
+      this.server
+        .to(`user:${uid}`)
+        .emit('chat:message-updated', { chatId, message })
     }
   }
 
   emitMessageDeleted(chatId: string, memberIds: string[], messageId: string) {
-    this.server.to(`chat:${chatId}`).emit('message:deleted', { chatId, messageId })
+    this.server
+      .to(`chat:${chatId}`)
+      .emit('message:deleted', { chatId, messageId })
     for (const uid of memberIds) {
-      this.server.to(`user:${uid}`).emit('chat:message-deleted', { chatId, messageId })
+      this.server
+        .to(`user:${uid}`)
+        .emit('chat:message-deleted', { chatId, messageId })
     }
   }
 

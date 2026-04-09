@@ -10,7 +10,8 @@ export interface ToolContext {
 
 const ROLE_ADMIN = ['Super Administrator', 'Admin']
 
-const SENSITIVE_PATTERNS = /password|passwd|token|secret|api[_-]?key|private[_-]?key|credential|\.env/i
+const SENSITIVE_PATTERNS =
+  /password|passwd|token|secret|api[_-]?key|private[_-]?key|credential|\.env/i
 
 function sanitizeArgs(args: any): any {
   if (!args || typeof args !== 'object') return args
@@ -46,9 +47,18 @@ export class AiToolsService {
             properties: {
               completed: { type: 'boolean', description: 'Yakunlanganmi' },
               overdue: { type: 'boolean', description: "Muddati o'tgan" },
-              dueToday: { type: 'boolean', description: 'Bugungi muddatdagilar' },
-              dueTomorrow: { type: 'boolean', description: 'Ertangi muddatdagilar' },
-              createdToday: { type: 'boolean', description: 'Bugun yaratilgan' },
+              dueToday: {
+                type: 'boolean',
+                description: 'Bugungi muddatdagilar',
+              },
+              dueTomorrow: {
+                type: 'boolean',
+                description: 'Ertangi muddatdagilar',
+              },
+              createdToday: {
+                type: 'boolean',
+                description: 'Bugun yaratilgan',
+              },
               priority: {
                 type: 'string',
                 enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT', 'CRITICAL'],
@@ -101,8 +111,11 @@ export class AiToolsService {
           parameters: {
             type: 'object',
             properties: {
-              typeName: { type: 'string', description: "Hujjat turi nomi" },
-              status: { type: 'string', enum: ['DRAFT', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'] },
+              typeName: { type: 'string', description: 'Hujjat turi nomi' },
+              status: {
+                type: 'string',
+                enum: ['DRAFT', 'PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'],
+              },
               limit: { type: 'number' },
             },
             required: ['typeName'],
@@ -151,7 +164,7 @@ export class AiToolsService {
         function: {
           name: 'getDocumentPdf',
           description:
-            "Tasdiqlangan hujjat PDF havolasini qaytaradi. Faqat APPROVED hujjatlar.",
+            'Tasdiqlangan hujjat PDF havolasini qaytaradi. Faqat APPROVED hujjatlar.',
           parameters: {
             type: 'object',
             properties: {
@@ -169,7 +182,16 @@ export class AiToolsService {
           parameters: {
             type: 'object',
             properties: {
-              status: { type: 'string', enum: ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'] },
+              status: {
+                type: 'string',
+                enum: [
+                  'PLANNING',
+                  'ACTIVE',
+                  'ON_HOLD',
+                  'COMPLETED',
+                  'CANCELLED',
+                ],
+              },
             },
           },
         },
@@ -178,7 +200,8 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'getDepartmentStats',
-          description: "O'z bo'limi statistikasini qaytaradi: jami xodimlar, faol task, KPI o'rtachasi.",
+          description:
+            "O'z bo'limi statistikasini qaytaradi: jami xodimlar, faol task, KPI o'rtachasi.",
           parameters: { type: 'object', properties: {} },
         },
       },
@@ -201,7 +224,7 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'getDocumentVersions',
-          description: "Hujjat barcha fayl versiyalari (eski va yangi).",
+          description: 'Hujjat barcha fayl versiyalari (eski va yangi).',
           parameters: {
             type: 'object',
             properties: {
@@ -215,11 +238,15 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'getTaskByRef',
-          description: "Topshiriq ref'i bo'yicha ma'lumotlarini qaytaradi (masalan: DOCFLOW-15).",
+          description:
+            "Topshiriq ref'i bo'yicha ma'lumotlarini qaytaradi (masalan: DOCFLOW-15).",
           parameters: {
             type: 'object',
             properties: {
-              ref: { type: 'string', description: "Task ref, masalan: DOCFLOW-15" },
+              ref: {
+                type: 'string',
+                description: 'Task ref, masalan: DOCFLOW-15',
+              },
             },
             required: ['ref'],
           },
@@ -234,7 +261,10 @@ export class AiToolsService {
           parameters: {
             type: 'object',
             properties: {
-              name: { type: 'string', description: "Ism, familiya yoki username" },
+              name: {
+                type: 'string',
+                description: 'Ism, familiya yoki username',
+              },
             },
             required: ['name'],
           },
@@ -259,7 +289,7 @@ export class AiToolsService {
         function: {
           name: 'createTask',
           description:
-            "Yangi topshiriq yaratadi. Avval findProjectByName va findUserByName bilan ID larni aniqlang. Yaratishdan oldin foydalanuvchidan tasdiq oling.",
+            'Yangi topshiriq yaratadi. Avval findProjectByName va findUserByName bilan ID larni aniqlang. Yaratishdan oldin foydalanuvchidan tasdiq oling.',
           parameters: {
             type: 'object',
             properties: {
@@ -301,7 +331,7 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'completeTask',
-          description: "Topshiriqni yakunlangan deb belgilaydi.",
+          description: 'Topshiriqni yakunlangan deb belgilaydi.',
           parameters: {
             type: 'object',
             properties: {
@@ -315,7 +345,8 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'countMyTasks',
-          description: "Foydalanuvchi tasklarini sanaydi: bugun, hafta, muddati o'tgan, jami.",
+          description:
+            "Foydalanuvchi tasklarini sanaydi: bugun, hafta, muddati o'tgan, jami.",
           parameters: { type: 'object', properties: {} },
         },
       },
@@ -323,11 +354,12 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'getRecentDocuments',
-          description: "So'nggi yaratilgan hujjatlarni qaytaradi (vaqt bo'yicha).",
+          description:
+            "So'nggi yaratilgan hujjatlarni qaytaradi (vaqt bo'yicha).",
           parameters: {
             type: 'object',
             properties: {
-              days: { type: 'number', description: "Necha kun ichida" },
+              days: { type: 'number', description: 'Necha kun ichida' },
               limit: { type: 'number' },
             },
           },
@@ -355,7 +387,8 @@ export class AiToolsService {
         type: 'function',
         function: {
           name: 'getWorkflowStatusForDocument',
-          description: "Hujjatning workflow holatini va bosqichlarini ko'rsatadi.",
+          description:
+            "Hujjatning workflow holatini va bosqichlarini ko'rsatadi.",
           parameters: {
             type: 'object',
             properties: {
@@ -374,7 +407,9 @@ export class AiToolsService {
   async executeTool(name: string, args: any, ctx: ToolContext): Promise<any> {
     args = sanitizeArgs(args)
     if (!ctx.userId) return { error: 'Autentifikatsiya talab qilinadi' }
-    this.logger.log(`AI tool: ${name} user=${ctx.userId} role=${ctx.roleName || '-'}`)
+    this.logger.log(
+      `AI tool: ${name} user=${ctx.userId} role=${ctx.roleName || '-'}`,
+    )
 
     try {
       switch (name) {
@@ -452,7 +487,10 @@ export class AiToolsService {
   }
 
   /** Hujjatga kirish: yaratuvchi, workflow ishtirokchisi yoki admin */
-  private async canAccessDocument(documentId: string, ctx: ToolContext): Promise<boolean> {
+  private async canAccessDocument(
+    documentId: string,
+    ctx: ToolContext,
+  ): Promise<boolean> {
     if (this.isAdmin(ctx)) return true
     const doc = await this.prisma.document.findFirst({
       where: {
@@ -460,7 +498,13 @@ export class AiToolsService {
         deletedAt: null,
         OR: [
           { createdById: ctx.userId },
-          { workflow: { some: { workflowSteps: { some: { assignedToUserId: ctx.userId } } } } },
+          {
+            workflow: {
+              some: {
+                workflowSteps: { some: { assignedToUserId: ctx.userId } },
+              },
+            },
+          },
         ],
       },
       select: { id: true },
@@ -469,7 +513,10 @@ export class AiToolsService {
   }
 
   /** Topshiriqqa kirish: yaratuvchi, assignee, loyiha a'zosi yoki admin */
-  private async canAccessTask(taskId: string, ctx: ToolContext): Promise<boolean> {
+  private async canAccessTask(
+    taskId: string,
+    ctx: ToolContext,
+  ): Promise<boolean> {
     if (this.isAdmin(ctx)) return true
     const task = await this.prisma.task.findFirst({
       where: {
@@ -488,7 +535,10 @@ export class AiToolsService {
   }
 
   /** Loyihaga yozish: a'zo, yaratuvchi yoki admin */
-  private async canWriteProject(projectId: string, ctx: ToolContext): Promise<boolean> {
+  private async canWriteProject(
+    projectId: string,
+    ctx: ToolContext,
+  ): Promise<boolean> {
     if (this.isAdmin(ctx)) return true
     const project = await this.prisma.project.findFirst({
       where: {
@@ -570,7 +620,11 @@ export class AiToolsService {
       deletedAt: null,
       OR: [
         { document: { createdById: ctx.userId } },
-        { workflowSteps: { some: { assignedToUserId: ctx.userId, deletedAt: null } } },
+        {
+          workflowSteps: {
+            some: { assignedToUserId: ctx.userId, deletedAt: null },
+          },
+        },
       ],
     }
     if (args.status) where.status = args.status
@@ -642,7 +696,7 @@ export class AiToolsService {
       },
     })
 
-    if (!doc) return { error: 'Hujjat topilmadi yoki sizda ruxsat yo\'q' }
+    if (!doc) return { error: "Hujjat topilmadi yoki sizda ruxsat yo'q" }
     return {
       ...doc,
       url: `/dashboard/document/${doc.id}`,
@@ -676,7 +730,10 @@ export class AiToolsService {
 
     return {
       count: docs.length,
-      documents: docs.map((d) => ({ ...d, url: `/dashboard/document/${d.id}` })),
+      documents: docs.map((d) => ({
+        ...d,
+        url: `/dashboard/document/${d.id}`,
+      })),
     }
   }
 
@@ -706,16 +763,23 @@ export class AiToolsService {
 
     return {
       count: docs.length,
-      documents: docs.map((d) => ({ ...d, url: `/dashboard/document/${d.id}` })),
+      documents: docs.map((d) => ({
+        ...d,
+        url: `/dashboard/document/${d.id}`,
+      })),
     }
   }
 
   private async getMyKpi(ctx: ToolContext) {
     const now = new Date()
     const kpi = await this.prisma.userMonthlyKpi.findFirst({
-      where: { userId: ctx.userId, year: now.getFullYear(), month: now.getMonth() + 1 },
+      where: {
+        userId: ctx.userId,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+      },
     })
-    if (!kpi) return { message: 'Joriy oy uchun KPI ma\'lumoti yo\'q' }
+    if (!kpi) return { message: "Joriy oy uchun KPI ma'lumoti yo'q" }
     return {
       year: kpi.year,
       month: kpi.month,
@@ -753,7 +817,13 @@ export class AiToolsService {
         ...(!isAdmin && {
           OR: [
             { createdById: ctx.userId },
-            { workflow: { some: { workflowSteps: { some: { assignedToUserId: ctx.userId } } } } },
+            {
+              workflow: {
+                some: {
+                  workflowSteps: { some: { assignedToUserId: ctx.userId } },
+                },
+              },
+            },
           ],
         }),
       },
@@ -765,7 +835,8 @@ export class AiToolsService {
       },
     })
 
-    if (!doc) return { error: 'Tasdiqlangan PDF topilmadi yoki sizda ruxsat yo\'q' }
+    if (!doc)
+      return { error: "Tasdiqlangan PDF topilmadi yoki sizda ruxsat yo'q" }
     if (!doc.pdfUrl) return { error: 'PDF fayl mavjud emas' }
 
     return {
@@ -787,7 +858,12 @@ export class AiToolsService {
           { createdById: ctx.userId },
           { members: { some: { userId: ctx.userId } } },
           ...(ctx.departmentId
-            ? [{ visibility: 'DEPARTMENT' as any, departmentId: ctx.departmentId }]
+            ? [
+                {
+                  visibility: 'DEPARTMENT' as any,
+                  departmentId: ctx.departmentId,
+                },
+              ]
             : []),
         ],
       },
@@ -816,31 +892,36 @@ export class AiToolsService {
   }
 
   private async getDepartmentStats(ctx: ToolContext) {
-    if (!ctx.departmentId) return { error: 'Siz bo\'limga biriktirilmagansiz' }
+    if (!ctx.departmentId) return { error: "Siz bo'limga biriktirilmagansiz" }
 
-    const [usersCount, activeTasksCount, completedTasksCount, dept] = await Promise.all([
-      this.prisma.user.count({
-        where: { departmentId: ctx.departmentId, deletedAt: null, isActive: true },
-      }),
-      this.prisma.task.count({
-        where: {
-          deletedAt: null,
-          completedAt: null,
-          project: { departmentId: ctx.departmentId },
-        },
-      }),
-      this.prisma.task.count({
-        where: {
-          deletedAt: null,
-          completedAt: { not: null },
-          project: { departmentId: ctx.departmentId },
-        },
-      }),
-      this.prisma.department.findFirst({
-        where: { id: ctx.departmentId },
-        select: { name: true },
-      }),
-    ])
+    const [usersCount, activeTasksCount, completedTasksCount, dept] =
+      await Promise.all([
+        this.prisma.user.count({
+          where: {
+            departmentId: ctx.departmentId,
+            deletedAt: null,
+            isActive: true,
+          },
+        }),
+        this.prisma.task.count({
+          where: {
+            deletedAt: null,
+            completedAt: null,
+            project: { departmentId: ctx.departmentId },
+          },
+        }),
+        this.prisma.task.count({
+          where: {
+            deletedAt: null,
+            completedAt: { not: null },
+            project: { departmentId: ctx.departmentId },
+          },
+        }),
+        this.prisma.department.findFirst({
+          where: { id: ctx.departmentId },
+          select: { name: true },
+        }),
+      ])
 
     return {
       department: dept?.name,
@@ -863,7 +944,13 @@ export class AiToolsService {
           : {
               OR: [
                 { createdById: ctx.userId },
-                { workflow: { some: { workflowSteps: { some: { assignedToUserId: ctx.userId } } } } },
+                {
+                  workflow: {
+                    some: {
+                      workflowSteps: { some: { assignedToUserId: ctx.userId } },
+                    },
+                  },
+                },
               ],
             }),
       },
@@ -876,7 +963,7 @@ export class AiToolsService {
       },
     })
 
-    if (!doc) return { error: 'Hujjat topilmadi yoki ruxsat yo\'q' }
+    if (!doc) return { error: "Hujjat topilmadi yoki ruxsat yo'q" }
     if (!doc.attachments[0]) return { error: 'PDF fayl mavjud emas' }
 
     const att = doc.attachments[0]
@@ -905,7 +992,13 @@ export class AiToolsService {
           : {
               OR: [
                 { createdById: ctx.userId },
-                { workflow: { some: { workflowSteps: { some: { assignedToUserId: ctx.userId } } } } },
+                {
+                  workflow: {
+                    some: {
+                      workflowSteps: { some: { assignedToUserId: ctx.userId } },
+                    },
+                  },
+                },
               ],
             }),
       },
@@ -1023,7 +1116,12 @@ export class AiToolsService {
                     { createdById: ctx.userId },
                     { members: { some: { userId: ctx.userId } } },
                     ...(ctx.departmentId
-                      ? [{ visibility: 'DEPARTMENT' as any, departmentId: ctx.departmentId }]
+                      ? [
+                          {
+                            visibility: 'DEPARTMENT' as any,
+                            departmentId: ctx.departmentId,
+                          },
+                        ]
                       : []),
                   ],
                 },
@@ -1035,28 +1133,34 @@ export class AiToolsService {
     })
     return {
       count: projects.length,
-      projects: projects.map((p) => ({ ...p, url: `/dashboard/project/${p.id}` })),
+      projects: projects.map((p) => ({
+        ...p,
+        url: `/dashboard/project/${p.id}`,
+      })),
     }
   }
 
   private async createTask(args: any, ctx: ToolContext) {
     // Security: loyihaga yozish huquqi
     if (!(await this.canWriteProject(args.projectId, ctx))) {
-      return { error: "Loyiha topilmadi yoki sizda topshiriq yaratish huquqi yo'q" }
+      return {
+        error: "Loyiha topilmadi yoki sizda topshiriq yaratish huquqi yo'q",
+      }
     }
     // Input validation
     if (!args.title || args.title.trim().length < 3) {
       return { error: "Topshiriq nomi kamida 3 belgi bo'lishi kerak" }
     }
     if (args.title.length > 500) {
-      return { error: "Topshiriq nomi juda uzun (maksimum 500 belgi)" }
+      return { error: 'Topshiriq nomi juda uzun (maksimum 500 belgi)' }
     }
     if (args.score !== undefined && (args.score < 0 || args.score > 100)) {
       return { error: "Ball 0-100 oralig'ida bo'lishi kerak" }
     }
     if (args.dueDate) {
       const d = new Date(args.dueDate)
-      if (isNaN(d.getTime())) return { error: "Noto'g'ri sana formati (YYYY-MM-DD)" }
+      if (isNaN(d.getTime()))
+        return { error: "Noto'g'ri sana formati (YYYY-MM-DD)" }
     }
     const project = await this.prisma.project.findFirst({
       where: { id: args.projectId, deletedAt: null },
@@ -1091,7 +1195,11 @@ export class AiToolsService {
 
     if (args.assigneeIds?.length) {
       const validUsers = await this.prisma.user.findMany({
-        where: { id: { in: args.assigneeIds }, deletedAt: null, isActive: true },
+        where: {
+          id: { in: args.assigneeIds },
+          deletedAt: null,
+          isActive: true,
+        },
         select: { id: true },
       })
       if (validUsers.length) {
@@ -1185,19 +1293,36 @@ export class AiToolsService {
 
     const [total, completed, dueToday, dueWeek, overdue] = await Promise.all([
       this.prisma.task.count({ where: baseWhere }),
-      this.prisma.task.count({ where: { ...baseWhere, completedAt: { not: null } } }),
       this.prisma.task.count({
-        where: { ...baseWhere, completedAt: null, dueDate: { gte: todayStart, lte: todayEnd } },
+        where: { ...baseWhere, completedAt: { not: null } },
       }),
       this.prisma.task.count({
-        where: { ...baseWhere, completedAt: null, dueDate: { gte: now, lte: weekEnd } },
+        where: {
+          ...baseWhere,
+          completedAt: null,
+          dueDate: { gte: todayStart, lte: todayEnd },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          ...baseWhere,
+          completedAt: null,
+          dueDate: { gte: now, lte: weekEnd },
+        },
       }),
       this.prisma.task.count({
         where: { ...baseWhere, completedAt: null, dueDate: { lt: now } },
       }),
     ])
 
-    return { total, completed, active: total - completed, dueToday, dueWeek, overdue }
+    return {
+      total,
+      completed,
+      active: total - completed,
+      dueToday,
+      dueWeek,
+      overdue,
+    }
   }
 
   private async getRecentDocuments(args: any, ctx: ToolContext) {
@@ -1227,7 +1352,10 @@ export class AiToolsService {
 
     return {
       count: docs.length,
-      documents: docs.map((d) => ({ ...d, url: `/dashboard/document/${d.id}` })),
+      documents: docs.map((d) => ({
+        ...d,
+        url: `/dashboard/document/${d.id}`,
+      })),
     }
   }
 
@@ -1242,7 +1370,13 @@ export class AiToolsService {
           : {
               OR: [
                 { createdById: ctx.userId },
-                { workflow: { some: { workflowSteps: { some: { assignedToUserId: ctx.userId } } } } },
+                {
+                  workflow: {
+                    some: {
+                      workflowSteps: { some: { assignedToUserId: ctx.userId } },
+                    },
+                  },
+                },
               ],
             }),
       },
@@ -1263,13 +1397,23 @@ export class AiToolsService {
 
     if (!workflow) {
       return {
-        document: { id: doc.id, title: doc.title, documentNumber: doc.documentNumber, status: doc.status },
+        document: {
+          id: doc.id,
+          title: doc.title,
+          documentNumber: doc.documentNumber,
+          status: doc.status,
+        },
         message: "Bu hujjat uchun ish jarayoni yo'q",
       }
     }
 
     return {
-      document: { id: doc.id, title: doc.title, documentNumber: doc.documentNumber, status: doc.status },
+      document: {
+        id: doc.id,
+        title: doc.title,
+        documentNumber: doc.documentNumber,
+        status: doc.status,
+      },
       workflow: {
         id: workflow.id,
         type: workflow.type,
@@ -1293,7 +1437,10 @@ export class AiToolsService {
   private async getMyOverallStats(ctx: ToolContext) {
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const taskWhere = { deletedAt: null, assignees: { some: { userId: ctx.userId } } }
+    const taskWhere = {
+      deletedAt: null,
+      assignees: { some: { userId: ctx.userId } },
+    }
 
     const [
       totalTasks,
@@ -1310,17 +1457,25 @@ export class AiToolsService {
       projectsCount,
     ] = await Promise.all([
       this.prisma.task.count({ where: taskWhere }),
-      this.prisma.task.count({ where: { ...taskWhere, completedAt: { not: null } } }),
+      this.prisma.task.count({
+        where: { ...taskWhere, completedAt: { not: null } },
+      }),
       this.prisma.task.count({
         where: { ...taskWhere, completedAt: null, dueDate: { lt: now } },
       }),
       this.prisma.task.count({ where: { ...taskWhere, completedAt: null } }),
-      this.prisma.document.count({ where: { createdById: ctx.userId, deletedAt: null } }),
+      this.prisma.document.count({
+        where: { createdById: ctx.userId, deletedAt: null },
+      }),
       this.prisma.document.count({
         where: { createdById: ctx.userId, deletedAt: null, status: 'APPROVED' },
       }),
       this.prisma.document.count({
-        where: { createdById: ctx.userId, deletedAt: null, status: { in: ['PENDING', 'IN_REVIEW'] } },
+        where: {
+          createdById: ctx.userId,
+          deletedAt: null,
+          status: { in: ['PENDING', 'IN_REVIEW'] },
+        },
       }),
       this.prisma.workflow.count({
         where: {
@@ -1343,7 +1498,11 @@ export class AiToolsService {
         where: { userId: ctx.userId, isRead: false, deletedAt: null },
       }),
       this.prisma.userMonthlyKpi.findFirst({
-        where: { userId: ctx.userId, year: now.getFullYear(), month: now.getMonth() + 1 },
+        where: {
+          userId: ctx.userId,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+        },
       }),
       this.prisma.project.count({
         where: {
@@ -1363,13 +1522,26 @@ export class AiToolsService {
         completed: completedTasks,
         active: activeTasks,
         overdue: overdueTasks,
-        completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+        completionRate:
+          totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       },
-      documents: { total: totalDocs, approved: approvedDocs, pending: pendingDocs },
-      workflows: { active: activeWorkflows, pendingMySteps: pendingWorkflowSteps },
+      documents: {
+        total: totalDocs,
+        approved: approvedDocs,
+        pending: pendingDocs,
+      },
+      workflows: {
+        active: activeWorkflows,
+        pendingMySteps: pendingWorkflowSteps,
+      },
       notifications: { unread: unreadNotifications },
       kpi: kpi
-        ? { finalScore: kpi.finalScore, tasksCompleted: kpi.tasksCompleted, tasksOnTime: kpi.tasksOnTime, tasksLate: kpi.tasksLate }
+        ? {
+            finalScore: kpi.finalScore,
+            tasksCompleted: kpi.tasksCompleted,
+            tasksOnTime: kpi.tasksOnTime,
+            tasksLate: kpi.tasksLate,
+          }
         : null,
       projects: projectsCount,
       period: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -1396,7 +1568,11 @@ export class AiToolsService {
         select: { name: true },
       }),
       this.prisma.user.count({
-        where: { departmentId: ctx.departmentId, deletedAt: null, isActive: true },
+        where: {
+          departmentId: ctx.departmentId,
+          deletedAt: null,
+          isActive: true,
+        },
       }),
       this.prisma.task.count({
         where: {
@@ -1461,7 +1637,9 @@ export class AiToolsService {
       },
       documents: { total: totalDocs, approved: approvedDocs },
       workflows: { active: activeWorkflows },
-      avgKpiScore: avgKpi._avg.finalScore ? Math.round(avgKpi._avg.finalScore) : null,
+      avgKpiScore: avgKpi._avg.finalScore
+        ? Math.round(avgKpi._avg.finalScore)
+        : null,
       period: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
     }
   }

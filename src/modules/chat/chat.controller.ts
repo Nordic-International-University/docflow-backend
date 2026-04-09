@@ -59,8 +59,15 @@ export class ChatController {
 
   @Get()
   @Permissions(PERMISSIONS.CHAT.LIST)
-  async list(@Req() req: any, @Query('search') search?: string, @Query('limit') limit?: number) {
-    return this.chat.listChats(this.ctx(req), { search, limit: Number(limit) || 50 })
+  async list(
+    @Req() req: any,
+    @Query('search') search?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.chat.listChats(this.ctx(req), {
+      search,
+      limit: Number(limit) || 50,
+    })
   }
 
   @Post('direct')
@@ -94,13 +101,19 @@ export class ChatController {
 
   @Patch('settings/me')
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async updateSettingsStatic(@Body() payload: UpdateChatSettingsDto, @Req() req: any) {
+  async updateSettingsStatic(
+    @Body() payload: UpdateChatSettingsDto,
+    @Req() req: any,
+  ) {
     return this.chat.updateSettings(payload, this.ctx(req))
   }
 
   @Get('search/messages')
   @Permissions(PERMISSIONS.CHAT.READ)
-  async searchMessagesStatic(@Query() query: SearchMessagesDto, @Req() req: any) {
+  async searchMessagesStatic(
+    @Query() query: SearchMessagesDto,
+    @Req() req: any,
+  ) {
     return this.chat.searchMessages(query.q, query.chatId, this.ctx(req))
   }
 
@@ -150,7 +163,10 @@ export class ChatController {
   @Post('join/username')
   @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
   async joinByUsername(@Body() payload: JoinByUsernameDto, @Req() req: any) {
-    const result = await this.chat.joinByUsername(payload.username, this.ctx(req))
+    const result = await this.chat.joinByUsername(
+      payload.username,
+      this.ctx(req),
+    )
     this.gateway.emitChatCreated(result.chatId, [req.user.userId])
     return result
   }
@@ -212,7 +228,11 @@ export class ChatController {
   @Post(':id/leave')
   @Permissions(PERMISSIONS.CHAT.READ)
   async leaveChat(@Param('id') id: string, @Req() req: any) {
-    const result = await this.chat.removeMember(id, req.user.userId, this.ctx(req))
+    const result = await this.chat.removeMember(
+      id,
+      req.user.userId,
+      this.ctx(req),
+    )
     this.gateway.emitChatUpdated(id, { memberLeft: req.user.userId })
     return result
   }
@@ -254,7 +274,12 @@ export class ChatController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
-    const message = await this.chat.sendMessage(id, payload, this.ctx(req), file)
+    const message = await this.chat.sendMessage(
+      id,
+      payload,
+      this.ctx(req),
+      file,
+    )
     const memberIds = await this.chat.getChatMemberIds(id)
     this.gateway.emitNewMessage(id, memberIds, message)
     return message
@@ -267,7 +292,11 @@ export class ChatController {
     @Body() payload: EditMessageDto,
     @Req() req: any,
   ) {
-    const updated = await this.chat.editMessage(messageId, payload, this.ctx(req))
+    const updated = await this.chat.editMessage(
+      messageId,
+      payload,
+      this.ctx(req),
+    )
     const memberIds = await this.chat.getChatMemberIds(updated.chatId)
     this.gateway.emitMessageUpdated(updated.chatId, memberIds, updated)
     return updated
@@ -289,7 +318,11 @@ export class ChatController {
     @Body() payload: AddReactionDto,
     @Req() req: any,
   ) {
-    const result = await this.chat.addReaction(messageId, payload, this.ctx(req))
+    const result = await this.chat.addReaction(
+      messageId,
+      payload,
+      this.ctx(req),
+    )
     const memberIds = await this.chat.getChatMemberIds(result.chatId)
     this.gateway.emitReaction(result.chatId, memberIds, {
       messageId,
@@ -307,7 +340,11 @@ export class ChatController {
     @Param('emoji') emoji: string,
     @Req() req: any,
   ) {
-    const result = await this.chat.removeReaction(messageId, emoji, this.ctx(req))
+    const result = await this.chat.removeReaction(
+      messageId,
+      emoji,
+      this.ctx(req),
+    )
     const memberIds = await this.chat.getChatMemberIds(result.chatId)
     this.gateway.emitReaction(result.chatId, memberIds, {
       messageId,
@@ -325,10 +362,17 @@ export class ChatController {
     @Body() payload: ForwardMessageDto,
     @Req() req: any,
   ) {
-    const result = await this.chat.forwardMessage(messageId, payload, this.ctx(req))
+    const result = await this.chat.forwardMessage(
+      messageId,
+      payload,
+      this.ctx(req),
+    )
     for (const f of result.forwarded) {
       const memberIds = await this.chat.getChatMemberIds(f.chatId)
-      this.gateway.emitNewMessage(f.chatId, memberIds, { id: f.messageId, forwarded: true })
+      this.gateway.emitNewMessage(f.chatId, memberIds, {
+        id: f.messageId,
+        forwarded: true,
+      })
     }
     return result
   }
@@ -340,7 +384,11 @@ export class ChatController {
     @Body() body: { upToMessageId?: string },
     @Req() req: any,
   ) {
-    const result = await this.chat.markChatRead(id, this.ctx(req), body?.upToMessageId)
+    const result = await this.chat.markChatRead(
+      id,
+      this.ctx(req),
+      body?.upToMessageId,
+    )
     const memberIds = await this.chat.getChatMemberIds(id)
     this.gateway.emitReadReceipt(id, memberIds, {
       userId: req.user.userId,
@@ -359,7 +407,11 @@ export class ChatController {
     @Body() payload: ForwardEntityDto,
     @Req() req: any,
   ) {
-    const msg = await this.chat.forwardWorkflow(workflowId, payload, this.ctx(req))
+    const msg = await this.chat.forwardWorkflow(
+      workflowId,
+      payload,
+      this.ctx(req),
+    )
     const memberIds = await this.chat.getChatMemberIds(payload.toChatId)
     this.gateway.emitNewMessage(payload.toChatId, memberIds, msg)
     return msg
@@ -372,7 +424,11 @@ export class ChatController {
     @Body() payload: ForwardEntityDto,
     @Req() req: any,
   ) {
-    const msg = await this.chat.forwardDocument(documentId, payload, this.ctx(req))
+    const msg = await this.chat.forwardDocument(
+      documentId,
+      payload,
+      this.ctx(req),
+    )
     const memberIds = await this.chat.getChatMemberIds(payload.toChatId)
     this.gateway.emitNewMessage(payload.toChatId, memberIds, msg)
     return msg
@@ -438,7 +494,11 @@ export class ChatController {
     @Body() payload: UpdateGroupVisibilityDto,
     @Req() req: any,
   ) {
-    const result = await this.chat.updateGroupVisibility(id, payload, this.ctx(req))
+    const result = await this.chat.updateGroupVisibility(
+      id,
+      payload,
+      this.ctx(req),
+    )
     this.gateway.emitChatUpdated(id, { visibility: result.visibility })
     return result
   }
@@ -450,7 +510,11 @@ export class ChatController {
     @Body() payload: UpdateGroupPermissionsDto,
     @Req() req: any,
   ) {
-    const result = await this.chat.updateGroupPermissions(id, payload, this.ctx(req))
+    const result = await this.chat.updateGroupPermissions(
+      id,
+      payload,
+      this.ctx(req),
+    )
     this.gateway.emitChatUpdated(id, { permissions: result })
     return result
   }
@@ -470,8 +534,11 @@ export class ChatController {
     @Body() payload: InitiateCallDto,
     @Req() req: any,
   ) {
-    if (payload.type === 'VIDEO' && !req.user.permissions?.includes(PERMISSIONS.CHAT.CALL_VIDEO)) {
-      return { error: 'Video qo\'ng\'iroqlar uchun ruxsat yo\'q' }
+    if (
+      payload.type === 'VIDEO' &&
+      !req.user.permissions?.includes(PERMISSIONS.CHAT.CALL_VIDEO)
+    ) {
+      return { error: "Video qo'ng'iroqlar uchun ruxsat yo'q" }
     }
     const call = await this.chat.initiateCall(id, payload, this.ctx(req))
     const memberIds = await this.chat.getChatMemberIds(id)
@@ -482,7 +549,11 @@ export class ChatController {
   @Post('calls/:callId/accept')
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
   async acceptCall(@Param('callId') callId: string, @Req() req: any) {
-    const result = await this.chat.respondToCall(callId, 'accept', this.ctx(req))
+    const result = await this.chat.respondToCall(
+      callId,
+      'accept',
+      this.ctx(req),
+    )
     this.gateway.emitCallStatus(callId, {
       action: 'accepted',
       userId: req.user.userId,
@@ -495,7 +566,11 @@ export class ChatController {
   @Post('calls/:callId/reject')
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
   async rejectCall(@Param('callId') callId: string, @Req() req: any) {
-    const result = await this.chat.respondToCall(callId, 'reject', this.ctx(req))
+    const result = await this.chat.respondToCall(
+      callId,
+      'reject',
+      this.ctx(req),
+    )
     this.gateway.emitCallStatus(callId, {
       action: 'rejected',
       userId: req.user.userId,

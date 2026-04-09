@@ -9,7 +9,13 @@ import { ChatGateway } from './chat.gateway'
 import { ChatEncryptionService } from './chat-encryption'
 
 @Module({
-  imports: [PrismaModule, JwtModule, MinioModule, RedisModule, forwardRef(() => TelegramModule)],
+  imports: [
+    PrismaModule,
+    JwtModule,
+    MinioModule,
+    RedisModule,
+    forwardRef(() => TelegramModule),
+  ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, ChatEncryptionService],
   exports: [ChatService, ChatGateway],

@@ -177,7 +177,9 @@ export class WopiController {
       // HTTP header'ga to'g'ridan-to'g'ri yozib bo'lmaydi.
       // ASCII fallback + UTF-8 encoded versiya bilan.
       const rawName = fileInfo.BaseFileName || 'document'
-      const asciiFallback = rawName.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '')
+      const asciiFallback = rawName
+        .replace(/[^\x20-\x7E]/g, '_')
+        .replace(/"/g, '')
       const utf8Encoded = encodeURIComponent(rawName)
       res.setHeader(
         'Content-Disposition',

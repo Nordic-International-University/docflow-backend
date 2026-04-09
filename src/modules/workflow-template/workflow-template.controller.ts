@@ -94,8 +94,14 @@ export class WorkflowTemplateController {
     status: 409,
     description: 'Workflow template with this name already exists',
   })
-  async workflowTemplateCreate(@Body() payload: WorkflowTemplateCreateDto, @Req() req: any) {
-    return await this.workflowTemplateService.workflowTemplateCreate({ ...payload, createdBy: req.user?.userId })
+  async workflowTemplateCreate(
+    @Body() payload: WorkflowTemplateCreateDto,
+    @Req() req: any,
+  ) {
+    return await this.workflowTemplateService.workflowTemplateCreate({
+      ...payload,
+      createdBy: req.user?.userId,
+    })
   }
 
   @Patch(':id')
@@ -141,6 +147,9 @@ export class WorkflowTemplateController {
     description: 'Workflow template not found',
   })
   async workflowTemplateDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.workflowTemplateService.workflowTemplateDelete({ id, deletedBy: req.user?.userId })
+    return await this.workflowTemplateService.workflowTemplateDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

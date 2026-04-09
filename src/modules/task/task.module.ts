@@ -8,7 +8,12 @@ import { NotificationModule } from '../notification/notification.module'
 import { UserMonthlyKpiModule } from '../user-monthly-kpi/user-monthly-kpi.module'
 
 @Module({
-  imports: [PrismaModule, AuditLogModule, NotificationModule, UserMonthlyKpiModule],
+  imports: [
+    PrismaModule,
+    AuditLogModule,
+    NotificationModule,
+    UserMonthlyKpiModule,
+  ],
   controllers: [TaskController],
   providers: [TaskService, TaskGateway],
   exports: [TaskService, TaskGateway],

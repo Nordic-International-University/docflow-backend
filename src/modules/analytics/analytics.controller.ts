@@ -1,7 +1,14 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger'
 import { AnalyticsService } from './analytics.service'
-import { AuthGuard } from '@guards'
+import { AuthGuard, PermissionGuard } from '@guards'
+import { Permissions } from '@decorators'
+import { PERMISSIONS } from '@constants'
 import { AnalyticsQueryDto } from './dtos/analytics-query.dto'
 import {
   DashboardAnalyticsResponseDto,
@@ -11,11 +18,14 @@ import {
 } from './dtos/analytics-response.dto'
 
 @ApiTags('Analytics')
+@ApiBearerAuth()
+@UseGuards(AuthGuard, PermissionGuard)
 @Controller({ path: 'analytics', version: '1' })
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
+  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get overall dashboard analytics' })
   @ApiResponse({
     status: 200,
@@ -29,6 +39,7 @@ export class AnalyticsController {
   }
 
   @Get('documents')
+  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get document-specific analytics' })
   @ApiResponse({
     status: 200,
@@ -42,6 +53,7 @@ export class AnalyticsController {
   }
 
   @Get('workflows')
+  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get workflow analytics' })
   @ApiResponse({
     status: 200,
@@ -55,6 +67,7 @@ export class AnalyticsController {
   }
 
   @Get('users')
+  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get user activity analytics' })
   @ApiResponse({
     status: 200,
@@ -68,8 +81,7 @@ export class AnalyticsController {
   }
 
   @Get('kpi')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
+  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({
     summary: "To'liq KPI statistikasi (dashboard uchun)",
     description:

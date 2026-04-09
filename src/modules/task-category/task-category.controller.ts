@@ -105,6 +105,9 @@ export class TaskCategoryController {
     description: 'Task category deleted successfully',
   })
   async taskCategoryDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.taskCategoryService.taskCategoryDelete({ id, deletedBy: req.user?.userId })
+    return await this.taskCategoryService.taskCategoryDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

@@ -27,7 +27,11 @@ export class ResponseInterceptor implements NestInterceptor {
         const statusCode = response.statusCode
 
         // If data is already a structured response with 'data' or 'total', return as-is
-        if (data && typeof data === 'object' && ('data' in data || 'total' in data || 'accessToken' in data)) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          ('data' in data || 'total' in data || 'accessToken' in data)
+        ) {
           return data
         }
 

@@ -68,7 +68,7 @@ export class UserService {
           orConditions.push({ departmentId: project.departmentId })
         }
         if (project.visibility === 'PUBLIC') {
-          orConditions.push({})  // PUBLIC — hamma
+          orConditions.push({}) // PUBLIC — hamma
         }
         projectAccessFilter = { OR: orConditions }
       }

@@ -19,7 +19,9 @@ export class ChatEncryptionService {
     if (!raw) {
       this.enabled = false
       this.key = Buffer.alloc(0)
-      this.logger.warn('CHAT_ENCRYPTION_KEY belgilanmagan — chat xabarlari shifrlanmaydi')
+      this.logger.warn(
+        'CHAT_ENCRYPTION_KEY belgilanmagan — chat xabarlari shifrlanmaydi',
+      )
       return
     }
     try {
@@ -27,7 +29,9 @@ export class ChatEncryptionService {
       let buf = Buffer.from(raw, 'hex')
       if (buf.length !== 32) buf = Buffer.from(raw, 'base64')
       if (buf.length !== 32) {
-        throw new Error('CHAT_ENCRYPTION_KEY 32 byte (hex yoki base64) bo\'lishi kerak')
+        throw new Error(
+          "CHAT_ENCRYPTION_KEY 32 byte (hex yoki base64) bo'lishi kerak",
+        )
       }
       this.key = buf
       this.enabled = true

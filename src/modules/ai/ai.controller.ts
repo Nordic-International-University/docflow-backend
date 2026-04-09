@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '@guards'
 import { AiService } from './ai.service'
@@ -27,9 +28,11 @@ export class AiController {
   constructor(private readonly aiService: AiService) {}
 
   @Post('chat')
+  @Throttle({ short: { ttl: 60000, limit: 10 } })  // AI: 10 so'rov / daqiqa (API quota himoyasi)
   @ApiOperation({
     summary: 'AI yordamchi bilan suhbat',
-    description: "Tabiiy o'zbek tilida savol bering — AI tushunadi va javob beradi.",
+    description:
+      "Tabiiy o'zbek tilida savol bering — AI tushunadi va javob beradi.",
   })
   async chat(@Body() body: ChatDto, @Req() req: any) {
     return this.aiService.chat({
@@ -42,13 +45,13 @@ export class AiController {
   }
 
   @Get('history')
-  @ApiOperation({ summary: "Suhbat tarixi" })
+  @ApiOperation({ summary: 'Suhbat tarixi' })
   async history(@Req() req: any) {
     return this.aiService.getHistory(req.user.userId)
   }
 
   @Delete('history')
-  @ApiOperation({ summary: "Suhbat tarixini tozalash" })
+  @ApiOperation({ summary: 'Suhbat tarixini tozalash' })
   async clearHistory(@Req() req: any) {
     return this.aiService.clearHistory(req.user.userId)
   }

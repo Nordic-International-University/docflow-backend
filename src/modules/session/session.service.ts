@@ -18,10 +18,7 @@ export class SessionService {
     this.#_gateway = gateway
   }
 
-  private mapSession(
-    session: any,
-    currentSessionId?: string,
-  ): SessionItem {
+  private mapSession(session: any, currentSessionId?: string): SessionItem {
     const parsed = parseUserAgent(session.userAgent)
     return {
       id: session.id,

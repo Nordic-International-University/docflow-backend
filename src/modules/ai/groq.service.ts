@@ -42,7 +42,10 @@ export class GroqService {
       } catch (err: any) {
         lastErr = err
         // 429 yoki rate-limit bo'lsa — keyingi modelga o'tish
-        if (err?.status === 429 || /rate.?limit|429/i.test(err?.message || '')) {
+        if (
+          err?.status === 429 ||
+          /rate.?limit|429/i.test(err?.message || '')
+        ) {
           this.logger.warn(`${model} rate-limited, fallback modelga o'tish...`)
           continue
         }
@@ -104,7 +107,9 @@ export class GroqService {
         if (!waitMs) waitMs = Math.min(1000 * Math.pow(2, attempt), 8000)
 
         if (attempt < maxRetries) {
-          this.logger.warn(`Groq 429 (${model}), ${waitMs}ms kutish... (${attempt}/${maxRetries})`)
+          this.logger.warn(
+            `Groq 429 (${model}), ${waitMs}ms kutish... (${attempt}/${maxRetries})`,
+          )
           await new Promise((r) => setTimeout(r, waitMs))
           continue
         }

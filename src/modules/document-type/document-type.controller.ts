@@ -71,8 +71,14 @@ export class DocumentTypeController {
     status: 201,
     description: 'Document type created successfully',
   })
-  async documentTypeCreate(@Body() payload: DocumentTypeCreateDto, @Req() req: any) {
-    return await this.documentTypeService.documentTypeCreate({ ...payload, createdBy: req.user?.userId })
+  async documentTypeCreate(
+    @Body() payload: DocumentTypeCreateDto,
+    @Req() req: any,
+  ) {
+    return await this.documentTypeService.documentTypeCreate({
+      ...payload,
+      createdBy: req.user?.userId,
+    })
   }
 
   @Patch(':id')
@@ -102,6 +108,9 @@ export class DocumentTypeController {
     description: 'Document type deleted successfully',
   })
   async documentTypeDelete(@Param('id') id: string, @Req() req: any) {
-    return await this.documentTypeService.documentTypeDelete({ id, deletedBy: req.user?.userId })
+    return await this.documentTypeService.documentTypeDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

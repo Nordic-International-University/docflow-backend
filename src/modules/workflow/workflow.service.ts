@@ -52,7 +52,10 @@ export class WorkflowService {
    * Document'ning eng oxirgi office faylini PDF'ga aylantiradi
    * va document.pdfUrl ni yangilaydi.
    */
-  private async freezeDocumentToPdf(documentId: string, userId: string): Promise<void> {
+  private async freezeDocumentToPdf(
+    documentId: string,
+    userId: string,
+  ): Promise<void> {
     const document = await this.prisma.document.findFirst({
       where: { id: documentId, deletedAt: null },
       include: {
@@ -82,13 +85,21 @@ export class WorkflowService {
       // URL dan to'liq path olish (documents/... yoki attachments/...)
       const url = officeAttachment.fileUrl
       const idx = url.indexOf('docflow-files/')
-      const fullPath = idx >= 0 ? url.substring(idx + 'docflow-files/'.length) : url.split('/').pop()!
+      const fullPath =
+        idx >= 0
+          ? url.substring(idx + 'docflow-files/'.length)
+          : url.split('/').pop()!
       const docxBuffer = await this.minio.getFile(fullPath)
 
       const { pdfBuffer, fileName: pdfFileName } =
-        await PdfConverterUtil.convertDocxToPdf(docxBuffer, officeAttachment.fileName)
+        await PdfConverterUtil.convertDocxToPdf(
+          docxBuffer,
+          officeAttachment.fileName,
+        )
 
-      const cleanPdfName = pdfFileName.replace(/^\d+-/g, '').replace(/^(merged-)+/g, '')
+      const cleanPdfName = pdfFileName
+        .replace(/^\d+-/g, '')
+        .replace(/^(merged-)+/g, '')
       const sanitizedName = this.minio.sanitizeFileName(cleanPdfName)
       const uploadedPdfName = `attachments/${Date.now()}-${sanitizedName}`
       await this.minio.putFile(uploadedPdfName, pdfBuffer, 'application/pdf')
@@ -114,7 +125,9 @@ export class WorkflowService {
 
       this.logger.log(`Document ${documentId} frozen to PDF: ${pdfUrl}`)
     } catch (err) {
-      this.logger.error(`PDF freezing failed for document ${documentId}: ${err.message}`)
+      this.logger.error(
+        `PDF freezing failed for document ${documentId}: ${err.message}`,
+      )
       throw new BadRequestException(
         "Hujjatni PDF ga aylantirib bo'lmadi: " + (err as Error).message,
       )

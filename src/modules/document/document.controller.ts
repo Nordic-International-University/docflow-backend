@@ -185,7 +185,7 @@ export class DocumentController {
   @ApiOperation({
     summary: 'Hujjat yaratish va Collabora Office da ochish',
     description:
-      'Bo\'sh Office hujjat yaratadi (docx/xlsx/pptx), attachment sifatida saqlaydi, document yaratadi va Collabora editor URL qaytaradi.',
+      "Bo'sh Office hujjat yaratadi (docx/xlsx/pptx), attachment sifatida saqlaydi, document yaratadi va Collabora editor URL qaytaradi.",
   })
   async documentCreateWithOffice(
     @Body()

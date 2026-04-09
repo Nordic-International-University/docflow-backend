@@ -121,7 +121,10 @@ export class JournalController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBody({ type: JournalCreateDto })
   async journalCreate(@Body() createDto: JournalCreateDto, @Req() req: any) {
-    return this.journalService.journalCreate({ ...createDto, createdBy: req.user?.userId })
+    return this.journalService.journalCreate({
+      ...createDto,
+      createdBy: req.user?.userId,
+    })
   }
 
   @Patch(':id')
@@ -171,6 +174,9 @@ export class JournalController {
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
   async journalDelete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
-    return this.journalService.journalDelete({ id, deletedBy: req.user?.userId })
+    return this.journalService.journalDelete({
+      id,
+      deletedBy: req.user?.userId,
+    })
   }
 }

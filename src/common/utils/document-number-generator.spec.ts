@@ -16,9 +16,11 @@ describe('DocumentNumberGenerator (unit)', () => {
       ['only-text', false],
       ['', false],
     ]
-    test.each(cases)("hasSequencePlaceholder(%s) === %s", (input, expected) => {
+    test.each(cases)('hasSequencePlaceholder(%s) === %s', (input, expected) => {
       // private — accessing via any
-      const result = (DocumentNumberGenerator as any).hasSequencePlaceholder(input)
+      const result = (DocumentNumberGenerator as any).hasSequencePlaceholder(
+        input,
+      )
       expect(result).toBe(expected)
     })
   })
@@ -75,7 +77,7 @@ describe('DocumentNumberGenerator (unit)', () => {
   describe('buildPrefix', () => {
     const date = new Date('2026-04-09T12:00:00Z')
 
-    it('NUMBER:N gacha bo\'lgan qism', () => {
+    it("NUMBER:N gacha bo'lgan qism", () => {
       const result = (DocumentNumberGenerator as any).buildPrefix(
         { prefix: 'IB', format: '{prefix}-{year}-{NUMBER:4}' },
         date,

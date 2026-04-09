@@ -63,14 +63,6 @@ export class DocumentNumberGenerator {
       return result
     }
 
-    // ATOMIC SEQUENCE: document_sequence jadvali orqali
-    // Postgres INSERT ... ON CONFLICT DO UPDATE atomic operatsiya.
-    // Ikki parallel so'rov kelganda Postgres ularni navbatga qo'yadi va
-    // har biriga UNIQUE counter qaytaradi. Application lock kerak emas.
-    //
-    // Safety net: agar document.create() baribir unique xato bersa
-    // (masalan, seeding yoki manual insert bilan), 5 marta qayta urinamiz.
-
     const prefix = this.buildPrefix(config, date)
     const key = `${config.journalId || 'global'}:${prefix}`
 
@@ -88,9 +80,6 @@ export class DocumentNumberGenerator {
       )
 
       let nextSeq = rows[0]?.counter || 1
-
-      // Birinchi ishlatilganda — mavjud hujjatlar bo'lishi mumkin.
-      // Counter 1 qaytarsa, haqiqiy max'ni topib counter'ni uning ustiga ko'tarish.
       if (nextSeq === 1) {
         const existingMax = await this.findMaxExistingSequence(
           prisma,
@@ -98,15 +87,15 @@ export class DocumentNumberGenerator {
           date,
         )
         if (existingMax >= 1) {
-          // Counter'ni mavjud max'dan keyingi qiymatga o'rnatish
-          const updated: Array<{ counter: number }> = await prisma.$queryRawUnsafe(
-            `UPDATE document_sequence
+          const updated: Array<{ counter: number }> =
+            await prisma.$queryRawUnsafe(
+              `UPDATE document_sequence
              SET counter = GREATEST(counter, $2) + 1, updated_at = NOW()
              WHERE key = $1
              RETURNING counter`,
-            key,
-            existingMax,
-          )
+              key,
+              existingMax,
+            )
           nextSeq = updated[0]?.counter || existingMax + 1
         }
       }

@@ -43,7 +43,12 @@ export class WorkflowPermissionService {
 
     if (!attachment || !attachment.documentId) {
       this.logger.log(`No document — granting full access`)
-      return { UserCanWrite: true, UserCanRead: true, ReadOnly: false, WebEditingDisabled: false }
+      return {
+        UserCanWrite: true,
+        UserCanRead: true,
+        ReadOnly: false,
+        WebEditingDisabled: false,
+      }
     }
 
     const document = await this.#_prisma.document.findFirst({
@@ -51,7 +56,12 @@ export class WorkflowPermissionService {
       select: { status: true, createdById: true },
     })
     if (!document) {
-      return { UserCanWrite: false, UserCanRead: false, ReadOnly: true, WebEditingDisabled: true }
+      return {
+        UserCanWrite: false,
+        UserCanRead: false,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // Office fayl turi (DOCX/XLSX/PPTX)
@@ -66,24 +76,48 @@ export class WorkflowPermissionService {
 
     // ============ APPROVED/ARCHIVED — hamma uchun READ-ONLY ============
     if (document.status === 'APPROVED' || document.status === 'ARCHIVED') {
-      this.logger.log(`Document ${attachment.documentId} is ${document.status}, READ-ONLY`)
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      this.logger.log(
+        `Document ${attachment.documentId} is ${document.status}, READ-ONLY`,
+      )
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // ============ DRAFT — faqat creator DOCX edit qila oladi ============
     if (document.status === 'DRAFT' || document.status === 'REJECTED') {
       // Faqat creator yoki Super Admin
       if (document.createdById === userId || isSuperAdmin) {
-        return { UserCanWrite: true, UserCanRead: true, ReadOnly: false, WebEditingDisabled: false }
+        return {
+          UserCanWrite: true,
+          UserCanRead: true,
+          ReadOnly: false,
+          WebEditingDisabled: false,
+        }
       }
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // ============ PENDING / IN_REVIEW (workflow active) ============
     // OFFICE FAYL — hech kim edit qila olmaydi (workflow boshlandi, qotirildi)
     if (isOfficeFile) {
-      this.logger.log(`Document ${attachment.documentId} workflow active — DOCX is LOCKED`)
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      this.logger.log(
+        `Document ${attachment.documentId} workflow active — DOCX is LOCKED`,
+      )
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // PDF fayl — faqat workflow step bo'yicha edit qilinishi mumkin (XFDF orqali)
@@ -92,27 +126,53 @@ export class WorkflowPermissionService {
 
     // Workflow COMPLETED — read-only
     const completedWorkflow = await this.#_prisma.workflow.findFirst({
-      where: { documentId: attachment.documentId, status: 'COMPLETED', deletedAt: null },
+      where: {
+        documentId: attachment.documentId,
+        status: 'COMPLETED',
+        deletedAt: null,
+      },
     })
     if (completedWorkflow) {
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // Super Admin — read-only ham (workflow active'da Super Admin ham edit qilmasligi kerak)
     if (isSuperAdmin) {
-      this.logger.log(`Super Admin viewing active workflow document — read-only`)
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      this.logger.log(
+        `Super Admin viewing active workflow document — read-only`,
+      )
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // File owner — workflow active'da ham edit qila olmaydi
     if (attachment.uploadedById === userId) {
       this.logger.log(`File owner during active workflow — read-only`)
-      return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+      return {
+        UserCanWrite: false,
+        UserCanRead: true,
+        ReadOnly: true,
+        WebEditingDisabled: true,
+      }
     }
 
     // Workflow active va user assigned step'ga ega — read-only Collabora'da
     // (XFDF orqali alohida endpoint orqali edit qilishi mumkin)
-    return { UserCanWrite: false, UserCanRead: true, ReadOnly: true, WebEditingDisabled: true }
+    return {
+      UserCanWrite: false,
+      UserCanRead: true,
+      ReadOnly: true,
+      WebEditingDisabled: true,
+    }
   }
 
   async verifyWritePermission(userId: string, fileId: string): Promise<void> {
@@ -154,7 +214,9 @@ export class WorkflowPermissionService {
       select: { role: { select: { name: true } } },
     })
     if (user?.role?.name === 'Super Administrator') {
-      this.logger.log(`User ${userId} is Super Administrator, granting XFDF edit permission`)
+      this.logger.log(
+        `User ${userId} is Super Administrator, granting XFDF edit permission`,
+      )
       return true
     }
 

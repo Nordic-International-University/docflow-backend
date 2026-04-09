@@ -32,7 +32,12 @@ export class GeminiService {
     let lastErr: any = null
     for (const model of MODELS) {
       try {
-        return await this.callWithRetry(model, systemInstruction, contents, geminiTools)
+        return await this.callWithRetry(
+          model,
+          systemInstruction,
+          contents,
+          geminiTools,
+        )
       } catch (err: any) {
         lastErr = err
         if (err?.status === 429 || err?.status === 503) {
@@ -41,7 +46,9 @@ export class GeminiService {
         }
         if (err?.status === 404 || err?.status === 400) {
           // Model mavjud emas — keyingisini urinish
-          this.logger.warn(`${model} mavjud emas yoki so'rov noto'g'ri: ${err.message}`)
+          this.logger.warn(
+            `${model} mavjud emas yoki so'rov noto'g'ri: ${err.message}`,
+          )
           continue
         }
         throw err
@@ -67,11 +74,14 @@ export class GeminiService {
     let attempt = 0
     while (attempt < maxRetries) {
       attempt++
-      const res = await fetch(`${BASE}/${model}:generateContent?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const res = await fetch(
+        `${BASE}/${model}:generateContent?key=${this.apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      )
 
       if (res.ok) {
         const data = await res.json()
@@ -83,7 +93,9 @@ export class GeminiService {
       if (res.status === 429) {
         const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000)
         if (attempt < maxRetries) {
-          this.logger.warn(`Gemini 429 (${model}), ${waitMs}ms kutish... (${attempt}/${maxRetries})`)
+          this.logger.warn(
+            `Gemini 429 (${model}), ${waitMs}ms kutish... (${attempt}/${maxRetries})`,
+          )
           await new Promise((r) => setTimeout(r, waitMs))
           continue
         }
@@ -94,7 +106,9 @@ export class GeminiService {
         continue
       }
 
-      this.logger.error(`Gemini ${model} error ${res.status}: ${text.slice(0, 300)}`)
+      this.logger.error(
+        `Gemini ${model} error ${res.status}: ${text.slice(0, 300)}`,
+      )
       const err: any = new Error(`Gemini ${res.status}`)
       err.status = res.status
       err.body = text
@@ -151,7 +165,10 @@ export class GeminiService {
       if (m.role === 'tool') {
         let response: any = {}
         try {
-          response = typeof m.content === 'string' ? JSON.parse(m.content) : m.content || {}
+          response =
+            typeof m.content === 'string'
+              ? JSON.parse(m.content)
+              : m.content || {}
         } catch {
           response = { result: m.content }
         }
@@ -202,7 +219,10 @@ export class GeminiService {
       out[k] = this.cleanSchema(schema[k])
     }
     // Gemini bo'sh properties object'ni qabul qilmasligi mumkin
-    if (out.type === 'object' && (!out.properties || Object.keys(out.properties).length === 0)) {
+    if (
+      out.type === 'object' &&
+      (!out.properties || Object.keys(out.properties).length === 0)
+    ) {
       delete out.properties
     }
     return out
