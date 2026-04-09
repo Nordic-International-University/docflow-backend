@@ -84,6 +84,10 @@ export class NotificationService {
       TASK_ASSIGNED: '📌',
       TASK_COMPLETED: '✅',
       TASK_COMMENT: '💬',
+      TASK_DUE_SOON: '⏰',
+      DOCUMENT_STATUS: '📄',
+      CHAT_MESSAGE: '💬',
+      PROJECT_MEMBER: '👥',
       KPI: '📊',
       SYSTEM: '⚙️',
     }
@@ -102,6 +106,9 @@ export class NotificationService {
     } else if (meta.taskId) {
       actionUrl = `${FRONTEND_URL}/dashboard/task/${meta.taskId}`
       buttonText = '📌 Topshiriqni ochish'
+    } else if (meta.chatId) {
+      actionUrl = `${FRONTEND_URL}/dashboard/chat/${meta.chatId}`
+      buttonText = '💬 Chatni ochish'
     } else if (meta.projectId) {
       actionUrl = `${FRONTEND_URL}/dashboard/project/${meta.projectId}`
       buttonText = '🚀 Loyihani ochish'
@@ -520,6 +527,137 @@ export class NotificationService {
         assignedBy: params.assignedById,
       },
     })
+  }
+
+  // ============ YANGI: Task, Document, Chat, Project notification'lari ============
+
+  async createTaskCompletedNotification(params: {
+    taskId: string
+    taskTitle: string
+    taskNumber: number
+    projectKey: string
+    completedByUserId: string
+    completedByName: string
+    score: number
+    notifyUserIds: string[]
+  }): Promise<void> {
+    const taskRef = `${params.projectKey}-${params.taskNumber}`
+    for (const userId of params.notifyUserIds) {
+      if (userId === params.completedByUserId) continue
+      await this.createNotification({
+        userId,
+        type: NotificationType.TASK_COMPLETED,
+        title: 'Topshiriq yakunlandi',
+        message: `${params.completedByName} "${params.taskTitle}" (${taskRef}) topshiriqni yakunladi. Ball: ${params.score}.`,
+        metadata: { taskId: params.taskId, taskNumber: params.taskNumber, projectKey: params.projectKey },
+      }).catch((err) => this.logger.warn(`Task complete notify failed: ${err.message}`))
+    }
+  }
+
+  async createTaskCommentNotification(params: {
+    taskId: string
+    taskTitle: string
+    taskNumber: number
+    projectKey: string
+    commentByUserId: string
+    commentByName: string
+    commentPreview: string
+    notifyUserIds: string[]
+  }): Promise<void> {
+    const taskRef = `${params.projectKey}-${params.taskNumber}`
+    const preview = params.commentPreview.length > 100
+      ? params.commentPreview.slice(0, 100) + '...'
+      : params.commentPreview
+    for (const userId of params.notifyUserIds) {
+      if (userId === params.commentByUserId) continue
+      await this.createNotification({
+        userId,
+        type: NotificationType.TASK_COMMENT,
+        title: 'Yangi izoh',
+        message: `${params.commentByName} "${params.taskTitle}" (${taskRef}) ga izoh yozdi: "${preview}"`,
+        metadata: { taskId: params.taskId, taskNumber: params.taskNumber, projectKey: params.projectKey },
+      }).catch((err) => this.logger.warn(`Task comment notify failed: ${err.message}`))
+    }
+  }
+
+  async createDocumentStatusChangedNotification(params: {
+    documentId: string
+    documentNumber: string
+    documentTitle: string
+    newStatus: string
+    changedByName: string
+    notifyUserId: string
+  }): Promise<void> {
+    const statusUz: Record<string, string> = {
+      DRAFT: 'Qoralama',
+      PENDING: 'Kutilmoqda',
+      IN_REVIEW: "Ko'rib chiqilmoqda",
+      APPROVED: 'Tasdiqlandi',
+      REJECTED: 'Rad etildi',
+      ARCHIVED: 'Arxivlandi',
+    }
+    await this.createNotification({
+      userId: params.notifyUserId,
+      type: NotificationType.DOCUMENT_STATUS,
+      title: `Hujjat holati o'zgardi`,
+      message: `${params.changedByName} "${params.documentTitle}" (${params.documentNumber}) hujjatini ${statusUz[params.newStatus] || params.newStatus} holatiga o'zgartirdi.`,
+      metadata: { documentId: params.documentId, documentNumber: params.documentNumber, status: params.newStatus },
+    }).catch((err) => this.logger.warn(`Doc status notify failed: ${err.message}`))
+  }
+
+  async createChatMessageNotification(params: {
+    chatId: string
+    chatTitle: string
+    senderName: string
+    messagePreview: string
+    notifyUserId: string
+  }): Promise<void> {
+    const preview = params.messagePreview.length > 80
+      ? params.messagePreview.slice(0, 80) + '...'
+      : params.messagePreview
+    await this.createNotification({
+      userId: params.notifyUserId,
+      type: NotificationType.CHAT_MESSAGE,
+      title: `${params.senderName}`,
+      message: preview,
+      metadata: { chatId: params.chatId, chatTitle: params.chatTitle },
+    }).catch((err) => this.logger.warn(`Chat msg notify failed: ${err.message}`))
+  }
+
+  async createProjectMemberAddedNotification(params: {
+    projectId: string
+    projectName: string
+    addedByName: string
+    notifyUserId: string
+  }): Promise<void> {
+    await this.createNotification({
+      userId: params.notifyUserId,
+      type: NotificationType.PROJECT_MEMBER,
+      title: 'Loyihaga qo\'shildingiz',
+      message: `${params.addedByName} sizni "${params.projectName}" loyihasiga qo'shdi.`,
+      metadata: { projectId: params.projectId },
+    }).catch((err) => this.logger.warn(`Project member notify failed: ${err.message}`))
+  }
+
+  async createTaskDueSoonNotification(params: {
+    taskId: string
+    taskTitle: string
+    taskNumber: number
+    projectKey: string
+    dueDate: Date
+    notifyUserIds: string[]
+  }): Promise<void> {
+    const taskRef = `${params.projectKey}-${params.taskNumber}`
+    const dueDateStr = params.dueDate.toLocaleDateString('uz-UZ')
+    for (const userId of params.notifyUserIds) {
+      await this.createNotification({
+        userId,
+        type: NotificationType.TASK_DUE_SOON,
+        title: 'Topshiriq muddati yaqinlashmoqda',
+        message: `"${params.taskTitle}" (${taskRef}) topshiriqning muddati ${dueDateStr} da tugaydi.`,
+        metadata: { taskId: params.taskId, taskNumber: params.taskNumber, projectKey: params.projectKey },
+      }).catch((err) => this.logger.warn(`Task due notify failed: ${err.message}`))
+    }
   }
 
   // Get notifications for a user

@@ -12,6 +12,12 @@ export enum NotificationType {
   DOCUMENT_APPROVED = 'document_approved',
   DOCUMENT_REJECTED = 'document_rejected',
   TASK_ASSIGNED = 'task_assigned',
+  TASK_COMPLETED = 'task_completed',
+  TASK_COMMENT = 'task_comment',
+  TASK_DUE_SOON = 'task_due_soon',
+  DOCUMENT_STATUS = 'document_status',
+  CHAT_MESSAGE = 'chat_message',
+  PROJECT_MEMBER = 'project_member',
 }
 
 export class CreateNotificationDto {

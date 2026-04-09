@@ -7,6 +7,7 @@ import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { TaskGateway } from '../task/task.gateway'
+import { NotificationService } from '../notification/notification.service'
 import {
   TaskCommentCreateRequest,
   TaskCommentDeleteRequest,
@@ -96,21 +97,32 @@ export class TaskCommentService {
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
   readonly #_taskGateway: TaskGateway
+  readonly #_notificationService: NotificationService
 
   constructor(
     prisma: PrismaService,
     auditLogService: AuditLogService,
     taskGateway: TaskGateway,
+    notificationService: NotificationService,
   ) {
     this.#_prisma = prisma
     this.#_auditLogService = auditLogService
     this.#_taskGateway = taskGateway
+    this.#_notificationService = notificationService
   }
 
   async taskCommentCreate(payload: TaskCommentCreateRequest): Promise<any> {
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.taskId, deletedAt: null },
-      select: { id: true, projectId: true, title: true },
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        taskNumber: true,
+        createdById: true,
+        project: { select: { key: true } },
+        assignees: { select: { userId: true } },
+      },
     })
 
     if (!task) {
@@ -215,6 +227,26 @@ export class TaskCommentService {
       task.id,
       fullComment,
     )
+
+    // Notification: barcha assignee + creator ga
+    const commentUser = await this.#_prisma.user.findFirst({
+      where: { id: payload.userId },
+      select: { fullname: true },
+    })
+    const notifyIds = [
+      ...task.assignees.map((a) => a.userId),
+      task.createdById,
+    ].filter((id, i, arr) => arr.indexOf(id) === i)
+    this.#_notificationService.createTaskCommentNotification({
+      taskId: task.id,
+      taskTitle: task.title,
+      taskNumber: task.taskNumber,
+      projectKey: task.project?.key || '',
+      commentByUserId: payload.userId,
+      commentByName: commentUser?.fullname || '',
+      commentPreview: payload.content || '',
+      notifyUserIds: notifyIds,
+    }).catch(() => {})
 
     return fullComment
   }

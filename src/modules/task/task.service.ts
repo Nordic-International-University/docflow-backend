@@ -797,7 +797,7 @@ export class TaskService {
       where: { id: payload.id, deletedAt: null },
       include: {
         assignees: { select: { userId: true } },
-        project: { select: { penaltyPerDay: true } },
+        project: { select: { penaltyPerDay: true, key: true, name: true } },
         subtasks: {
           where: { deletedAt: null, completedAt: null },
           include: {
@@ -877,6 +877,26 @@ export class TaskService {
       { ...task, completedAt: now, score },
       payload.completedBy,
     )
+
+    // Notification: barcha assignee va creator ga
+    const completedByUser = await this.#_prisma.user.findFirst({
+      where: { id: payload.completedBy },
+      select: { fullname: true },
+    })
+    const notifyIds = [
+      ...task.assignees.map((a) => a.userId),
+      task.createdById,
+    ].filter((id, i, arr) => arr.indexOf(id) === i)
+    this.#_notificationService.createTaskCompletedNotification({
+      taskId: payload.id,
+      taskTitle: task.title,
+      taskNumber: task.taskNumber,
+      projectKey: task.project?.key || '',
+      completedByUserId: payload.completedBy,
+      completedByName: completedByUser?.fullname || '',
+      score,
+      notifyUserIds: notifyIds,
+    }).catch(() => {})
 
     return {
       message: 'Topshiriq yakunlandi',
