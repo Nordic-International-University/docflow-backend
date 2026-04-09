@@ -1,13 +1,11 @@
 import { ApiClient } from '../helpers/api-client'
 
 describe('Auth API', () => {
-  let api: ApiClient
-
-  beforeEach(() => {
-    api = new ApiClient()
-  })
-
   describe('POST /auth/login', () => {
+    let api: ApiClient
+    beforeEach(() => {
+      api = new ApiClient()
+    })
     it('to\'g\'ri credentials bilan token qaytaradi', async () => {
       const res = await api.request('POST', '/auth/login', {
         body: { username: 'superadmin', password: '12345678' },
@@ -65,7 +63,9 @@ describe('Auth API', () => {
   })
 
   describe('Token uses', () => {
+    let api: ApiClient
     beforeAll(async () => {
+      api = new ApiClient()
       await api.login()
     })
 
@@ -94,6 +94,8 @@ describe('Auth API', () => {
   })
 
   describe('POST /auth/refresh-token', () => {
+    const api = new ApiClient()
+
     it('valid refresh token bilan yangi access token oladi', async () => {
       const loginRes = await api.request('POST', '/auth/login', {
         body: { username: 'superadmin', password: '12345678' },
