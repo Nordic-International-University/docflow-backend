@@ -1,0 +1,51 @@
+/** @type {import('jest').Config} */
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  rootDir: '.',
+  roots: ['<rootDir>/test', '<rootDir>/src'],
+  testRegex: '.*\\.(spec|test|e2e-spec)\\.ts$',
+  transform: {
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.json',
+        isolatedModules: true,
+      },
+    ],
+  },
+  moduleNameMapper: {
+    '^@modules$': '<rootDir>/src/modules',
+    '^@modules/(.*)$': '<rootDir>/src/modules/$1',
+    '^@prisma$': '<rootDir>/src/prisma',
+    '^@prisma/(.*)$': '<rootDir>/src/prisma/$1',
+    '^@clients$': '<rootDir>/src/clients',
+    '^@clients/(.*)$': '<rootDir>/src/clients/$1',
+    '^@constants$': '<rootDir>/src/constants',
+    '^@constants/(.*)$': '<rootDir>/src/constants/$1',
+    '^@guards$': '<rootDir>/src/guards',
+    '^@guards/(.*)$': '<rootDir>/src/guards/$1',
+    '^@decorators$': '<rootDir>/src/decorators',
+    '^@decorators/(.*)$': '<rootDir>/src/decorators/$1',
+    '^@config$': '<rootDir>/src/config',
+    '^@config/(.*)$': '<rootDir>/src/config/$1',
+    '^@filters$': '<rootDir>/src/filters',
+    '^@filters/(.*)$': '<rootDir>/src/filters/$1',
+    '^@common/(.*)$': '<rootDir>/src/common/$1',
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,js}',
+    '!src/**/*.dto.ts',
+    '!src/**/*.module.ts',
+    '!src/**/*.interface.ts',
+    '!src/**/index.ts',
+    '!src/main.ts',
+  ],
+  coverageDirectory: '<rootDir>/coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  testTimeout: 30000,
+  setupFilesAfterEach: [],
+  // E2E testlarda hot start uchun
+  maxWorkers: '50%',
+  forceExit: true,
+}
