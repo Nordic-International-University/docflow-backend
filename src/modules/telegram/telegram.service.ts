@@ -7,6 +7,7 @@ export class TelegramService implements OnModuleInit {
   private readonly logger = new Logger(TelegramService.name)
   private bot: Telegraf
   private _workflowStepId: string
+  private _username: string
 
   constructor(private readonly prisma: PrismaService) {}
 
