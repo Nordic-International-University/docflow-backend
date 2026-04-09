@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import {
   AuditLogCreateRequest,
@@ -10,6 +10,7 @@ import {
 
 @Injectable()
 export class AuditLogService {
+  private readonly logger = new Logger(AuditLogService.name)
   readonly #_prisma: PrismaService
 
   constructor(prisma: PrismaService) {
@@ -184,13 +185,13 @@ export class AuditLogService {
         select: { id: true },
       })
       if (!userExists) {
-        console.warn(
+        this.logger.warn(
           `[AuditLog] Skipped: invalid performedByUserId "${performedByUserId}" for ${action} on ${entity}:${entityId}`,
         )
         return
       }
     } else {
-      console.warn(
+      this.logger.warn(
         `[AuditLog] Skipped: no performedByUserId for ${action} on ${entity}:${entityId}`,
       )
       return

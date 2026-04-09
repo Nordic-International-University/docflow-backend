@@ -9,7 +9,9 @@ import {
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { AuthGuard } from '@guards'
+import { AuthGuard, PermissionGuard } from '@guards'
+import { Permissions } from '@decorators'
+import { PERMISSIONS } from '@constants'
 import { AiService } from './ai.service'
 import { IsNotEmpty, IsString, Length } from 'class-validator'
 
@@ -22,13 +24,14 @@ class ChatDto {
 
 @ApiBearerAuth()
 @ApiTags('AI Chatbot')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PermissionGuard)
 @Controller({ path: 'ai', version: '1' })
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
   @Post('chat')
-  @Throttle({ short: { ttl: 60000, limit: 10 } })  // AI: 10 so'rov / daqiqa (API quota himoyasi)
+  @Permissions(PERMISSIONS.NOTIFICATION.READ)  // har kimda bor — AI hamma uchun ochiq
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({
     summary: 'AI yordamchi bilan suhbat',
     description:
@@ -45,12 +48,14 @@ export class AiController {
   }
 
   @Get('history')
+  @Permissions(PERMISSIONS.NOTIFICATION.READ)
   @ApiOperation({ summary: 'Suhbat tarixi' })
   async history(@Req() req: any) {
     return this.aiService.getHistory(req.user.userId)
   }
 
   @Delete('history')
+  @Permissions(PERMISSIONS.NOTIFICATION.READ)
   @ApiOperation({ summary: 'Suhbat tarixini tozalash' })
   async clearHistory(@Req() req: any) {
     return this.aiService.clearHistory(req.user.userId)

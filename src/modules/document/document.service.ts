@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -31,6 +32,7 @@ import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name)
   readonly #_prisma: PrismaService
   readonly #_minio: MinioService
   readonly #_workflowPermissionService: WorkflowPermissionService
@@ -776,7 +778,7 @@ export class DocumentService {
       throw new BadRequestException('Tags are required when using a template')
     }
 
-    console.log(payload)
+    this.logger.log(payload)
 
     const createdDocument = await this.#_prisma.document.create({
       data: {
@@ -880,10 +882,10 @@ export class DocumentService {
         },
       })
 
-      console.log('Document generated from template:', generatedFileUrl)
+      this.logger.log('Document generated from template:', generatedFileUrl)
       return generatedAttachment.id
     } catch (error) {
-      console.error('Error generating document from template:', error)
+      this.logger.error('Error generating document from template:', error)
       throw new Error(
         `Failed to generate document from template: ${error.message}`,
       )
@@ -909,7 +911,7 @@ export class DocumentService {
       })
 
       if (docxAttachments.length === 0) {
-        console.log('No DOCX attachments found for document:', documentId)
+        this.logger.log('No DOCX attachments found for document:', documentId)
         return
       }
 
@@ -926,7 +928,7 @@ export class DocumentService {
 
       // Process the first DOCX attachment
       const docxAttachment = docxAttachments[0]
-      console.log('Converting DOCX to PDF:', docxAttachment.fileName)
+      this.logger.log('Converting DOCX to PDF:', docxAttachment.fileName)
 
       // Extract the file path from the URL
       const fileUrl = docxAttachment.fileUrl
@@ -950,7 +952,7 @@ export class DocumentService {
 
       // If XFDF exists, merge it with the new PDF (for edge cases or re-conversions)
       if (document?.xfdfUrl) {
-        console.log('XFDF found during initial conversion, merging with PDF')
+        this.logger.log('XFDF found during initial conversion, merging with PDF')
         const xfdfBuffer = Buffer.from(document.xfdfUrl, 'utf-8')
 
         const { pdfBuffer: mergedPdfBuffer, fileName: mergedFileName } =
@@ -962,7 +964,7 @@ export class DocumentService {
 
         finalPdfBuffer = mergedPdfBuffer
         finalPdfFileName = mergedFileName
-        console.log('XFDF merged successfully with PDF')
+        this.logger.log('XFDF merged successfully with PDF')
       }
 
       // Upload PDF to MinIO with sanitized filename
@@ -1000,9 +1002,9 @@ export class DocumentService {
         },
       })
 
-      console.log('PDF conversion completed successfully:', finalPdfFileName)
+      this.logger.log('PDF conversion completed successfully:', finalPdfFileName)
     } catch (error) {
-      console.error('Error converting DOCX to PDF:', error)
+      this.logger.error('Error converting DOCX to PDF:', error)
       // Don't throw error to prevent document creation from failing
       // Just log the error and continue
     }
@@ -1262,11 +1264,11 @@ export class DocumentService {
 
       // Download original PDF from MinIO
       const pdfBuffer = await this.#_minio.getFile(pdfFileName)
-      console.log('Original PDF downloaded from MinIO')
+      this.logger.log('Original PDF downloaded from MinIO')
 
       // Convert XFDF content to buffer
       const xfdfBuffer = Buffer.from(xfdfContent, 'utf-8')
-      console.log('XFDF content converted to buffer')
+      this.logger.log('XFDF content converted to buffer')
 
       // Extract original PDF filename
       const originalPdfFileName = pdfFileName.split('/').pop() || 'document.pdf'
@@ -1278,7 +1280,7 @@ export class DocumentService {
           xfdfBuffer,
           originalPdfFileName,
         )
-      console.log('XFDF merged into PDF successfully')
+      this.logger.log('XFDF merged into PDF successfully')
 
       // Versiya aniqlash
       const versionCount = await this.#_prisma.attachment.count({
@@ -1319,7 +1321,7 @@ export class DocumentService {
       )
 
       const mergedPdfUrl = `https://cdn.nordicuniversity.org/docflow-files/${uploadedPdfFileName}`
-      console.log('Merged PDF uploaded to MinIO:', mergedPdfUrl)
+      this.logger.log('Merged PDF uploaded to MinIO:', mergedPdfUrl)
 
       // Create attachment for merged PDF
       let displayFileName = versionedName
@@ -1351,11 +1353,11 @@ export class DocumentService {
         },
       })
 
-      console.log('Document updated with XFDF content and merged PDF URL')
+      this.logger.log('Document updated with XFDF content and merged PDF URL')
 
       // Record XFDF submission in workflow step action if user has an active workflow step
       if (userWorkflowStep && userId) {
-        console.log(userWorkflowStep)
+        this.logger.log(userWorkflowStep)
         await this.#_prisma.workflowStepAction.create({
           data: {
             workflowStepId: userWorkflowStep.id,
@@ -1369,13 +1371,13 @@ export class DocumentService {
             },
           },
         })
-        console.log(
+        this.logger.log(
           `XFDF submission recorded for user ${userId} on workflow step ${userWorkflowStep.id}`,
         )
       }
-      console.log('Nooooooooooooooooooooooooo')
+      this.logger.log('Nooooooooooooooooooooooooo')
     } catch (error) {
-      console.error('Error updating XFDF URL and merging PDF:', error)
+      this.logger.error('Error updating XFDF URL and merging PDF:', error)
       throw new Error(`Failed to update XFDF and merge PDF: ${error.message}`)
     }
   }
@@ -1569,7 +1571,7 @@ export class DocumentService {
 
     // Check if workflow is completed
     const workflow = document.workflow[0]
-    console.log('DEBUG download:', {
+    this.logger.log('DEBUG download:', {
       workflowId: workflow.id,
       workflowStatus: workflow.status,
       expected: WorkflowStatus.COMPLETED,
@@ -1617,11 +1619,11 @@ export class DocumentService {
 
       // Download PDF from MinIO
       const pdfBuffer = await this.#_minio.getFile(pdfFileName)
-      console.log('PDF downloaded from MinIO for watermark removal')
+      this.logger.log('PDF downloaded from MinIO for watermark removal')
 
       // Remove watermark from PDF
       const result = await removeWatermark(pdfBuffer)
-      console.log(
+      this.logger.log(
         `Watermark removal completed: ${result.watermarksRemoved} watermark(s) removed`,
       )
 
@@ -1633,7 +1635,7 @@ export class DocumentService {
         fileName: fileName,
       }
     } catch (error) {
-      console.error('Error downloading document with watermark removal:', error)
+      this.logger.error('Error downloading document with watermark removal:', error)
       throw new Error(
         `Failed to download document: ${(error as Error).message}`,
       )

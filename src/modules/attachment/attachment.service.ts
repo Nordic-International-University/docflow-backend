@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common'
 import {
@@ -21,6 +22,7 @@ import { ROLE_NAMES } from '@constants'
 
 @Injectable()
 export class AttachmentService {
+  private readonly logger = new Logger(AttachmentService.name)
   readonly #_prisma: PrismaService
   readonly #_minio: MinioService
 
@@ -93,7 +95,7 @@ export class AttachmentService {
       return originalName
     } catch (error) {
       // If any unexpected error occurs, return original filename
-      console.error('Error decoding filename:', error)
+      this.logger.error('Error decoding filename:', error)
       return originalName
     }
   }
@@ -483,7 +485,7 @@ export class AttachmentService {
       })
 
       stats.total = attachments.length
-      console.log(`Found ${stats.total} attachments to check`)
+      this.logger.log(`Found ${stats.total} attachments to check`)
 
       for (const attachment of attachments) {
         try {
@@ -504,7 +506,7 @@ export class AttachmentService {
               newName: decodedName,
             })
 
-            console.log(
+            this.logger.log(
               `Fixed: "${originalName}" → "${decodedName}" (ID: ${attachment.id})`,
             )
           } else {
@@ -512,22 +514,22 @@ export class AttachmentService {
           }
         } catch (error) {
           stats.errors++
-          console.error(
+          this.logger.error(
             `Error fixing filename for attachment ${attachment.id}:`,
             error,
           )
         }
       }
 
-      console.log('\n=== Repair Summary ===')
-      console.log(`Total attachments: ${stats.total}`)
-      console.log(`Fixed: ${stats.fixed}`)
-      console.log(`Unchanged: ${stats.unchanged}`)
-      console.log(`Errors: ${stats.errors}`)
+      this.logger.log('\n=== Repair Summary ===')
+      this.logger.log(`Total attachments: ${stats.total}`)
+      this.logger.log(`Fixed: ${stats.fixed}`)
+      this.logger.log(`Unchanged: ${stats.unchanged}`)
+      this.logger.log(`Errors: ${stats.errors}`)
 
       return stats
     } catch (error) {
-      console.error('Error during filename repair operation:', error)
+      this.logger.error('Error during filename repair operation:', error)
       throw error
     }
   }

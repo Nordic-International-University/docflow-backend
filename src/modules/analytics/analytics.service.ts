@@ -1,3 +1,4 @@
+import { ROLE_NAMES } from '@constants'
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { AnalyticsQueryDto, TimeRange } from './dtos/analytics-query.dto'
@@ -1030,8 +1031,8 @@ export class AnalyticsService {
   }) {
     const { userId, year, month } = payload
     const isAdmin =
-      payload.currentUserRole === 'Super Administrator' ||
-      payload.currentUserRole === 'Admin'
+      payload.currentUserRole === ROLE_NAMES.SUPER_ADMIN ||
+      payload.currentUserRole === ROLE_NAMES.ADMIN
 
     // ============ 1. SHAXSIY KPI (joriy oy) ============
     const personalKpi = await this.prisma.userMonthlyKpi.findFirst({

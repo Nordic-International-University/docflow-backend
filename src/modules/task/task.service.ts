@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { ROLE_NAMES } from '@constants'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
@@ -12,6 +13,7 @@ const VALID_PRIORITIES = Object.values(TaskPriority)
 
 @Injectable()
 export class TaskService {
+  private readonly logger = new Logger(TaskService.name)
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
   readonly #_notificationService: NotificationService
@@ -68,56 +70,60 @@ export class TaskService {
     const periodYear = now.getFullYear()
     const periodMonth = now.getMonth() + 1
 
-    for (const userId of assigneeUserIds) {
-      await this.#_prisma.taskKpiScore.upsert({
-        where: { taskId_userId: { taskId, userId } },
-        create: {
-          taskId,
-          userId,
-          baseScore: score,
-          earnedScore,
-          penaltyApplied: penalty,
-          dueDate: dueDate ?? now,
-          completedDate: now,
-          daysLate,
-          periodYear,
-          periodMonth,
-          breakdown: {
+    // N+1 fix: parallel upsert (sequential o'rniga)
+    await Promise.all(
+      assigneeUserIds.map((userId) =>
+        this.#_prisma.taskKpiScore.upsert({
+          where: { taskId_userId: { taskId, userId } },
+          create: {
+            taskId,
+            userId,
             baseScore: score,
+            earnedScore,
+            penaltyApplied: penalty,
+            dueDate: dueDate ?? now,
+            completedDate: now,
             daysLate,
-            penaltyPerDay,
-            totalPenalty: penalty,
-            earned: earnedScore,
+            periodYear,
+            periodMonth,
+            breakdown: {
+              baseScore: score,
+              daysLate,
+              penaltyPerDay,
+              totalPenalty: penalty,
+              earned: earnedScore,
+            },
           },
-        },
-        update: {
-          baseScore: score,
-          earnedScore,
-          penaltyApplied: penalty,
-          completedDate: now,
-          daysLate,
-          periodYear,
-          periodMonth,
-          breakdown: {
+          update: {
             baseScore: score,
+            earnedScore,
+            penaltyApplied: penalty,
+            completedDate: now,
             daysLate,
-            penaltyPerDay,
-            totalPenalty: penalty,
-            earned: earnedScore,
+            periodYear,
+            periodMonth,
+            breakdown: {
+              baseScore: score,
+              daysLate,
+              penaltyPerDay,
+              totalPenalty: penalty,
+              earned: earnedScore,
+            },
           },
-        },
-      })
-      // Auto-update monthly KPI
-      try {
-        await this.#_kpiService.updateUserMonthlyKpi(
-          userId,
-          periodYear,
-          periodMonth,
-        )
-      } catch {
-        /* empty */
-      }
-    }
+        }),
+      ),
+    )
+
+    // Monthly KPI yangilash (parallel)
+    await Promise.all(
+      assigneeUserIds.map((userId) =>
+        this.#_kpiService
+          .updateUserMonthlyKpi(userId, periodYear, periodMonth)
+          .catch((err: any) =>
+            this.logger.warn(`KPI update failed for ${userId}: ${err.message}`),
+          ),
+      ),
+    )
   }
 
   /**
@@ -133,18 +139,16 @@ export class TaskService {
 
     await this.#_prisma.taskKpiScore.deleteMany({ where: { taskId } })
 
-    // Re-aggregate monthly KPI for affected users
-    for (const score of existing) {
-      try {
-        await this.#_kpiService.updateUserMonthlyKpi(
-          score.userId,
-          score.periodYear,
-          score.periodMonth,
-        )
-      } catch {
-        /* empty */
-      }
-    }
+    // N+1 fix: Re-aggregate monthly KPI (parallel)
+    await Promise.all(
+      existing.map((score) =>
+        this.#_kpiService
+          .updateUserMonthlyKpi(score.userId, score.periodYear, score.periodMonth)
+          .catch((err: any) =>
+            this.logger.warn(`KPI re-aggregate failed: ${err.message}`),
+          ),
+      ),
+    )
   }
 
   async taskCreate(
@@ -321,7 +325,7 @@ export class TaskService {
 
     // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
     const isAdmin =
-      payload.roleName === 'Super Administrator' || payload.roleName === 'Admin'
+      payload.roleName === ROLE_NAMES.SUPER_ADMIN || payload.roleName === ROLE_NAMES.ADMIN
 
     const projectAccessFilter: any = isAdmin
       ? {}

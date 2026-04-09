@@ -8,7 +8,9 @@ export interface ToolContext {
   departmentId?: string
 }
 
-const ROLE_ADMIN = ['Super Administrator', 'Admin']
+import { ROLE_NAMES } from '@constants'
+
+const ROLE_ADMIN: string[] = [ROLE_NAMES.SUPER_ADMIN, ROLE_NAMES.ADMIN]
 
 const SENSITIVE_PATTERNS =
   /password|passwd|token|secret|api[_-]?key|private[_-]?key|credential|\.env/i

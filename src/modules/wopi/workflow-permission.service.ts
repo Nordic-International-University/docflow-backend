@@ -1,3 +1,4 @@
+import { ROLE_NAMES } from '@constants'
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { StepActionType } from '@prisma/client'
@@ -29,7 +30,7 @@ export class WorkflowPermissionService {
       where: { id: userId, deletedAt: null },
       select: { role: { select: { name: true } } },
     })
-    const isSuperAdmin = currentUser?.role?.name === 'Super Administrator'
+    const isSuperAdmin = currentUser?.role?.name === ROLE_NAMES.SUPER_ADMIN
 
     const attachment = await this.#_prisma.attachment.findFirst({
       where: { id: fileId, deletedAt: null },
@@ -213,7 +214,7 @@ export class WorkflowPermissionService {
       where: { id: userId, deletedAt: null },
       select: { role: { select: { name: true } } },
     })
-    if (user?.role?.name === 'Super Administrator') {
+    if (user?.role?.name === ROLE_NAMES.SUPER_ADMIN) {
       this.logger.log(
         `User ${userId} is Super Administrator, granting XFDF edit permission`,
       )

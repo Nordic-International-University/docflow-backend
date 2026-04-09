@@ -31,7 +31,9 @@ interface Ctx {
   roleName?: string
 }
 
-const ADMIN_ROLES = ['Super Administrator', 'Admin']
+import { ROLE_NAMES } from '@constants'
+
+const ADMIN_ROLES: string[] = [ROLE_NAMES.SUPER_ADMIN, ROLE_NAMES.ADMIN]
 
 @Injectable()
 export class ChatService {

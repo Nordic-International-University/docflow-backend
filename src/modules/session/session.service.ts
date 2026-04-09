@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { parseUserAgent } from '@common'
 import { NotificationGateway } from '../notification/notification.gateway'
@@ -10,6 +10,7 @@ import {
 
 @Injectable()
 export class SessionService {
+  private readonly logger = new Logger(SessionService.name)
   readonly #_prisma: PrismaService
   readonly #_gateway: NotificationGateway
 
@@ -133,7 +134,10 @@ export class SessionService {
         message: 'Sizning sessiyangiz boshqa qurilmadan chiqarib yuborildi',
         timestamp: new Date().toISOString(),
       })
-    } catch {}
+    } catch (err: any) {
+      // WS notification xatosi session amalini to'xtatmasligi kerak
+      this.logger.warn(`Session WS broadcast failed: ${err?.message}`)
+    }
   }
 
   async sessionRevokeAll(
@@ -162,7 +166,10 @@ export class SessionService {
         exceptSessionId,
         timestamp: new Date().toISOString(),
       })
-    } catch {}
+    } catch (err: any) {
+      // WS notification xatosi session amalini to'xtatmasligi kerak
+      this.logger.warn(`Session WS broadcast failed: ${err?.message}`)
+    }
 
     return result.count
   }

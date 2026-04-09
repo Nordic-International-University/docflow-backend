@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common'
@@ -22,6 +23,7 @@ import * as argon2 from 'argon2'
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name)
   readonly #_prisma: PrismaService
   readonly #_telegram: TelegramService
   readonly #_auditLogService: AuditLogService
@@ -259,7 +261,7 @@ export class UserService {
   }
 
   async userUpdate(payload: UserUpdateRequest): Promise<void> {
-    console.log('Updating user with payload:', payload)
+    this.logger.log('Updating user with payload:', payload)
     const user = await this.#_prisma.user.findFirst({
       where: {
         id: payload.id,
