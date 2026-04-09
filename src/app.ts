@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { PrismaModule } from '@prisma'
+import { CaslModule } from './casl'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import {
   UserModule,
@@ -96,6 +97,7 @@ console.log('Sandbox mode is active.')
     }),
     PrismaModule,
     RedisModule,
+    CaslModule,
     AuthModule,
     UserModule,
     RoleModule,
