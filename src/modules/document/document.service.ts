@@ -61,8 +61,7 @@ export class DocumentService {
 
     const isAdmin =
       payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN ||
-      payload.roleName === ROLE_NAMES.HR_MANAGER
+      payload.roleName === ROLE_NAMES.SUPER_ADMIN
 
     const searchCondition = search
       ? [
@@ -74,6 +73,31 @@ export class DocumentService {
         ]
       : undefined
 
+    // Non-admin foydalanuvchilar faqat:
+    //  1) O'zi yaratgan hujjatlarni
+    //  2) Workflow'da ishtirok etgan (step assignee) hujjatlarni ko'radi
+    const userAccessFilter =
+      !isAdmin && payload.userId
+        ? {
+            OR: [
+              { createdById: payload.userId },
+              {
+                workflow: {
+                  some: {
+                    workflowSteps: {
+                      some: {
+                        assignedToUserId: payload.userId,
+                        deletedAt: null,
+                      },
+                    },
+                    deletedAt: null,
+                  },
+                },
+              },
+            ],
+          }
+        : {}
+
     const documentList = await this.#_prisma.document.findMany({
       where: {
         deletedAt: null,
@@ -84,8 +108,7 @@ export class DocumentService {
         }),
         ...(payload.journalId && { journalId: payload.journalId }),
         ...(payload.templateId && { templateId: payload.templateId }),
-        // Only show documents created by the user (unless admin)
-        ...(!isAdmin && payload.userId && { createdById: payload.userId }),
+        ...userAccessFilter,
       },
       select: {
         id: true,
@@ -151,8 +174,7 @@ export class DocumentService {
         }),
         ...(payload.journalId && { journalId: payload.journalId }),
         ...(payload.templateId && { templateId: payload.templateId }),
-        // Only count documents created by the user (unless admin)
-        ...(!isAdmin && payload.userId && { createdById: payload.userId }),
+        ...userAccessFilter,
       },
     })
 
@@ -170,8 +192,7 @@ export class DocumentService {
   ): Promise<DocumentRetrieveOneResponse> {
     const isAdmin =
       payload.roleName === ROLE_NAMES.ADMIN ||
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN ||
-      payload.roleName === ROLE_NAMES.HR_MANAGER
+      payload.roleName === ROLE_NAMES.SUPER_ADMIN
 
     const document = await this.#_prisma.document.findFirst({
       where: {
