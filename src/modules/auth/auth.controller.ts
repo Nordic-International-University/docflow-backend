@@ -35,7 +35,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  @Throttle({ short: { ttl: 60000, limit: 5 } })  // Login: faqat 5 urinish / daqiqa
+  @Throttle({ short: { ttl: 60000, limit: 20 } })  // Login: 20 urinish / daqiqa
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Login successful' })

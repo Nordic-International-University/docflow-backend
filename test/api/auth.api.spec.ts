@@ -65,7 +65,7 @@ describe('Auth API', () => {
   })
 
   describe('Token uses', () => {
-    beforeEach(async () => {
+    beforeAll(async () => {
       await api.login()
     })
 
