@@ -6,7 +6,7 @@ import { GeminiService } from './gemini.service'
 import { AiToolsService, ToolContext } from './ai-tools.service'
 
 /** AI card displayed in the frontend */
-interface AiCard {
+export interface AiCard {
   type: string
   id: string
   title: string

@@ -56,7 +56,7 @@ interface DocumentRetrieveOneExtended extends DocumentRetrieveOneResponse {
   pdfAttachment: DocumentAttachmentSelect | null
 }
 
-interface DocumentHistoryResponse {
+export interface DocumentHistoryResponse {
   document: Record<string, unknown>
   summary: Record<string, unknown>
   fileVersions: Record<string, unknown[]>
@@ -65,7 +65,7 @@ interface DocumentHistoryResponse {
   timeline: TimelineEntry[]
 }
 
-interface DocumentPublicVerificationResponse {
+export interface DocumentPublicVerificationResponse {
   id: string
   title: string
   description: string | null
@@ -77,7 +77,7 @@ interface DocumentPublicVerificationResponse {
   workflow: Record<string, unknown> | null
 }
 
-interface DocumentBlankResponse {
+export interface DocumentBlankResponse {
   document: {
     id: string
     title: string
