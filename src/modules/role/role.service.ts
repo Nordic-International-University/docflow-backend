@@ -202,7 +202,7 @@ export class RoleService {
         )
       : []
 
-    const roleUpdateData: any = {}
+    const roleUpdateData: Record<string, any> = {}
     if (updateData.name !== undefined) {
       roleUpdateData.name = updateData.name
     }

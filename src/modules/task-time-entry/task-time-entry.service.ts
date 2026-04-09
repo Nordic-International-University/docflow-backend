@@ -75,7 +75,7 @@ export class TaskTimeEntryService {
   ): Promise<TaskTimeEntryRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       deletedAt: null,
       ...(payload.taskId && { taskId: payload.taskId }),
       ...(payload.userId && { userId: payload.userId }),
@@ -196,7 +196,7 @@ export class TaskTimeEntryService {
       throw new NotFoundException('Time entry not found')
     }
 
-    const dataToUpdate: any = {
+    const dataToUpdate: Record<string, any> = {
       updatedAt: new Date(),
     }
 

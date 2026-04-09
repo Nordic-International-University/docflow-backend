@@ -74,7 +74,7 @@ export class UserService {
       }
     }
 
-    const baseWhere: any = {
+    const baseWhere: Record<string, any> = {
       deletedAt: null,
       isActive: true,
       ...(search && {
@@ -329,7 +329,7 @@ export class UserService {
       }
     }
 
-    const updateData: any = {
+    const updateData: Record<string, any> = {
       fullname: payload.fullname,
       username: payload.username,
       roleId: payload.roleId,

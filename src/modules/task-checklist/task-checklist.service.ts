@@ -74,7 +74,7 @@ export class TaskChecklistService {
   ): Promise<TaskChecklistRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       taskId: payload.taskId,
       deletedAt: null,
       ...(payload.search && {
@@ -314,7 +314,7 @@ export class TaskChecklistService {
   ): Promise<TaskChecklistItemRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       checklistId: payload.checklistId,
       deletedAt: null,
       ...(payload.search && {
@@ -407,7 +407,7 @@ export class TaskChecklistService {
     }
 
     // Handle completion status change
-    const data: any = {
+    const data: Record<string, any> = {
       ...updateData,
       updatedAt: new Date(),
     }

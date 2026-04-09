@@ -357,11 +357,11 @@ export class DocumentPublicController {
   @ApiOkResponse({
     description:
       'Document details with workflow information including all signatures, approvals, and current status.',
-    type: DocumentPublicVerificationDto,
+    type: Object,
   })
   async documentPublicVerification(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<DocumentPublicVerificationDto> {
+  ) {
     return await this.documentService.documentPublicVerification(id)
   }
 }

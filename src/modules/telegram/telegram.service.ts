@@ -353,7 +353,7 @@ export class TelegramService implements OnModuleInit {
       return false
     }
     try {
-      const options: any = {
+      const options: Record<string, unknown> = {
         parse_mode: 'HTML',
         disable_web_page_preview: true,
       }

@@ -198,7 +198,7 @@ export class BoardColumnService {
     }
 
     // Build update payload
-    const updatePayload: any = {
+    const updatePayload: Record<string, any> = {
       updatedAt: new Date(),
     }
 

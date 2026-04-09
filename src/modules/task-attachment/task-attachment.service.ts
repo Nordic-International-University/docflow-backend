@@ -97,7 +97,7 @@ export class TaskAttachmentService {
   ): Promise<TaskAttachmentRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       deletedAt: null,
       ...(payload.taskId && { taskId: payload.taskId }),
     }

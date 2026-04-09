@@ -249,7 +249,7 @@ export class ProjectService {
     if (Object.keys(visibilityFilter).length > 0)
       andConditions.push(visibilityFilter)
 
-    const where: any = { AND: andConditions }
+    const where = { AND: andConditions }
 
     const projectList = await this.#_prisma.project.findMany({
       where,
@@ -416,7 +416,7 @@ export class ProjectService {
       }
     }
 
-    const updatePayload: any = {
+    const updatePayload: Record<string, any> = {
       ...updateData,
       updatedAt: new Date(),
     }

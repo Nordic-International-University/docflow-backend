@@ -21,7 +21,7 @@ export class TaskActivityService {
   ): Promise<TaskActivityRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       taskId: payload.taskId,
       ...(payload.userId && { userId: payload.userId }),
       ...(payload.action && { action: payload.action }),

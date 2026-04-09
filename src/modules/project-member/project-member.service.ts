@@ -96,7 +96,7 @@ export class ProjectMemberService {
   ): Promise<ProjectMemberRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where: Record<string, any> = {
       deletedAt: null,
       ...(payload.projectId && { projectId: payload.projectId }),
       ...(payload.userId && { userId: payload.userId }),

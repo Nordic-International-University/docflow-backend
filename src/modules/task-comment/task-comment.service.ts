@@ -232,7 +232,7 @@ export class TaskCommentService {
       throw new NotFoundException('Task not found')
     }
 
-    const where: any = {
+    const where = {
       taskId: payload.taskId,
       deletedAt: null,
     }

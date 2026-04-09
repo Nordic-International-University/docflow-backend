@@ -231,7 +231,7 @@ export class PermissionService {
 
   #_moduleByFilter(permissions: any): any[] {
     const groupedPermissions = permissions.reduce(
-      (acc: any, permission: any) => {
+      (acc: any[], permission: any) => {
         const moduleGroup = acc.find(
           (group: any) => group.module === permission.module,
         )

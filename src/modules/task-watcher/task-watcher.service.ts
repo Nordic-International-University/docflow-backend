@@ -91,7 +91,7 @@ export class TaskWatcherService {
   ): Promise<TaskWatcherRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       ...(payload.taskId && { taskId: payload.taskId }),
       ...(payload.userId && { userId: payload.userId }),
     }

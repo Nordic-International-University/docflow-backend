@@ -16,7 +16,13 @@ import {
   WorkflowListResponseDto,
   WorkflowResponseDto,
 } from './dtos'
-import { WorkflowStatus, WorkflowType, DocumentStatus } from '@prisma/client'
+import {
+  Prisma,
+  WorkflowStatus,
+  WorkflowType,
+  DocumentStatus,
+  StepActionType,
+} from '@prisma/client'
 import { ROLE_NAMES, WORKFLOW_STEP_STATUS } from '@constants'
 import { NotificationService } from '../notification/notification.service'
 import { NotificationGateway } from '../notification/notification.gateway'
@@ -25,6 +31,46 @@ import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
 import { isAdmin } from '@common/helpers'
+
+type WorkflowWithRelations = Prisma.WorkflowGetPayload<{
+  include: {
+    document: {
+      include: {
+        documentType: true
+        createdBy: {
+          select: { id: true; fullname: true; username: true }
+        }
+      }
+    }
+    workflowSteps: {
+      include: {
+        assignedToUser: {
+          select: { id: true; fullname: true; username: true }
+        }
+        attachments: {
+          include: {
+            attachment: true
+            uploadedBy: {
+              select: { id: true; fullname: true; username: true }
+            }
+          }
+        }
+        actions: {
+          include: {
+            performedBy: {
+              select: {
+                id: true
+                fullname: true
+                username: true
+                avatarUrl: true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}>
 
 const OFFICE_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -163,7 +209,7 @@ export class WorkflowService {
 
     const skip = (page - 1) * limit
 
-    const andConditions: any[] = [{ deletedAt: null }]
+    const andConditions: Prisma.WorkflowWhereInput[] = [{ deletedAt: null }]
 
     // Basic filters
     if (documentId) andConditions.push({ documentId })
@@ -212,7 +258,7 @@ export class WorkflowService {
 
     // Date range filter
     if (dateFrom || dateTo) {
-      const dateFilter: any = {}
+      const dateFilter: Prisma.DateTimeFilter = {}
       if (dateFrom) dateFilter.gte = new Date(dateFrom)
       if (dateTo) dateFilter.lte = new Date(dateTo + 'T23:59:59.999Z')
       andConditions.push({ createdAt: dateFilter })
@@ -313,7 +359,7 @@ export class WorkflowService {
     ])
 
     return {
-      data: workflows.map((workflow) => this.mapToResponseDto(workflow)),
+      data: workflows.map((workflow) => this.mapToResponseDto(workflow as any)),
       total,
       page,
       limit,
@@ -409,7 +455,7 @@ export class WorkflowService {
       throw new NotFoundException('Workflow not found')
     }
 
-    return this.mapToResponseDto(workflow)
+    return this.mapToResponseDto(workflow as any)
   }
 
   async workflowCreate(
@@ -448,7 +494,7 @@ export class WorkflowService {
     // Determine steps - either from template or from provided steps
     let steps: Array<{
       order: number
-      actionType: any
+      actionType: StepActionType
       assignedToUserId?: string | null
       dueDate?: Date | null
       isRejected?: boolean
@@ -747,7 +793,7 @@ export class WorkflowService {
       },
     )
 
-    return this.mapToResponseDto(workflow)
+    return this.mapToResponseDto(workflow as any)
   }
 
   async workflowUpdate(
@@ -848,7 +894,7 @@ export class WorkflowService {
     })
 
     // Log workflow update
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.status && updateData.status !== existingWorkflow.status) {
       changes.status = { old: existingWorkflow.status, new: updateData.status }
     }
@@ -872,7 +918,7 @@ export class WorkflowService {
       )
     }
 
-    return this.mapToResponseDto(workflow)
+    return this.mapToResponseDto(workflow as any)
   }
 
   async workflowDelete(
@@ -1003,7 +1049,7 @@ export class WorkflowService {
       throw new NotFoundException('Workflow not found for this document')
     }
 
-    return this.mapToResponseDto(workflow)
+    return this.mapToResponseDto(workflow as any)
   }
 
   async advanceWorkflowStep(workflowId: string): Promise<WorkflowResponseDto> {
@@ -1052,16 +1098,16 @@ export class WorkflowService {
     })
   }
 
-  private mapToResponseDto(workflow: any): WorkflowResponseDto {
+  private mapToResponseDto(workflow: WorkflowWithRelations): WorkflowResponseDto {
     return {
       id: workflow.id,
       documentId: workflow.documentId,
       currentStepOrder: workflow.currentStepOrder,
-      document: workflow.document,
+      document: workflow.document as any,
       status: workflow.status,
       type: workflow.type,
       deadline: workflow.deadline?.toISOString(),
-      workflowSteps: workflow.workflowSteps.map((step: any) => ({
+      workflowSteps: workflow.workflowSteps.map((step) => ({
         id: step.id,
         order: step.order,
         status: step.status,
@@ -1083,7 +1129,7 @@ export class WorkflowService {
         isCreator: step.isCreator ?? false,
         rejectedAt: step.rejectedAt?.toISOString(),
         attachments: step.attachments
-          ? step.attachments.map((att: any) => ({
+          ? step.attachments.map((att) => ({
               id: att.id,
               workflowStepId: att.workflowStepId,
               attachmentId: att.attachmentId,
@@ -1110,7 +1156,7 @@ export class WorkflowService {
             }))
           : [],
         actions: step.actions
-          ? step.actions.map((action: any) => ({
+          ? step.actions.map((action) => ({
               id: action.id,
               workflowStepId: action.workflowStepId,
               actionType: action.actionType,

@@ -4,12 +4,32 @@ const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions'
 const PRIMARY_MODEL = 'llama-3.3-70b-versatile'
 const FALLBACK_MODELS = ['llama-3.1-8b-instant', 'llama3-70b-8192']
 
+export interface GroqToolCall {
+  id: string
+  type: 'function'
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: string | null
-  tool_calls?: any[]
+  tool_calls?: GroqToolCall[]
   tool_call_id?: string
   name?: string
+}
+
+export interface GroqChatResponse {
+  content: string | null
+  tool_calls?: GroqToolCall[]
+}
+
+export interface GroqToolParameterSchema {
+  type: 'object'
+  properties: Record<string, unknown>
+  required?: string[]
 }
 
 export interface GroqTool {
@@ -17,11 +37,7 @@ export interface GroqTool {
   function: {
     name: string
     description: string
-    parameters: {
-      type: 'object'
-      properties: Record<string, any>
-      required?: string[]
-    }
+    parameters: GroqToolParameterSchema
   }
 }
 
@@ -30,21 +46,22 @@ export class GroqService {
   private readonly logger = new Logger(GroqService.name)
   private readonly apiKey = process.env.GROQ_API_KEY || ''
 
-  async chat(messages: GroqMessage[], tools?: GroqTool[]): Promise<any> {
+  async chat(messages: GroqMessage[], tools?: GroqTool[]): Promise<GroqChatResponse> {
     if (!this.apiKey) throw new Error('GROQ_API_KEY .env da topilmadi')
 
     const models = [PRIMARY_MODEL, ...FALLBACK_MODELS]
-    let lastErr: any = null
+    let lastErr: Error | null = null
 
     for (const model of models) {
       try {
         return await this.callWithRetry(model, messages, tools)
-      } catch (err: any) {
-        lastErr = err
+      } catch (err: unknown) {
+        const e = err as Error & { status?: number }
+        lastErr = e
         // 429 yoki rate-limit bo'lsa — keyingi modelga o'tish
         if (
-          err?.status === 429 ||
-          /rate.?limit|429/i.test(err?.message || '')
+          e?.status === 429 ||
+          /rate.?limit|429/i.test(e?.message || '')
         ) {
           this.logger.warn(`${model} rate-limited, fallback modelga o'tish...`)
           continue
@@ -60,8 +77,8 @@ export class GroqService {
     messages: GroqMessage[],
     tools?: GroqTool[],
     maxRetries = 3,
-  ): Promise<any> {
-    const body: any = {
+  ): Promise<GroqChatResponse> {
+    const body: Record<string, unknown> = {
       model,
       messages,
       temperature: 0.3,
@@ -85,8 +102,8 @@ export class GroqService {
       })
 
       if (res.ok) {
-        const data = await res.json()
-        return data.choices?.[0]?.message
+        const data = (await res.json()) as { choices?: Array<{ message?: GroqChatResponse }> }
+        return data.choices?.[0]?.message ?? { content: '' }
       }
 
       const text = await res.text()
@@ -113,9 +130,10 @@ export class GroqService {
           await new Promise((r) => setTimeout(r, waitMs))
           continue
         }
-        const err: any = new Error(`Groq rate limit (${model})`)
-        err.status = 429
-        err.body = text
+        const err = Object.assign(new Error(`Groq rate limit (${model})`), {
+          status: 429,
+          body: text,
+        })
         throw err
       }
 
@@ -128,9 +146,10 @@ export class GroqService {
       }
 
       this.logger.error(`Groq API error ${res.status}: ${text}`)
-      const err: any = new Error(`Groq API xatosi: ${res.status}`)
-      err.status = res.status
-      err.body = text
+      const err = Object.assign(new Error(`Groq API xatosi: ${res.status}`), {
+        status: res.status,
+        body: text,
+      })
       throw err
     }
 

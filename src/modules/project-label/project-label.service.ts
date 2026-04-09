@@ -82,7 +82,7 @@ export class ProjectLabelService {
   ): Promise<ProjectLabelRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       deletedAt: null,
       ...(payload.projectId && { projectId: payload.projectId }),
       ...(payload.search && {

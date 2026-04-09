@@ -1,5 +1,49 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { GroqMessage, GroqTool } from './groq.service'
+import { GroqMessage, GroqTool, GroqChatResponse, GroqToolCall } from './groq.service'
+
+/** Gemini API content part */
+interface GeminiPart {
+  text?: string
+  functionCall?: { name: string; args: Record<string, unknown> }
+  functionResponse?: { name: string; response: Record<string, unknown> }
+}
+
+/** Gemini API content entry */
+interface GeminiContent {
+  role: 'user' | 'model'
+  parts: GeminiPart[]
+}
+
+/** Gemini system instruction format */
+interface GeminiSystemInstruction {
+  parts: Array<{ text: string }>
+}
+
+/** Gemini API response shape */
+interface GeminiApiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiPart[]
+    }
+  }>
+}
+
+/** Gemini function declarations wrapper */
+interface GeminiFunctionDeclarations {
+  functionDeclarations: Array<{
+    name: string
+    description: string
+    parameters: unknown
+  }>
+}
+
+/** Gemini request body */
+interface GeminiRequestBody {
+  contents: GeminiContent[]
+  generationConfig: { temperature: number; maxOutputTokens: number }
+  systemInstruction?: GeminiSystemInstruction
+  tools?: GeminiFunctionDeclarations[]
+}
 
 // Eng yuqori limitli modellar birinchi — fallback chain
 // gemini-flash-lite-latest → 3.1 Flash Lite (500 RPD, 15 RPM)
@@ -23,13 +67,13 @@ export class GeminiService {
     return !!this.apiKey
   }
 
-  async chat(messages: GroqMessage[], tools?: GroqTool[]): Promise<any> {
+  async chat(messages: GroqMessage[], tools?: GroqTool[]): Promise<GroqChatResponse> {
     if (!this.apiKey) throw new Error('GEMINI_API_KEY .env da topilmadi')
 
     const { systemInstruction, contents } = this.convertMessages(messages)
     const geminiTools = tools?.length ? this.convertTools(tools) : undefined
 
-    let lastErr: any = null
+    let lastErr: Error | null = null
     for (const model of MODELS) {
       try {
         return await this.callWithRetry(
@@ -38,16 +82,17 @@ export class GeminiService {
           contents,
           geminiTools,
         )
-      } catch (err: any) {
-        lastErr = err
-        if (err?.status === 429 || err?.status === 503) {
-          this.logger.warn(`${model} ${err.status}, fallback modelga o'tish...`)
+      } catch (err: unknown) {
+        const e = err as Error & { status?: number }
+        lastErr = e
+        if (e?.status === 429 || e?.status === 503) {
+          this.logger.warn(`${model} ${e.status}, fallback modelga o'tish...`)
           continue
         }
-        if (err?.status === 404 || err?.status === 400) {
+        if (e?.status === 404 || e?.status === 400) {
           // Model mavjud emas — keyingisini urinish
           this.logger.warn(
-            `${model} mavjud emas yoki so'rov noto'g'ri: ${err.message}`,
+            `${model} mavjud emas yoki so'rov noto'g'ri: ${e.message}`,
           )
           continue
         }
@@ -59,12 +104,12 @@ export class GeminiService {
 
   private async callWithRetry(
     model: string,
-    systemInstruction: any,
-    contents: any[],
-    tools: any,
+    systemInstruction: GeminiSystemInstruction | null,
+    contents: GeminiContent[],
+    tools: GeminiFunctionDeclarations[] | undefined,
     maxRetries = 3,
-  ): Promise<any> {
-    const body: any = {
+  ): Promise<GroqChatResponse> {
+    const body: GeminiRequestBody = {
       contents,
       generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
     }
@@ -84,7 +129,7 @@ export class GeminiService {
       )
 
       if (res.ok) {
-        const data = await res.json()
+        const data = (await res.json()) as GeminiApiResponse
         return this.parseResponse(data)
       }
 
@@ -109,14 +154,16 @@ export class GeminiService {
       this.logger.error(
         `Gemini ${model} error ${res.status}: ${text.slice(0, 300)}`,
       )
-      const err: any = new Error(`Gemini ${res.status}`)
-      err.status = res.status
-      err.body = text
+      const err = Object.assign(new Error(`Gemini ${res.status}`), {
+        status: res.status,
+        body: text,
+      })
       throw err
     }
 
-    const err: any = new Error(`Gemini max retries (${model})`)
-    err.status = 429
+    const err = Object.assign(new Error(`Gemini max retries (${model})`), {
+      status: 429,
+    })
     throw err
   }
 
@@ -124,11 +171,11 @@ export class GeminiService {
    * OpenAI-style xabarlarni Gemini formatiga aylantirish
    */
   private convertMessages(messages: GroqMessage[]): {
-    systemInstruction: any
-    contents: any[]
+    systemInstruction: GeminiSystemInstruction | null
+    contents: GeminiContent[]
   } {
-    let systemInstruction: any = null
-    const contents: any[] = []
+    let systemInstruction: GeminiSystemInstruction | null = null
+    const contents: GeminiContent[] = []
 
     for (const m of messages) {
       if (m.role === 'system') {
@@ -142,16 +189,16 @@ export class GeminiService {
       }
 
       if (m.role === 'assistant') {
-        const parts: any[] = []
+        const parts: GeminiPart[] = []
         if (m.content) parts.push({ text: m.content })
         if (m.tool_calls?.length) {
           for (const tc of m.tool_calls) {
-            let args: any = {}
+            let args: Record<string, unknown> = {}
             try {
               args =
                 typeof tc.function?.arguments === 'string'
-                  ? JSON.parse(tc.function.arguments || '{}')
-                  : tc.function?.arguments || {}
+                  ? (JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>)
+                  : (tc.function?.arguments as unknown as Record<string, unknown>) || {}
             } catch {
               args = {}
             }
@@ -163,18 +210,20 @@ export class GeminiService {
       }
 
       if (m.role === 'tool') {
-        let response: any = {}
+        let response: Record<string, unknown> = {}
         try {
-          response =
+          const parsed: unknown =
             typeof m.content === 'string'
               ? JSON.parse(m.content)
               : m.content || {}
+          // Gemini tool javobi obyekt bo'lishi kerak
+          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            response = { result: parsed }
+          } else {
+            response = parsed as Record<string, unknown>
+          }
         } catch {
           response = { result: m.content }
-        }
-        // Gemini tool javobi obyekt bo'lishi kerak
-        if (typeof response !== 'object' || Array.isArray(response)) {
-          response = { result: response }
         }
         contents.push({
           role: 'user',
@@ -197,7 +246,7 @@ export class GeminiService {
   /**
    * OpenAI tool definitions → Gemini functionDeclarations
    */
-  private convertTools(tools: GroqTool[]): any[] {
+  private convertTools(tools: GroqTool[]): GeminiFunctionDeclarations[] {
     return [
       {
         functionDeclarations: tools.map((t) => ({
@@ -210,18 +259,19 @@ export class GeminiService {
   }
 
   /** Gemini ba'zi OpenAPI field'larni qabul qilmaydi */
-  private cleanSchema(schema: any): any {
+  private cleanSchema(schema: unknown): unknown {
     if (!schema || typeof schema !== 'object') return schema
-    if (Array.isArray(schema)) return schema.map((s) => this.cleanSchema(s))
-    const out: any = {}
-    for (const k of Object.keys(schema)) {
+    if (Array.isArray(schema)) return schema.map((s: unknown) => this.cleanSchema(s))
+    const input = schema as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const k of Object.keys(input)) {
       if (k === 'additionalProperties' || k === '$schema') continue
-      out[k] = this.cleanSchema(schema[k])
+      out[k] = this.cleanSchema(input[k])
     }
     // Gemini bo'sh properties object'ni qabul qilmasligi mumkin
     if (
       out.type === 'object' &&
-      (!out.properties || Object.keys(out.properties).length === 0)
+      (!out.properties || Object.keys(out.properties as Record<string, unknown>).length === 0)
     ) {
       delete out.properties
     }
@@ -231,13 +281,13 @@ export class GeminiService {
   /**
    * Gemini response → OpenAI-style { content, tool_calls }
    */
-  private parseResponse(data: any): any {
+  private parseResponse(data: GeminiApiResponse): GroqChatResponse {
     const candidate = data?.candidates?.[0]
     if (!candidate) return { content: '' }
 
     const parts = candidate.content?.parts || []
     let content = ''
-    const toolCalls: any[] = []
+    const toolCalls: GroqToolCall[] = []
 
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i]

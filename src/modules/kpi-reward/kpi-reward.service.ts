@@ -29,7 +29,7 @@ export class KpiRewardService {
     const pageSize = payload.pageSize || 10
     const skip = (pageNumber - 1) * pageSize
 
-    const where: any = {
+    const where: Record<string, any> = {
       deletedAt: null,
     }
 

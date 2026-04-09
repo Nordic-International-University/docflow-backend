@@ -16,6 +16,51 @@ import {
   forwardRef,
   Inject,
 } from '@nestjs/common'
+
+/** Broadcast payload for chat messages emitted via WebSocket */
+interface ChatMessagePayload {
+  id: string
+  chatId: string
+  senderId: string
+  type: string
+  content: string | null
+  [key: string]: unknown
+}
+
+/** Broadcast payload for message reactions */
+interface ReactionPayload {
+  messageId: string
+  userId: string
+  emoji: string
+  [key: string]: unknown
+}
+
+/** Broadcast payload for read receipts */
+interface ReadReceiptPayload {
+  userId: string
+  readAt: Date | string
+  [key: string]: unknown
+}
+
+/** Broadcast payload for chat updates */
+interface ChatUpdatePayload {
+  [key: string]: unknown
+}
+
+/** Broadcast payload for incoming calls */
+interface CallPayload {
+  id: string
+  chatId: string
+  type: string
+  status: string
+  [key: string]: unknown
+}
+
+/** Broadcast payload for call status changes */
+interface CallStatusPayload {
+  action: string
+  [key: string]: unknown
+}
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '@prisma'
@@ -116,8 +161,9 @@ export class ChatGateway
             ? null
             : lastSeen?.toISOString() || null,
       })
-    } catch (err: any) {
-      this.logger.error(`broadcastPresence failed: ${err.message}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      this.logger.error(`broadcastPresence failed: ${message}`)
     }
   }
 
@@ -140,8 +186,9 @@ export class ChatGateway
             })
           }
         }
-      } catch (err: any) {
-        this.logger.error(`Call expiry check failed: ${err.message}`)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        this.logger.error(`Call expiry check failed: ${message}`)
       }
     }, 15_000)
   }
@@ -184,7 +231,7 @@ export class ChatGateway
       if (wasFirst) {
         await this.broadcastPresence(user.userId, true, null)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       handleWsAuthError(client, err, this.logger)
     }
   }
@@ -282,7 +329,7 @@ export class ChatGateway
       callId: string
       type: 'offer' | 'answer' | 'ice'
       targetUserId: string
-      payload: any
+      payload: Record<string, unknown>
     },
   ) {
     if (!client.userId || !body?.callId || !body?.targetUserId) return
@@ -302,7 +349,7 @@ export class ChatGateway
 
   // ============ BROADCASTS (controller'dan chaqiriladi) ============
 
-  emitNewMessage(chatId: string, memberIds: string[], message: any) {
+  emitNewMessage(chatId: string, memberIds: string[], message: ChatMessagePayload) {
     this.server.to(`chat:${chatId}`).emit('message:new', message)
     // Offline a'zolarga ham user room orqali xabar (chat ochilmagan bo'lsa)
     for (const uid of memberIds) {
@@ -310,7 +357,7 @@ export class ChatGateway
     }
   }
 
-  emitMessageUpdated(chatId: string, memberIds: string[], message: any) {
+  emitMessageUpdated(chatId: string, memberIds: string[], message: ChatMessagePayload) {
     this.server.to(`chat:${chatId}`).emit('message:updated', message)
     for (const uid of memberIds) {
       this.server
@@ -330,11 +377,11 @@ export class ChatGateway
     }
   }
 
-  emitReaction(chatId: string, memberIds: string[], data: any) {
+  emitReaction(chatId: string, memberIds: string[], data: ReactionPayload) {
     this.server.to(`chat:${chatId}`).emit('message:reaction', data)
   }
 
-  emitReadReceipt(chatId: string, memberIds: string[], data: any) {
+  emitReadReceipt(chatId: string, memberIds: string[], data: ReadReceiptPayload) {
     this.server.to(`chat:${chatId}`).emit('message:read', { chatId, ...data })
   }
 
@@ -344,7 +391,7 @@ export class ChatGateway
     }
   }
 
-  emitChatUpdated(chatId: string, data: any) {
+  emitChatUpdated(chatId: string, data: ChatUpdatePayload) {
     this.server.to(`chat:${chatId}`).emit('chat:updated', { chatId, ...data })
   }
 
@@ -352,13 +399,13 @@ export class ChatGateway
     this.server.to(`chat:${chatId}`).emit('chat:deleted', { chatId })
   }
 
-  emitCallIncoming(chatId: string, memberIds: string[], call: any) {
+  emitCallIncoming(chatId: string, memberIds: string[], call: CallPayload) {
     for (const uid of memberIds) {
       this.server.to(`user:${uid}`).emit('call:incoming', { chatId, call })
     }
   }
 
-  emitCallStatus(callId: string, data: any) {
+  emitCallStatus(callId: string, data: CallStatusPayload) {
     this.server.emit('call:status', { callId, ...data })
   }
 }

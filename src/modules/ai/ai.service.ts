@@ -1,8 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@prisma'
-import { GroqService, GroqMessage } from './groq.service'
+import { Prisma } from '@prisma/client'
+import { GroqService, GroqMessage, GroqChatResponse, GroqTool } from './groq.service'
 import { GeminiService } from './gemini.service'
 import { AiToolsService, ToolContext } from './ai-tools.service'
+
+/** AI card displayed in the frontend */
+interface AiCard {
+  type: string
+  id: string
+  title: string
+  subtitle?: string
+  meta?: Record<string, unknown>
+  actions?: Array<{ label: string; url: string; external?: boolean }>
+}
+
+/** Logged tool result */
+interface ToolResultLog {
+  name: string
+  args: Record<string, unknown>
+  result: Record<string, unknown>
+}
 
 @Injectable()
 export class AiService {
@@ -18,12 +36,13 @@ export class AiService {
   /**
    * Unified AI chat — Gemini asosiy (eng yuqori limitlar), Groq fallback
    */
-  private async callLlm(messages: GroqMessage[], tools?: any): Promise<any> {
+  private async callLlm(messages: GroqMessage[], tools?: GroqTool[]): Promise<GroqChatResponse> {
     if (this.gemini.isConfigured()) {
       try {
         return await this.gemini.chat(messages, tools)
-      } catch (err: any) {
-        this.logger.warn(`Gemini failed, Groq fallback: ${err.message}`)
+      } catch (err: unknown) {
+        const e = err as Error
+        this.logger.warn(`Gemini failed, Groq fallback: ${e.message}`)
         return await this.groq.chat(messages, tools)
       }
     }
@@ -39,7 +58,13 @@ export class AiService {
     roleName?: string
     departmentId?: string
     fullname?: string
-  }): Promise<any> {
+  }): Promise<{
+    id: string
+    message: string
+    cards: AiCard[]
+    timestamp: Date
+    error?: string
+  }> {
     // 1. Foydalanuvchi xabarini saqlash
     await this.prisma.aiMessage.create({
       data: {
@@ -134,9 +159,11 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
     const messages: GroqMessage[] = [
       { role: 'system', content: systemPrompt },
       ...history.map((m) => ({
-        role: m.role as any,
+        role: m.role as GroqMessage['role'],
         content: m.content,
-        ...(m.toolCalls ? { tool_calls: m.toolCalls as any } : {}),
+        ...(m.toolCalls
+          ? { tool_calls: m.toolCalls as unknown as GroqChatResponse['tool_calls'] }
+          : {}),
       })),
     ]
 
@@ -147,13 +174,13 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       departmentId: payload.departmentId,
     }
 
-    let response: any
-    let cards: any[] = []
-    let toolResultsLog: any[] = []
+    let response: GroqChatResponse
+    let cards: AiCard[] = []
+    const toolResultsLog: ToolResultLog[] = []
 
     try {
       response = await this.callLlm(messages, this.tools.getToolDefinitions())
-    } catch (err: any) {
+    } catch (err: unknown) {
       return this.handleGroqError(err, payload.userId)
     }
 
@@ -165,7 +192,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       })
 
       for (const tc of response.tool_calls) {
-        const args = JSON.parse(tc.function.arguments || '{}')
+        const args = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>
         const result = await this.tools.executeTool(tc.function.name, args, ctx)
 
         toolResultsLog.push({ name: tc.function.name, args, result })
@@ -186,8 +213,9 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       // MUHIM: tools'ni ham berish kerak, aks holda Gemini bo'sh javob qaytarishi mumkin
       try {
         response = await this.callLlm(messages, this.tools.getToolDefinitions())
-      } catch (err: any) {
-        this.logger.warn(`Second LLM call failed: ${err.message}`)
+      } catch (err: unknown) {
+        const e = err as Error
+        this.logger.warn(`Second LLM call failed: ${e.message}`)
         response = { content: null }
       }
     }
@@ -205,8 +233,12 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
         userId: payload.userId,
         role: 'assistant',
         content: assistantContent,
-        toolResults: toolResultsLog.length > 0 ? toolResultsLog : undefined,
-        attachments: cards.length > 0 ? cards : undefined,
+        toolResults: toolResultsLog.length > 0
+          ? (toolResultsLog as unknown as Prisma.InputJsonValue)
+          : undefined,
+        attachments: cards.length > 0
+          ? (cards as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
     })
 
@@ -221,11 +253,13 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
   /**
    * Tool natijalaridan qisqa matn xulosasi (LLM bo'sh javob qaytarganda)
    */
-  private summarizeFromTools(toolResults: any[], cards: any[]): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private summarizeFromTools(toolResults: ToolResultLog[], _cards: AiCard[]): string {
     if (!toolResults.length) return "Natijalar quyida ko'rsatildi."
     const last = toolResults[toolResults.length - 1]
     const name = last?.name
-    const r = last?.result || {}
+    // Tool results are dynamic JSON shapes from various tools — using `any` for deep property access
+    const r = (last?.result || {}) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
     if (r.error) return r.error
 
     switch (name) {
@@ -294,14 +328,15 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
   /**
    * Groq xatosini foydalanuvchi uchun do'stona javobga aylantirish
    */
-  private async handleGroqError(err: any, userId: string) {
+  private async handleGroqError(err: unknown, userId: string) {
+    const e = err as Error & { status?: number }
     const is429 =
-      err?.status === 429 || /rate.?limit|429/i.test(err?.message || '')
+      e?.status === 429 || /rate.?limit|429/i.test(e?.message || '')
     const message = is429
       ? 'AI xizmati hozir band (limit). Iltimos, bir necha soniyadan keyin qayta urining.'
       : "Kechirasiz, AI javob bera olmadi. Iltimos keyinroq urinib ko'ring."
 
-    this.logger.error(`Groq chat failed: ${err?.message}`)
+    this.logger.error(`Groq chat failed: ${e?.message}`)
 
     const saved = await this.prisma.aiMessage.create({
       data: { userId, role: 'assistant', content: message },
@@ -318,10 +353,11 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
   /**
    * Tool natijasidan frontend uchun structured cards yaratish
    */
-  private buildCardsFromTool(toolName: string, result: any): any[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private buildCardsFromTool(toolName: string, result: Record<string, any>): AiCard[] {
     if (!result || result.error) return []
 
-    const cards: any[] = []
+    const cards: AiCard[] = []
 
     switch (toolName) {
       case 'getMyTasks': {

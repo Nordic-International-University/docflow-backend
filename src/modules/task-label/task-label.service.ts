@@ -106,7 +106,7 @@ export class TaskLabelService {
   ): Promise<TaskLabelRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       ...(payload.taskId && { taskId: payload.taskId }),
       ...(payload.labelId && { labelId: payload.labelId }),
     }

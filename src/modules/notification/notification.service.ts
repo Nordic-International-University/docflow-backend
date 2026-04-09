@@ -72,7 +72,7 @@ export class NotificationService {
     data: CreateNotificationDto,
   ): Promise<void> {
     const FRONTEND_URL = process.env.FRONTEND_URL || 'https://docverse.uz'
-    const meta: any = data.metadata || {}
+    const meta: Record<string, unknown> = data.metadata || {}
 
     // Type emoji
     const typeIcons: Record<string, string> = {

@@ -142,7 +142,7 @@ export class TaskDependencyService {
   ): Promise<TaskDependencyRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: any = {
+    const where = {
       ...(payload.taskId && { taskId: payload.taskId }),
       ...(payload.dependsOnTaskId && {
         dependsOnTaskId: payload.dependsOnTaskId,

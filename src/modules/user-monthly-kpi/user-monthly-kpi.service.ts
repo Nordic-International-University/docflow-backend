@@ -24,7 +24,7 @@ export class UserMonthlyKpiService {
     const pageSize = payload.pageSize || 10
     const skip = (pageNumber - 1) * pageSize
 
-    const where: any = {}
+    const where: Record<string, any> = {}
 
     if (payload.userId) {
       where.userId = payload.userId
@@ -252,7 +252,7 @@ export class UserMonthlyKpiService {
   async getLeaderboard(
     payload: LeaderboardRequest,
   ): Promise<LeaderboardResponse> {
-    const where: any = {
+    const where: Record<string, any> = {
       year: payload.year,
       month: payload.month,
     }
