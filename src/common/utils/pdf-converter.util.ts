@@ -40,7 +40,7 @@ export interface ConversionResult {
 export class PdfConverterUtil {
   /**
    * Office hujjatni (DOCX/XLSX/PPTX) → PDF ga aylantirish.
-   * DocVerse wordToPDF funksiyasi — LibreOffice kerak emas.
+   * LibreOfficePool orqali (3 parallel worker).
    */
   static async convertDocxToPdf(
     docxBuffer: Buffer,
