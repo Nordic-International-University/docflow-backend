@@ -39,7 +39,10 @@ export class PdfConverterUtil {
     try {
       logger.log(`Converting to PDF: ${originalFileName}`)
       const { wordToPDF } = await getSDK()
-      const pdfBuffer = await wordToPDF(docxBuffer)
+      // LibreOffice listener mode (port 2002) — 10x tez
+      const pdfBuffer = await wordToPDF(docxBuffer, {
+        socketUrl: 'socket,host=127.0.0.1,port=2002;urp;',
+      })
 
       logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)
 
