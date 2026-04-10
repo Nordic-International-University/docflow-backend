@@ -1,7 +1,15 @@
 import { Logger } from '@nestjs/common'
-import { PDFDocument, wordToPDF, flattenXFDF } from '@docverse-pdf/server'
 
 const logger = new Logger('PdfConverter')
+
+// ESM package — dynamic import kerak (CJS proyektda)
+let _sdk: any = null
+async function getSDK() {
+  if (!_sdk) {
+    _sdk = await import('@docverse-pdf/server')
+  }
+  return _sdk
+}
 
 export interface ConversionResult {
   pdfBuffer: Buffer
@@ -30,7 +38,7 @@ export class PdfConverterUtil {
 
     try {
       logger.log(`Converting to PDF: ${originalFileName}`)
-
+      const { wordToPDF } = await getSDK()
       const pdfBuffer = await wordToPDF(docxBuffer)
 
       logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)
@@ -58,7 +66,7 @@ export class PdfConverterUtil {
 
     try {
       logger.log(`XFDF merge: ${originalFileName}`)
-
+      const { flattenXFDF } = await getSDK()
       const xfdfString = xfdfBuffer.toString('utf-8')
       const mergedPdf = await flattenXFDF(pdfBuffer, xfdfString)
 
@@ -83,6 +91,7 @@ export class PdfConverterUtil {
     options?: { fontSize?: number; rotation?: number; opacity?: number },
   ): Promise<Buffer> {
     try {
+      const { PDFDocument } = await getSDK()
       const doc = await PDFDocument.load(pdfBuffer)
       doc.addWatermark(text, {
         fontSize: options?.fontSize || 48,
@@ -105,6 +114,7 @@ export class PdfConverterUtil {
    * PDF sahifalar sonini olish.
    */
   static async getPageCount(pdfBuffer: Buffer): Promise<number> {
+    const { PDFDocument } = await getSDK()
     const doc = await PDFDocument.load(pdfBuffer)
     const count = doc.getPageCount()
     doc.close()
@@ -115,6 +125,7 @@ export class PdfConverterUtil {
    * PDF'dan matn ajratib olish.
    */
   static async extractText(pdfBuffer: Buffer, pageIndex = 0): Promise<string> {
+    const { PDFDocument } = await getSDK()
     const doc = await PDFDocument.load(pdfBuffer)
     const text = doc.extractText(pageIndex)
     doc.close()
@@ -129,6 +140,7 @@ export class PdfConverterUtil {
     pageIndex = 0,
     width = 300,
   ): Promise<Buffer> {
+    const { PDFDocument } = await getSDK()
     const doc = await PDFDocument.load(pdfBuffer)
     const png = await doc.generateThumbnail(pageIndex, width, 'png', 90)
     doc.close()
@@ -139,6 +151,7 @@ export class PdfConverterUtil {
    * Imzolarni tekshirish.
    */
   static async verifySignatures(pdfBuffer: Buffer) {
+    const { PDFDocument } = await getSDK()
     const doc = await PDFDocument.load(pdfBuffer)
     const count = doc.getSignatureCount()
     const results = []
@@ -163,6 +176,7 @@ export class PdfConverterUtil {
       rect?: { left: number; bottom: number; right: number; top: number }
     },
   ): Promise<Buffer> {
+    const { PDFDocument } = await getSDK()
     const doc = await PDFDocument.load(pdfBuffer)
     const signed = await doc.sign({
       cert: options.cert,
