@@ -1,0 +1,2584 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: full-test.spec.ts >> Barcha sahifalar yuklanadi >> Settings - Sessions sahifasi (/dashboard/setting/sessions)
+- Location: test/browser/full-test.spec.ts:50:9
+
+# Error details
+
+```
+Error: expect(received).toBeFalsy()
+
+Received: true
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - img "university logo" [ref=e9]
+      - generic [ref=e12]:
+        - generic [ref=e14] [cursor=pointer]:
+          - img [ref=e16]
+          - paragraph [ref=e22]: Bosh sahifa
+        - generic [ref=e24] [cursor=pointer]:
+          - img [ref=e26]
+          - paragraph [ref=e30]: Suhbatlar
+        - generic [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - paragraph [ref=e39]: Hujjatlar
+        - generic [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+          - paragraph [ref=e47]: Hujjat turlari
+        - generic [ref=e49] [cursor=pointer]:
+          - img [ref=e51]
+          - paragraph [ref=e56]: Andozalar
+        - generic [ref=e58] [cursor=pointer]:
+          - img [ref=e60]
+          - paragraph [ref=e65]: Jurnallar
+        - generic [ref=e67] [cursor=pointer]:
+          - img [ref=e69]
+          - generic [ref=e74]:
+            - paragraph [ref=e75]: Hujjat aylanmasi
+            - generic [ref=e77]: "1"
+          - img [ref=e79]
+        - generic [ref=e82] [cursor=pointer]:
+          - img [ref=e84]
+          - paragraph [ref=e88]: Bo'limlar
+        - generic [ref=e90] [cursor=pointer]:
+          - img [ref=e92]
+          - paragraph [ref=e97]: Audit jurnali
+        - generic [ref=e99] [cursor=pointer]:
+          - img [ref=e101]
+          - paragraph [ref=e108]: KPI
+          - img [ref=e110]
+        - generic [ref=e113] [cursor=pointer]:
+          - img [ref=e115]
+          - paragraph [ref=e121]: Boshqaruv
+          - img [ref=e123]
+        - generic [ref=e125]:
+          - generic [ref=e126] [cursor=pointer]:
+            - img [ref=e128]
+            - paragraph [ref=e134]: Sozlamalar
+            - img [ref=e136]
+          - generic [ref=e139]:
+            - paragraph [ref=e144] [cursor=pointer]: Profil
+            - paragraph [ref=e149] [cursor=pointer]: Sessiyalar
+        - generic [ref=e151] [cursor=pointer]:
+          - img [ref=e153]
+          - generic [ref=e158]:
+            - paragraph [ref=e159]: Vazifalar
+            - button [ref=e160]:
+              - img [ref=e162]
+          - img [ref=e164]
+      - generic [ref=e167] [cursor=pointer]:
+        - img [ref=e169]
+        - paragraph [ref=e175]: Chiqish
+    - generic [ref=e176]:
+      - banner [ref=e177]:
+        - generic [ref=e178]:
+          - generic [ref=e183]:
+            - img [ref=e185]
+            - textbox "Qidirish..." [ref=e188]
+            - generic [ref=e191]: Ctrl+K
+          - generic [ref=e192]:
+            - generic [ref=e196] [cursor=pointer]: SA
+            - separator [ref=e197]
+            - button [ref=e199] [cursor=pointer]:
+              - img [ref=e201]
+            - button [ref=e204] [cursor=pointer]:
+              - img [ref=e206]
+            - button "SA" [ref=e209] [cursor=pointer]:
+              - generic "Super Administrator" [ref=e212]:
+                - paragraph [ref=e213]: SA
+      - main [ref=e214]:
+        - generic [ref=e219]:
+          - generic [ref=e221]:
+            - generic [ref=e222]:
+              - img [ref=e224]
+              - generic [ref=e226]:
+                - paragraph [ref=e227]: Faol sessiyalar
+                - paragraph [ref=e228]: Hisobingizga ulangan barcha qurilmalarni boshqaring
+            - button "Boshqa sessiyalardan chiqish" [ref=e229] [cursor=pointer]:
+              - generic [ref=e230]:
+                - img [ref=e232]
+                - generic [ref=e236]: Boshqa sessiyalardan chiqish
+          - generic [ref=e237]:
+            - generic [ref=e238]:
+              - paragraph [ref=e239]: Hozirgi sessiya
+              - generic [ref=e242]:
+                - img [ref=e244]
+                - generic [ref=e246]:
+                  - generic [ref=e247]:
+                    - paragraph [ref=e248]: Chrome
+                    - paragraph [ref=e249]: •
+                    - paragraph [ref=e250]: macOS
+                    - generic [ref=e251]:
+                      - img [ref=e253]
+                      - generic [ref=e255]: Hozirgi qurilma
+                  - generic [ref=e256]:
+                    - img [ref=e257]
+                    - img [ref=e262]
+                    - paragraph [ref=e265]: Desktop
+                  - generic [ref=e266]:
+                    - img [ref=e267]
+                    - paragraph [ref=e271]: 213.230.72.4
+                  - generic [ref=e272]:
+                    - img [ref=e273]
+                    - paragraph [ref=e276]: "Yaratilgan: 2026 M04 10 00:09"
+                  - generic [ref=e277]:
+                    - img [ref=e278]
+                    - paragraph [ref=e281]: "Tugaydi: 2026 M04 17 00:09"
+            - generic [ref=e282]:
+              - paragraph [ref=e283]: Boshqa sessiyalar (99)
+              - generic [ref=e284]:
+                - generic [ref=e286]:
+                  - generic [ref=e287]:
+                    - img [ref=e289]
+                    - generic [ref=e291]:
+                      - generic [ref=e292]:
+                        - paragraph [ref=e293]: Chrome
+                        - paragraph [ref=e294]: •
+                        - paragraph [ref=e295]: macOS
+                      - generic [ref=e296]:
+                        - img [ref=e297]
+                        - img [ref=e302]
+                        - paragraph [ref=e305]: Desktop
+                      - generic [ref=e306]:
+                        - img [ref=e307]
+                        - paragraph [ref=e311]: 213.230.72.4
+                      - generic [ref=e312]:
+                        - img [ref=e313]
+                        - paragraph [ref=e316]: "Yaratilgan: 2026 M04 10 00:09"
+                      - generic [ref=e317]:
+                        - img [ref=e318]
+                        - paragraph [ref=e321]: "Tugaydi: 2026 M04 17 00:09"
+                  - button [ref=e322] [cursor=pointer]:
+                    - img [ref=e324]
+                - generic [ref=e328]:
+                  - generic [ref=e329]:
+                    - img [ref=e331]
+                    - generic [ref=e333]:
+                      - generic [ref=e334]:
+                        - paragraph [ref=e335]: Chrome
+                        - paragraph [ref=e336]: •
+                        - paragraph [ref=e337]: macOS
+                      - generic [ref=e338]:
+                        - img [ref=e339]
+                        - img [ref=e344]
+                        - paragraph [ref=e347]: Desktop
+                      - generic [ref=e348]:
+                        - img [ref=e349]
+                        - paragraph [ref=e353]: 213.230.72.4
+                      - generic [ref=e354]:
+                        - img [ref=e355]
+                        - paragraph [ref=e358]: "Yaratilgan: 2026 M04 10 00:08"
+                      - generic [ref=e359]:
+                        - img [ref=e360]
+                        - paragraph [ref=e363]: "Tugaydi: 2026 M04 17 00:08"
+                  - button [ref=e364] [cursor=pointer]:
+                    - img [ref=e366]
+                - generic [ref=e370]:
+                  - generic [ref=e371]:
+                    - img [ref=e373]
+                    - generic [ref=e375]:
+                      - generic [ref=e376]:
+                        - paragraph [ref=e377]: Chrome
+                        - paragraph [ref=e378]: •
+                        - paragraph [ref=e379]: macOS
+                      - generic [ref=e380]:
+                        - img [ref=e381]
+                        - img [ref=e386]
+                        - paragraph [ref=e389]: Desktop
+                      - generic [ref=e390]:
+                        - img [ref=e391]
+                        - paragraph [ref=e395]: 213.230.72.4
+                      - generic [ref=e396]:
+                        - img [ref=e397]
+                        - paragraph [ref=e400]: "Yaratilgan: 2026 M04 10 00:08"
+                      - generic [ref=e401]:
+                        - img [ref=e402]
+                        - paragraph [ref=e405]: "Tugaydi: 2026 M04 17 00:08"
+                  - button [ref=e406] [cursor=pointer]:
+                    - img [ref=e408]
+                - generic [ref=e412]:
+                  - generic [ref=e413]:
+                    - img [ref=e415]
+                    - generic [ref=e417]:
+                      - generic [ref=e418]:
+                        - paragraph [ref=e419]: Chrome
+                        - paragraph [ref=e420]: •
+                        - paragraph [ref=e421]: macOS
+                      - generic [ref=e422]:
+                        - img [ref=e423]
+                        - img [ref=e428]
+                        - paragraph [ref=e431]: Desktop
+                      - generic [ref=e432]:
+                        - img [ref=e433]
+                        - paragraph [ref=e437]: 213.230.72.4
+                      - generic [ref=e438]:
+                        - img [ref=e439]
+                        - paragraph [ref=e442]: "Yaratilgan: 2026 M04 10 00:08"
+                      - generic [ref=e443]:
+                        - img [ref=e444]
+                        - paragraph [ref=e447]: "Tugaydi: 2026 M04 17 00:08"
+                  - button [ref=e448] [cursor=pointer]:
+                    - img [ref=e450]
+                - generic [ref=e454]:
+                  - generic [ref=e455]:
+                    - img [ref=e457]
+                    - generic [ref=e459]:
+                      - generic [ref=e460]:
+                        - paragraph [ref=e461]: Chrome
+                        - paragraph [ref=e462]: •
+                        - paragraph [ref=e463]: macOS
+                      - generic [ref=e464]:
+                        - img [ref=e465]
+                        - img [ref=e470]
+                        - paragraph [ref=e473]: Desktop
+                      - generic [ref=e474]:
+                        - img [ref=e475]
+                        - paragraph [ref=e479]: 213.230.72.4
+                      - generic [ref=e480]:
+                        - img [ref=e481]
+                        - paragraph [ref=e484]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e485]:
+                        - img [ref=e486]
+                        - paragraph [ref=e489]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e490] [cursor=pointer]:
+                    - img [ref=e492]
+                - generic [ref=e496]:
+                  - generic [ref=e497]:
+                    - img [ref=e499]
+                    - generic [ref=e501]:
+                      - generic [ref=e502]:
+                        - paragraph [ref=e503]: Chrome
+                        - paragraph [ref=e504]: •
+                        - paragraph [ref=e505]: macOS
+                      - generic [ref=e506]:
+                        - img [ref=e507]
+                        - img [ref=e512]
+                        - paragraph [ref=e515]: Desktop
+                      - generic [ref=e516]:
+                        - img [ref=e517]
+                        - paragraph [ref=e521]: 213.230.72.4
+                      - generic [ref=e522]:
+                        - img [ref=e523]
+                        - paragraph [ref=e526]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e527]:
+                        - img [ref=e528]
+                        - paragraph [ref=e531]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e532] [cursor=pointer]:
+                    - img [ref=e534]
+                - generic [ref=e538]:
+                  - generic [ref=e539]:
+                    - img [ref=e541]
+                    - generic [ref=e543]:
+                      - generic [ref=e544]:
+                        - paragraph [ref=e545]: Chrome
+                        - paragraph [ref=e546]: •
+                        - paragraph [ref=e547]: macOS
+                      - generic [ref=e548]:
+                        - img [ref=e549]
+                        - img [ref=e554]
+                        - paragraph [ref=e557]: Desktop
+                      - generic [ref=e558]:
+                        - img [ref=e559]
+                        - paragraph [ref=e563]: 213.230.72.4
+                      - generic [ref=e564]:
+                        - img [ref=e565]
+                        - paragraph [ref=e568]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e569]:
+                        - img [ref=e570]
+                        - paragraph [ref=e573]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e574] [cursor=pointer]:
+                    - img [ref=e576]
+                - generic [ref=e580]:
+                  - generic [ref=e581]:
+                    - img [ref=e583]
+                    - generic [ref=e585]:
+                      - generic [ref=e586]:
+                        - paragraph [ref=e587]: Chrome
+                        - paragraph [ref=e588]: •
+                        - paragraph [ref=e589]: macOS
+                      - generic [ref=e590]:
+                        - img [ref=e591]
+                        - img [ref=e596]
+                        - paragraph [ref=e599]: Desktop
+                      - generic [ref=e600]:
+                        - img [ref=e601]
+                        - paragraph [ref=e605]: 213.230.72.4
+                      - generic [ref=e606]:
+                        - img [ref=e607]
+                        - paragraph [ref=e610]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e611]:
+                        - img [ref=e612]
+                        - paragraph [ref=e615]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e616] [cursor=pointer]:
+                    - img [ref=e618]
+                - generic [ref=e622]:
+                  - generic [ref=e623]:
+                    - img [ref=e625]
+                    - generic [ref=e627]:
+                      - generic [ref=e628]:
+                        - paragraph [ref=e629]: Chrome
+                        - paragraph [ref=e630]: •
+                        - paragraph [ref=e631]: macOS
+                      - generic [ref=e632]:
+                        - img [ref=e633]
+                        - img [ref=e638]
+                        - paragraph [ref=e641]: Desktop
+                      - generic [ref=e642]:
+                        - img [ref=e643]
+                        - paragraph [ref=e647]: 213.230.72.4
+                      - generic [ref=e648]:
+                        - img [ref=e649]
+                        - paragraph [ref=e652]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e653]:
+                        - img [ref=e654]
+                        - paragraph [ref=e657]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e658] [cursor=pointer]:
+                    - img [ref=e660]
+                - generic [ref=e664]:
+                  - generic [ref=e665]:
+                    - img [ref=e667]
+                    - generic [ref=e669]:
+                      - generic [ref=e670]:
+                        - paragraph [ref=e671]: Chrome
+                        - paragraph [ref=e672]: •
+                        - paragraph [ref=e673]: macOS
+                      - generic [ref=e674]:
+                        - img [ref=e675]
+                        - img [ref=e680]
+                        - paragraph [ref=e683]: Desktop
+                      - generic [ref=e684]:
+                        - img [ref=e685]
+                        - paragraph [ref=e689]: 213.230.72.4
+                      - generic [ref=e690]:
+                        - img [ref=e691]
+                        - paragraph [ref=e694]: "Yaratilgan: 2026 M04 10 00:07"
+                      - generic [ref=e695]:
+                        - img [ref=e696]
+                        - paragraph [ref=e699]: "Tugaydi: 2026 M04 17 00:07"
+                  - button [ref=e700] [cursor=pointer]:
+                    - img [ref=e702]
+                - generic [ref=e706]:
+                  - generic [ref=e707]:
+                    - img [ref=e709]
+                    - generic [ref=e711]:
+                      - generic [ref=e712]:
+                        - paragraph [ref=e713]: Chrome
+                        - paragraph [ref=e714]: •
+                        - paragraph [ref=e715]: macOS
+                      - generic [ref=e716]:
+                        - img [ref=e717]
+                        - img [ref=e722]
+                        - paragraph [ref=e725]: Desktop
+                      - generic [ref=e726]:
+                        - img [ref=e727]
+                        - paragraph [ref=e731]: 213.230.72.4
+                      - generic [ref=e732]:
+                        - img [ref=e733]
+                        - paragraph [ref=e736]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e737]:
+                        - img [ref=e738]
+                        - paragraph [ref=e741]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e742] [cursor=pointer]:
+                    - img [ref=e744]
+                - generic [ref=e748]:
+                  - generic [ref=e749]:
+                    - img [ref=e751]
+                    - generic [ref=e753]:
+                      - generic [ref=e754]:
+                        - paragraph [ref=e755]: Chrome
+                        - paragraph [ref=e756]: •
+                        - paragraph [ref=e757]: macOS
+                      - generic [ref=e758]:
+                        - img [ref=e759]
+                        - img [ref=e764]
+                        - paragraph [ref=e767]: Desktop
+                      - generic [ref=e768]:
+                        - img [ref=e769]
+                        - paragraph [ref=e773]: 213.230.72.4
+                      - generic [ref=e774]:
+                        - img [ref=e775]
+                        - paragraph [ref=e778]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e779]:
+                        - img [ref=e780]
+                        - paragraph [ref=e783]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e784] [cursor=pointer]:
+                    - img [ref=e786]
+                - generic [ref=e790]:
+                  - generic [ref=e791]:
+                    - img [ref=e793]
+                    - generic [ref=e795]:
+                      - generic [ref=e796]:
+                        - paragraph [ref=e797]: Chrome
+                        - paragraph [ref=e798]: •
+                        - paragraph [ref=e799]: macOS
+                      - generic [ref=e800]:
+                        - img [ref=e801]
+                        - img [ref=e806]
+                        - paragraph [ref=e809]: Desktop
+                      - generic [ref=e810]:
+                        - img [ref=e811]
+                        - paragraph [ref=e815]: 213.230.72.4
+                      - generic [ref=e816]:
+                        - img [ref=e817]
+                        - paragraph [ref=e820]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e821]:
+                        - img [ref=e822]
+                        - paragraph [ref=e825]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e826] [cursor=pointer]:
+                    - img [ref=e828]
+                - generic [ref=e832]:
+                  - generic [ref=e833]:
+                    - img [ref=e835]
+                    - generic [ref=e837]:
+                      - generic [ref=e838]:
+                        - paragraph [ref=e839]: Chrome
+                        - paragraph [ref=e840]: •
+                        - paragraph [ref=e841]: macOS
+                      - generic [ref=e842]:
+                        - img [ref=e843]
+                        - img [ref=e848]
+                        - paragraph [ref=e851]: Desktop
+                      - generic [ref=e852]:
+                        - img [ref=e853]
+                        - paragraph [ref=e857]: 213.230.72.4
+                      - generic [ref=e858]:
+                        - img [ref=e859]
+                        - paragraph [ref=e862]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e863]:
+                        - img [ref=e864]
+                        - paragraph [ref=e867]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e868] [cursor=pointer]:
+                    - img [ref=e870]
+                - generic [ref=e874]:
+                  - generic [ref=e875]:
+                    - img [ref=e877]
+                    - generic [ref=e879]:
+                      - generic [ref=e880]:
+                        - paragraph [ref=e881]: Chrome
+                        - paragraph [ref=e882]: •
+                        - paragraph [ref=e883]: macOS
+                      - generic [ref=e884]:
+                        - img [ref=e885]
+                        - img [ref=e890]
+                        - paragraph [ref=e893]: Desktop
+                      - generic [ref=e894]:
+                        - img [ref=e895]
+                        - paragraph [ref=e899]: 213.230.72.4
+                      - generic [ref=e900]:
+                        - img [ref=e901]
+                        - paragraph [ref=e904]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e905]:
+                        - img [ref=e906]
+                        - paragraph [ref=e909]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e910] [cursor=pointer]:
+                    - img [ref=e912]
+                - generic [ref=e916]:
+                  - generic [ref=e917]:
+                    - img [ref=e919]
+                    - generic [ref=e921]:
+                      - generic [ref=e922]:
+                        - paragraph [ref=e923]: Chrome
+                        - paragraph [ref=e924]: •
+                        - paragraph [ref=e925]: macOS
+                      - generic [ref=e926]:
+                        - img [ref=e927]
+                        - img [ref=e932]
+                        - paragraph [ref=e935]: Desktop
+                      - generic [ref=e936]:
+                        - img [ref=e937]
+                        - paragraph [ref=e941]: 213.230.72.4
+                      - generic [ref=e942]:
+                        - img [ref=e943]
+                        - paragraph [ref=e946]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e947]:
+                        - img [ref=e948]
+                        - paragraph [ref=e951]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e952] [cursor=pointer]:
+                    - img [ref=e954]
+                - generic [ref=e958]:
+                  - generic [ref=e959]:
+                    - img [ref=e961]
+                    - generic [ref=e963]:
+                      - generic [ref=e964]:
+                        - paragraph [ref=e965]: Chrome
+                        - paragraph [ref=e966]: •
+                        - paragraph [ref=e967]: macOS
+                      - generic [ref=e968]:
+                        - img [ref=e969]
+                        - img [ref=e974]
+                        - paragraph [ref=e977]: Desktop
+                      - generic [ref=e978]:
+                        - img [ref=e979]
+                        - paragraph [ref=e983]: 213.230.72.4
+                      - generic [ref=e984]:
+                        - img [ref=e985]
+                        - paragraph [ref=e988]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e989]:
+                        - img [ref=e990]
+                        - paragraph [ref=e993]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e994] [cursor=pointer]:
+                    - img [ref=e996]
+                - generic [ref=e1000]:
+                  - generic [ref=e1001]:
+                    - img [ref=e1003]
+                    - generic [ref=e1005]:
+                      - generic [ref=e1006]:
+                        - paragraph [ref=e1007]: Chrome
+                        - paragraph [ref=e1008]: •
+                        - paragraph [ref=e1009]: macOS
+                      - generic [ref=e1010]:
+                        - img [ref=e1011]
+                        - img [ref=e1016]
+                        - paragraph [ref=e1019]: Desktop
+                      - generic [ref=e1020]:
+                        - img [ref=e1021]
+                        - paragraph [ref=e1025]: 213.230.72.4
+                      - generic [ref=e1026]:
+                        - img [ref=e1027]
+                        - paragraph [ref=e1030]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e1031]:
+                        - img [ref=e1032]
+                        - paragraph [ref=e1035]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e1036] [cursor=pointer]:
+                    - img [ref=e1038]
+                - generic [ref=e1042]:
+                  - generic [ref=e1043]:
+                    - img [ref=e1045]
+                    - generic [ref=e1047]:
+                      - generic [ref=e1048]:
+                        - paragraph [ref=e1049]: Chrome
+                        - paragraph [ref=e1050]: •
+                        - paragraph [ref=e1051]: macOS
+                      - generic [ref=e1052]:
+                        - img [ref=e1053]
+                        - img [ref=e1058]
+                        - paragraph [ref=e1061]: Desktop
+                      - generic [ref=e1062]:
+                        - img [ref=e1063]
+                        - paragraph [ref=e1067]: 213.230.72.4
+                      - generic [ref=e1068]:
+                        - img [ref=e1069]
+                        - paragraph [ref=e1072]: "Yaratilgan: 2026 M04 10 00:06"
+                      - generic [ref=e1073]:
+                        - img [ref=e1074]
+                        - paragraph [ref=e1077]: "Tugaydi: 2026 M04 17 00:06"
+                  - button [ref=e1078] [cursor=pointer]:
+                    - img [ref=e1080]
+                - generic [ref=e1084]:
+                  - generic [ref=e1085]:
+                    - img [ref=e1087]
+                    - generic [ref=e1089]:
+                      - generic [ref=e1090]:
+                        - paragraph [ref=e1091]: Chrome
+                        - paragraph [ref=e1092]: •
+                        - paragraph [ref=e1093]: macOS
+                      - generic [ref=e1094]:
+                        - img [ref=e1095]
+                        - img [ref=e1100]
+                        - paragraph [ref=e1103]: Desktop
+                      - generic [ref=e1104]:
+                        - img [ref=e1105]
+                        - paragraph [ref=e1109]: 213.230.72.4
+                      - generic [ref=e1110]:
+                        - img [ref=e1111]
+                        - paragraph [ref=e1114]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1115]:
+                        - img [ref=e1116]
+                        - paragraph [ref=e1119]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1120] [cursor=pointer]:
+                    - img [ref=e1122]
+                - generic [ref=e1126]:
+                  - generic [ref=e1127]:
+                    - img [ref=e1129]
+                    - generic [ref=e1131]:
+                      - generic [ref=e1132]:
+                        - paragraph [ref=e1133]: Chrome
+                        - paragraph [ref=e1134]: •
+                        - paragraph [ref=e1135]: macOS
+                      - generic [ref=e1136]:
+                        - img [ref=e1137]
+                        - img [ref=e1142]
+                        - paragraph [ref=e1145]: Desktop
+                      - generic [ref=e1146]:
+                        - img [ref=e1147]
+                        - paragraph [ref=e1151]: 213.230.72.4
+                      - generic [ref=e1152]:
+                        - img [ref=e1153]
+                        - paragraph [ref=e1156]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1157]:
+                        - img [ref=e1158]
+                        - paragraph [ref=e1161]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1162] [cursor=pointer]:
+                    - img [ref=e1164]
+                - generic [ref=e1168]:
+                  - generic [ref=e1169]:
+                    - img [ref=e1171]
+                    - generic [ref=e1173]:
+                      - generic [ref=e1174]:
+                        - paragraph [ref=e1175]: Chrome
+                        - paragraph [ref=e1176]: •
+                        - paragraph [ref=e1177]: macOS
+                      - generic [ref=e1178]:
+                        - img [ref=e1179]
+                        - img [ref=e1184]
+                        - paragraph [ref=e1187]: Desktop
+                      - generic [ref=e1188]:
+                        - img [ref=e1189]
+                        - paragraph [ref=e1193]: 213.230.72.4
+                      - generic [ref=e1194]:
+                        - img [ref=e1195]
+                        - paragraph [ref=e1198]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1199]:
+                        - img [ref=e1200]
+                        - paragraph [ref=e1203]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1204] [cursor=pointer]:
+                    - img [ref=e1206]
+                - generic [ref=e1210]:
+                  - generic [ref=e1211]:
+                    - img [ref=e1213]
+                    - generic [ref=e1215]:
+                      - generic [ref=e1216]:
+                        - paragraph [ref=e1217]: Chrome
+                        - paragraph [ref=e1218]: •
+                        - paragraph [ref=e1219]: macOS
+                      - generic [ref=e1220]:
+                        - img [ref=e1221]
+                        - img [ref=e1226]
+                        - paragraph [ref=e1229]: Desktop
+                      - generic [ref=e1230]:
+                        - img [ref=e1231]
+                        - paragraph [ref=e1235]: 213.230.72.4
+                      - generic [ref=e1236]:
+                        - img [ref=e1237]
+                        - paragraph [ref=e1240]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1241]:
+                        - img [ref=e1242]
+                        - paragraph [ref=e1245]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1246] [cursor=pointer]:
+                    - img [ref=e1248]
+                - generic [ref=e1252]:
+                  - generic [ref=e1253]:
+                    - img [ref=e1255]
+                    - generic [ref=e1257]:
+                      - generic [ref=e1258]:
+                        - paragraph [ref=e1259]: Chrome
+                        - paragraph [ref=e1260]: •
+                        - paragraph [ref=e1261]: macOS
+                      - generic [ref=e1262]:
+                        - img [ref=e1263]
+                        - img [ref=e1268]
+                        - paragraph [ref=e1271]: Desktop
+                      - generic [ref=e1272]:
+                        - img [ref=e1273]
+                        - paragraph [ref=e1277]: 213.230.72.4
+                      - generic [ref=e1278]:
+                        - img [ref=e1279]
+                        - paragraph [ref=e1282]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1283]:
+                        - img [ref=e1284]
+                        - paragraph [ref=e1287]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1288] [cursor=pointer]:
+                    - img [ref=e1290]
+                - generic [ref=e1294]:
+                  - generic [ref=e1295]:
+                    - img [ref=e1297]
+                    - generic [ref=e1299]:
+                      - generic [ref=e1300]:
+                        - paragraph [ref=e1301]: Chrome
+                        - paragraph [ref=e1302]: •
+                        - paragraph [ref=e1303]: macOS
+                      - generic [ref=e1304]:
+                        - img [ref=e1305]
+                        - img [ref=e1310]
+                        - paragraph [ref=e1313]: Desktop
+                      - generic [ref=e1314]:
+                        - img [ref=e1315]
+                        - paragraph [ref=e1319]: 213.230.72.4
+                      - generic [ref=e1320]:
+                        - img [ref=e1321]
+                        - paragraph [ref=e1324]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1325]:
+                        - img [ref=e1326]
+                        - paragraph [ref=e1329]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1330] [cursor=pointer]:
+                    - img [ref=e1332]
+                - generic [ref=e1336]:
+                  - generic [ref=e1337]:
+                    - img [ref=e1339]
+                    - generic [ref=e1341]:
+                      - generic [ref=e1342]:
+                        - paragraph [ref=e1343]: Chrome
+                        - paragraph [ref=e1344]: •
+                        - paragraph [ref=e1345]: macOS
+                      - generic [ref=e1346]:
+                        - img [ref=e1347]
+                        - img [ref=e1352]
+                        - paragraph [ref=e1355]: Desktop
+                      - generic [ref=e1356]:
+                        - img [ref=e1357]
+                        - paragraph [ref=e1361]: 213.230.72.4
+                      - generic [ref=e1362]:
+                        - img [ref=e1363]
+                        - paragraph [ref=e1366]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1367]:
+                        - img [ref=e1368]
+                        - paragraph [ref=e1371]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1372] [cursor=pointer]:
+                    - img [ref=e1374]
+                - generic [ref=e1378]:
+                  - generic [ref=e1379]:
+                    - img [ref=e1381]
+                    - generic [ref=e1383]:
+                      - generic [ref=e1384]:
+                        - paragraph [ref=e1385]: Chrome
+                        - paragraph [ref=e1386]: •
+                        - paragraph [ref=e1387]: macOS
+                      - generic [ref=e1388]:
+                        - img [ref=e1389]
+                        - img [ref=e1394]
+                        - paragraph [ref=e1397]: Desktop
+                      - generic [ref=e1398]:
+                        - img [ref=e1399]
+                        - paragraph [ref=e1403]: 213.230.72.4
+                      - generic [ref=e1404]:
+                        - img [ref=e1405]
+                        - paragraph [ref=e1408]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1409]:
+                        - img [ref=e1410]
+                        - paragraph [ref=e1413]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1414] [cursor=pointer]:
+                    - img [ref=e1416]
+                - generic [ref=e1420]:
+                  - generic [ref=e1421]:
+                    - img [ref=e1423]
+                    - generic [ref=e1425]:
+                      - generic [ref=e1426]:
+                        - paragraph [ref=e1427]: Chrome
+                        - paragraph [ref=e1428]: •
+                        - paragraph [ref=e1429]: macOS
+                      - generic [ref=e1430]:
+                        - img [ref=e1431]
+                        - img [ref=e1436]
+                        - paragraph [ref=e1439]: Desktop
+                      - generic [ref=e1440]:
+                        - img [ref=e1441]
+                        - paragraph [ref=e1445]: 213.230.72.4
+                      - generic [ref=e1446]:
+                        - img [ref=e1447]
+                        - paragraph [ref=e1450]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1451]:
+                        - img [ref=e1452]
+                        - paragraph [ref=e1455]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1456] [cursor=pointer]:
+                    - img [ref=e1458]
+                - generic [ref=e1462]:
+                  - generic [ref=e1463]:
+                    - img [ref=e1465]
+                    - generic [ref=e1467]:
+                      - generic [ref=e1468]:
+                        - paragraph [ref=e1469]: Chrome
+                        - paragraph [ref=e1470]: •
+                        - paragraph [ref=e1471]: macOS
+                      - generic [ref=e1472]:
+                        - img [ref=e1473]
+                        - img [ref=e1478]
+                        - paragraph [ref=e1481]: Desktop
+                      - generic [ref=e1482]:
+                        - img [ref=e1483]
+                        - paragraph [ref=e1487]: 213.230.72.4
+                      - generic [ref=e1488]:
+                        - img [ref=e1489]
+                        - paragraph [ref=e1492]: "Yaratilgan: 2026 M04 10 00:05"
+                      - generic [ref=e1493]:
+                        - img [ref=e1494]
+                        - paragraph [ref=e1497]: "Tugaydi: 2026 M04 17 00:05"
+                  - button [ref=e1498] [cursor=pointer]:
+                    - img [ref=e1500]
+                - generic [ref=e1504]:
+                  - generic [ref=e1505]:
+                    - img [ref=e1507]
+                    - generic [ref=e1509]:
+                      - generic [ref=e1510]:
+                        - paragraph [ref=e1511]: Chrome
+                        - paragraph [ref=e1512]: •
+                        - paragraph [ref=e1513]: macOS
+                      - generic [ref=e1514]:
+                        - img [ref=e1515]
+                        - img [ref=e1520]
+                        - paragraph [ref=e1523]: Desktop
+                      - generic [ref=e1524]:
+                        - img [ref=e1525]
+                        - paragraph [ref=e1529]: 213.230.72.4
+                      - generic [ref=e1530]:
+                        - img [ref=e1531]
+                        - paragraph [ref=e1534]: "Yaratilgan: 2026 M04 10 00:04"
+                      - generic [ref=e1535]:
+                        - img [ref=e1536]
+                        - paragraph [ref=e1539]: "Tugaydi: 2026 M04 17 00:04"
+                  - button [ref=e1540] [cursor=pointer]:
+                    - img [ref=e1542]
+                - generic [ref=e1546]:
+                  - generic [ref=e1547]:
+                    - img [ref=e1549]
+                    - generic [ref=e1551]:
+                      - generic [ref=e1552]:
+                        - paragraph [ref=e1553]: Chrome
+                        - paragraph [ref=e1554]: •
+                        - paragraph [ref=e1555]: macOS
+                      - generic [ref=e1556]:
+                        - img [ref=e1557]
+                        - img [ref=e1562]
+                        - paragraph [ref=e1565]: Desktop
+                      - generic [ref=e1566]:
+                        - img [ref=e1567]
+                        - paragraph [ref=e1571]: 213.230.72.4
+                      - generic [ref=e1572]:
+                        - img [ref=e1573]
+                        - paragraph [ref=e1576]: "Yaratilgan: 2026 M04 10 00:04"
+                      - generic [ref=e1577]:
+                        - img [ref=e1578]
+                        - paragraph [ref=e1581]: "Tugaydi: 2026 M04 17 00:04"
+                  - button [ref=e1582] [cursor=pointer]:
+                    - img [ref=e1584]
+                - generic [ref=e1588]:
+                  - generic [ref=e1589]:
+                    - img [ref=e1591]
+                    - generic [ref=e1593]:
+                      - generic [ref=e1594]:
+                        - paragraph [ref=e1595]: Chrome
+                        - paragraph [ref=e1596]: •
+                        - paragraph [ref=e1597]: macOS
+                      - generic [ref=e1598]:
+                        - img [ref=e1599]
+                        - img [ref=e1604]
+                        - paragraph [ref=e1607]: Desktop
+                      - generic [ref=e1608]:
+                        - img [ref=e1609]
+                        - paragraph [ref=e1613]: 213.230.72.4
+                      - generic [ref=e1614]:
+                        - img [ref=e1615]
+                        - paragraph [ref=e1618]: "Yaratilgan: 2026 M04 10 00:04"
+                      - generic [ref=e1619]:
+                        - img [ref=e1620]
+                        - paragraph [ref=e1623]: "Tugaydi: 2026 M04 17 00:04"
+                  - button [ref=e1624] [cursor=pointer]:
+                    - img [ref=e1626]
+                - generic [ref=e1630]:
+                  - generic [ref=e1631]:
+                    - img [ref=e1633]
+                    - generic [ref=e1635]:
+                      - generic [ref=e1636]:
+                        - paragraph [ref=e1637]: Chrome
+                        - paragraph [ref=e1638]: •
+                        - paragraph [ref=e1639]: macOS
+                      - generic [ref=e1640]:
+                        - img [ref=e1641]
+                        - img [ref=e1646]
+                        - paragraph [ref=e1649]: Desktop
+                      - generic [ref=e1650]:
+                        - img [ref=e1651]
+                        - paragraph [ref=e1655]: 213.230.72.4
+                      - generic [ref=e1656]:
+                        - img [ref=e1657]
+                        - paragraph [ref=e1660]: "Yaratilgan: 2026 M04 9 23:50"
+                      - generic [ref=e1661]:
+                        - img [ref=e1662]
+                        - paragraph [ref=e1665]: "Tugaydi: 2026 M04 16 23:50"
+                  - button [ref=e1666] [cursor=pointer]:
+                    - img [ref=e1668]
+                - generic [ref=e1672]:
+                  - generic [ref=e1673]:
+                    - img [ref=e1675]
+                    - generic [ref=e1677]:
+                      - generic [ref=e1678]:
+                        - paragraph [ref=e1679]: Chrome
+                        - paragraph [ref=e1680]: •
+                        - paragraph [ref=e1681]: macOS
+                      - generic [ref=e1682]:
+                        - img [ref=e1683]
+                        - img [ref=e1688]
+                        - paragraph [ref=e1691]: Desktop
+                      - generic [ref=e1692]:
+                        - img [ref=e1693]
+                        - paragraph [ref=e1697]: 213.230.72.4
+                      - generic [ref=e1698]:
+                        - img [ref=e1699]
+                        - paragraph [ref=e1702]: "Yaratilgan: 2026 M04 9 23:33"
+                      - generic [ref=e1703]:
+                        - img [ref=e1704]
+                        - paragraph [ref=e1707]: "Tugaydi: 2026 M04 16 23:33"
+                  - button [ref=e1708] [cursor=pointer]:
+                    - img [ref=e1710]
+                - generic [ref=e1714]:
+                  - generic [ref=e1715]:
+                    - img [ref=e1717]
+                    - generic [ref=e1719]:
+                      - generic [ref=e1720]:
+                        - paragraph [ref=e1721]: Chrome
+                        - paragraph [ref=e1722]: •
+                        - paragraph [ref=e1723]: macOS
+                      - generic [ref=e1724]:
+                        - img [ref=e1725]
+                        - img [ref=e1730]
+                        - paragraph [ref=e1733]: Desktop
+                      - generic [ref=e1734]:
+                        - img [ref=e1735]
+                        - paragraph [ref=e1739]: 213.230.72.4
+                      - generic [ref=e1740]:
+                        - img [ref=e1741]
+                        - paragraph [ref=e1744]: "Yaratilgan: 2026 M04 9 23:32"
+                      - generic [ref=e1745]:
+                        - img [ref=e1746]
+                        - paragraph [ref=e1749]: "Tugaydi: 2026 M04 16 23:32"
+                  - button [ref=e1750] [cursor=pointer]:
+                    - img [ref=e1752]
+                - generic [ref=e1756]:
+                  - generic [ref=e1757]:
+                    - img [ref=e1759]
+                    - generic [ref=e1761]:
+                      - generic [ref=e1762]:
+                        - paragraph [ref=e1763]: Chrome
+                        - paragraph [ref=e1764]: •
+                        - paragraph [ref=e1765]: macOS
+                      - generic [ref=e1766]:
+                        - img [ref=e1767]
+                        - img [ref=e1772]
+                        - paragraph [ref=e1775]: Desktop
+                      - generic [ref=e1776]:
+                        - img [ref=e1777]
+                        - paragraph [ref=e1781]: 213.230.72.4
+                      - generic [ref=e1782]:
+                        - img [ref=e1783]
+                        - paragraph [ref=e1786]: "Yaratilgan: 2026 M04 9 23:31"
+                      - generic [ref=e1787]:
+                        - img [ref=e1788]
+                        - paragraph [ref=e1791]: "Tugaydi: 2026 M04 16 23:31"
+                  - button [ref=e1792] [cursor=pointer]:
+                    - img [ref=e1794]
+                - generic [ref=e1798]:
+                  - generic [ref=e1799]:
+                    - img [ref=e1801]
+                    - generic [ref=e1803]:
+                      - generic [ref=e1804]:
+                        - paragraph [ref=e1805]: Chrome
+                        - paragraph [ref=e1806]: •
+                        - paragraph [ref=e1807]: macOS
+                      - generic [ref=e1808]:
+                        - img [ref=e1809]
+                        - img [ref=e1814]
+                        - paragraph [ref=e1817]: Desktop
+                      - generic [ref=e1818]:
+                        - img [ref=e1819]
+                        - paragraph [ref=e1823]: 213.230.72.4
+                      - generic [ref=e1824]:
+                        - img [ref=e1825]
+                        - paragraph [ref=e1828]: "Yaratilgan: 2026 M04 9 23:29"
+                      - generic [ref=e1829]:
+                        - img [ref=e1830]
+                        - paragraph [ref=e1833]: "Tugaydi: 2026 M04 16 23:29"
+                  - button [ref=e1834] [cursor=pointer]:
+                    - img [ref=e1836]
+                - generic [ref=e1840]:
+                  - generic [ref=e1841]:
+                    - img [ref=e1843]
+                    - generic [ref=e1845]:
+                      - generic [ref=e1846]:
+                        - paragraph [ref=e1847]: Chrome
+                        - paragraph [ref=e1848]: •
+                        - paragraph [ref=e1849]: macOS
+                      - generic [ref=e1850]:
+                        - img [ref=e1851]
+                        - img [ref=e1856]
+                        - paragraph [ref=e1859]: Desktop
+                      - generic [ref=e1860]:
+                        - img [ref=e1861]
+                        - paragraph [ref=e1865]: 213.230.72.4
+                      - generic [ref=e1866]:
+                        - img [ref=e1867]
+                        - paragraph [ref=e1870]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e1871]:
+                        - img [ref=e1872]
+                        - paragraph [ref=e1875]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e1876] [cursor=pointer]:
+                    - img [ref=e1878]
+                - generic [ref=e1882]:
+                  - generic [ref=e1883]:
+                    - img [ref=e1885]
+                    - generic [ref=e1887]:
+                      - generic [ref=e1888]:
+                        - paragraph [ref=e1889]: Chrome
+                        - paragraph [ref=e1890]: •
+                        - paragraph [ref=e1891]: macOS
+                      - generic [ref=e1892]:
+                        - img [ref=e1893]
+                        - img [ref=e1898]
+                        - paragraph [ref=e1901]: Desktop
+                      - generic [ref=e1902]:
+                        - img [ref=e1903]
+                        - paragraph [ref=e1907]: 213.230.72.4
+                      - generic [ref=e1908]:
+                        - img [ref=e1909]
+                        - paragraph [ref=e1912]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e1913]:
+                        - img [ref=e1914]
+                        - paragraph [ref=e1917]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e1918] [cursor=pointer]:
+                    - img [ref=e1920]
+                - generic [ref=e1924]:
+                  - generic [ref=e1925]:
+                    - img [ref=e1927]
+                    - generic [ref=e1929]:
+                      - generic [ref=e1930]:
+                        - paragraph [ref=e1931]: Chrome
+                        - paragraph [ref=e1932]: •
+                        - paragraph [ref=e1933]: macOS
+                      - generic [ref=e1934]:
+                        - img [ref=e1935]
+                        - img [ref=e1940]
+                        - paragraph [ref=e1943]: Desktop
+                      - generic [ref=e1944]:
+                        - img [ref=e1945]
+                        - paragraph [ref=e1949]: 213.230.72.4
+                      - generic [ref=e1950]:
+                        - img [ref=e1951]
+                        - paragraph [ref=e1954]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e1955]:
+                        - img [ref=e1956]
+                        - paragraph [ref=e1959]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e1960] [cursor=pointer]:
+                    - img [ref=e1962]
+                - generic [ref=e1966]:
+                  - generic [ref=e1967]:
+                    - img [ref=e1969]
+                    - generic [ref=e1971]:
+                      - generic [ref=e1972]:
+                        - paragraph [ref=e1973]: Chrome
+                        - paragraph [ref=e1974]: •
+                        - paragraph [ref=e1975]: macOS
+                      - generic [ref=e1976]:
+                        - img [ref=e1977]
+                        - img [ref=e1982]
+                        - paragraph [ref=e1985]: Desktop
+                      - generic [ref=e1986]:
+                        - img [ref=e1987]
+                        - paragraph [ref=e1991]: 213.230.72.4
+                      - generic [ref=e1992]:
+                        - img [ref=e1993]
+                        - paragraph [ref=e1996]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e1997]:
+                        - img [ref=e1998]
+                        - paragraph [ref=e2001]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e2002] [cursor=pointer]:
+                    - img [ref=e2004]
+                - generic [ref=e2008]:
+                  - generic [ref=e2009]:
+                    - img [ref=e2011]
+                    - generic [ref=e2013]:
+                      - generic [ref=e2014]:
+                        - paragraph [ref=e2015]: Chrome
+                        - paragraph [ref=e2016]: •
+                        - paragraph [ref=e2017]: macOS
+                      - generic [ref=e2018]:
+                        - img [ref=e2019]
+                        - img [ref=e2024]
+                        - paragraph [ref=e2027]: Desktop
+                      - generic [ref=e2028]:
+                        - img [ref=e2029]
+                        - paragraph [ref=e2033]: 213.230.72.4
+                      - generic [ref=e2034]:
+                        - img [ref=e2035]
+                        - paragraph [ref=e2038]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e2039]:
+                        - img [ref=e2040]
+                        - paragraph [ref=e2043]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e2044] [cursor=pointer]:
+                    - img [ref=e2046]
+                - generic [ref=e2050]:
+                  - generic [ref=e2051]:
+                    - img [ref=e2053]
+                    - generic [ref=e2055]:
+                      - generic [ref=e2056]:
+                        - paragraph [ref=e2057]: Chrome
+                        - paragraph [ref=e2058]: •
+                        - paragraph [ref=e2059]: macOS
+                      - generic [ref=e2060]:
+                        - img [ref=e2061]
+                        - img [ref=e2066]
+                        - paragraph [ref=e2069]: Desktop
+                      - generic [ref=e2070]:
+                        - img [ref=e2071]
+                        - paragraph [ref=e2075]: 213.230.72.4
+                      - generic [ref=e2076]:
+                        - img [ref=e2077]
+                        - paragraph [ref=e2080]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e2081]:
+                        - img [ref=e2082]
+                        - paragraph [ref=e2085]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e2086] [cursor=pointer]:
+                    - img [ref=e2088]
+                - generic [ref=e2092]:
+                  - generic [ref=e2093]:
+                    - img [ref=e2095]
+                    - generic [ref=e2097]:
+                      - generic [ref=e2098]:
+                        - paragraph [ref=e2099]: Chrome
+                        - paragraph [ref=e2100]: •
+                        - paragraph [ref=e2101]: macOS
+                      - generic [ref=e2102]:
+                        - img [ref=e2103]
+                        - img [ref=e2108]
+                        - paragraph [ref=e2111]: Desktop
+                      - generic [ref=e2112]:
+                        - img [ref=e2113]
+                        - paragraph [ref=e2117]: 213.230.72.4
+                      - generic [ref=e2118]:
+                        - img [ref=e2119]
+                        - paragraph [ref=e2122]: "Yaratilgan: 2026 M04 9 21:47"
+                      - generic [ref=e2123]:
+                        - img [ref=e2124]
+                        - paragraph [ref=e2127]: "Tugaydi: 2026 M04 16 21:47"
+                  - button [ref=e2128] [cursor=pointer]:
+                    - img [ref=e2130]
+                - generic [ref=e2134]:
+                  - generic [ref=e2135]:
+                    - img [ref=e2137]
+                    - generic [ref=e2139]:
+                      - generic [ref=e2140]:
+                        - paragraph [ref=e2141]: Chrome
+                        - paragraph [ref=e2142]: •
+                        - paragraph [ref=e2143]: macOS
+                      - generic [ref=e2144]:
+                        - img [ref=e2145]
+                        - img [ref=e2150]
+                        - paragraph [ref=e2153]: Desktop
+                      - generic [ref=e2154]:
+                        - img [ref=e2155]
+                        - paragraph [ref=e2159]: 213.230.72.4
+                      - generic [ref=e2160]:
+                        - img [ref=e2161]
+                        - paragraph [ref=e2164]: "Yaratilgan: 2026 M04 9 21:46"
+                      - generic [ref=e2165]:
+                        - img [ref=e2166]
+                        - paragraph [ref=e2169]: "Tugaydi: 2026 M04 16 21:46"
+                  - button [ref=e2170] [cursor=pointer]:
+                    - img [ref=e2172]
+                - generic [ref=e2176]:
+                  - generic [ref=e2177]:
+                    - img [ref=e2179]
+                    - generic [ref=e2181]:
+                      - generic [ref=e2182]:
+                        - paragraph [ref=e2183]: Chrome
+                        - paragraph [ref=e2184]: •
+                        - paragraph [ref=e2185]: macOS
+                      - generic [ref=e2186]:
+                        - img [ref=e2187]
+                        - img [ref=e2192]
+                        - paragraph [ref=e2195]: Desktop
+                      - generic [ref=e2196]:
+                        - img [ref=e2197]
+                        - paragraph [ref=e2201]: 213.230.72.4
+                      - generic [ref=e2202]:
+                        - img [ref=e2203]
+                        - paragraph [ref=e2206]: "Yaratilgan: 2026 M04 9 21:46"
+                      - generic [ref=e2207]:
+                        - img [ref=e2208]
+                        - paragraph [ref=e2211]: "Tugaydi: 2026 M04 16 21:46"
+                  - button [ref=e2212] [cursor=pointer]:
+                    - img [ref=e2214]
+                - generic [ref=e2218]:
+                  - generic [ref=e2219]:
+                    - img [ref=e2221]
+                    - generic [ref=e2223]:
+                      - generic [ref=e2224]:
+                        - paragraph [ref=e2225]: Chrome
+                        - paragraph [ref=e2226]: •
+                        - paragraph [ref=e2227]: macOS
+                      - generic [ref=e2228]:
+                        - img [ref=e2229]
+                        - img [ref=e2234]
+                        - paragraph [ref=e2237]: Desktop
+                      - generic [ref=e2238]:
+                        - img [ref=e2239]
+                        - paragraph [ref=e2243]: 213.230.72.4
+                      - generic [ref=e2244]:
+                        - img [ref=e2245]
+                        - paragraph [ref=e2248]: "Yaratilgan: 2026 M04 9 21:46"
+                      - generic [ref=e2249]:
+                        - img [ref=e2250]
+                        - paragraph [ref=e2253]: "Tugaydi: 2026 M04 16 21:46"
+                  - button [ref=e2254] [cursor=pointer]:
+                    - img [ref=e2256]
+                - generic [ref=e2260]:
+                  - generic [ref=e2261]:
+                    - img [ref=e2263]
+                    - generic [ref=e2265]:
+                      - generic [ref=e2266]:
+                        - paragraph [ref=e2267]: Chrome
+                        - paragraph [ref=e2268]: •
+                        - paragraph [ref=e2269]: macOS
+                      - generic [ref=e2270]:
+                        - img [ref=e2271]
+                        - img [ref=e2276]
+                        - paragraph [ref=e2279]: Desktop
+                      - generic [ref=e2280]:
+                        - img [ref=e2281]
+                        - paragraph [ref=e2285]: 213.230.72.4
+                      - generic [ref=e2286]:
+                        - img [ref=e2287]
+                        - paragraph [ref=e2290]: "Yaratilgan: 2026 M04 9 21:46"
+                      - generic [ref=e2291]:
+                        - img [ref=e2292]
+                        - paragraph [ref=e2295]: "Tugaydi: 2026 M04 16 21:46"
+                  - button [ref=e2296] [cursor=pointer]:
+                    - img [ref=e2298]
+                - generic [ref=e2302]:
+                  - generic [ref=e2303]:
+                    - img [ref=e2305]
+                    - generic [ref=e2307]:
+                      - generic [ref=e2308]:
+                        - paragraph [ref=e2309]: Chrome
+                        - paragraph [ref=e2310]: •
+                        - paragraph [ref=e2311]: macOS
+                      - generic [ref=e2312]:
+                        - img [ref=e2313]
+                        - img [ref=e2318]
+                        - paragraph [ref=e2321]: Desktop
+                      - generic [ref=e2322]:
+                        - img [ref=e2323]
+                        - paragraph [ref=e2327]: 213.230.72.4
+                      - generic [ref=e2328]:
+                        - img [ref=e2329]
+                        - paragraph [ref=e2332]: "Yaratilgan: 2026 M04 9 21:39"
+                      - generic [ref=e2333]:
+                        - img [ref=e2334]
+                        - paragraph [ref=e2337]: "Tugaydi: 2026 M04 16 21:39"
+                  - button [ref=e2338] [cursor=pointer]:
+                    - img [ref=e2340]
+                - generic [ref=e2344]:
+                  - generic [ref=e2345]:
+                    - img [ref=e2347]
+                    - generic [ref=e2349]:
+                      - generic [ref=e2350]:
+                        - paragraph [ref=e2351]: Chrome
+                        - paragraph [ref=e2352]: •
+                        - paragraph [ref=e2353]: macOS
+                      - generic [ref=e2354]:
+                        - img [ref=e2355]
+                        - img [ref=e2360]
+                        - paragraph [ref=e2363]: Desktop
+                      - generic [ref=e2364]:
+                        - img [ref=e2365]
+                        - paragraph [ref=e2369]: 213.230.72.4
+                      - generic [ref=e2370]:
+                        - img [ref=e2371]
+                        - paragraph [ref=e2374]: "Yaratilgan: 2026 M04 9 19:11"
+                      - generic [ref=e2375]:
+                        - img [ref=e2376]
+                        - paragraph [ref=e2379]: "Tugaydi: 2026 M04 16 19:11"
+                  - button [ref=e2380] [cursor=pointer]:
+                    - img [ref=e2382]
+                - generic [ref=e2386]:
+                  - generic [ref=e2387]:
+                    - img [ref=e2389]
+                    - generic [ref=e2391]:
+                      - generic [ref=e2392]:
+                        - paragraph [ref=e2393]: Chrome
+                        - paragraph [ref=e2394]: •
+                        - paragraph [ref=e2395]: Linux
+                      - generic [ref=e2396]:
+                        - img [ref=e2397]
+                        - img [ref=e2402]
+                        - paragraph [ref=e2407]: Desktop
+                      - generic [ref=e2408]:
+                        - img [ref=e2409]
+                        - paragraph [ref=e2413]: 93.188.87.23
+                      - generic [ref=e2414]:
+                        - img [ref=e2415]
+                        - paragraph [ref=e2418]: "Yaratilgan: 2026 M04 9 18:56"
+                      - generic [ref=e2419]:
+                        - img [ref=e2420]
+                        - paragraph [ref=e2423]: "Tugaydi: 2026 M04 16 18:56"
+                  - button [ref=e2424] [cursor=pointer]:
+                    - img [ref=e2426]
+                - generic [ref=e2430]:
+                  - generic [ref=e2431]:
+                    - img [ref=e2433]
+                    - generic [ref=e2435]:
+                      - generic [ref=e2436]:
+                        - paragraph [ref=e2437]: Chrome
+                        - paragraph [ref=e2438]: •
+                        - paragraph [ref=e2439]: macOS
+                      - generic [ref=e2440]:
+                        - img [ref=e2441]
+                        - img [ref=e2446]
+                        - paragraph [ref=e2449]: Desktop
+                      - generic [ref=e2450]:
+                        - img [ref=e2451]
+                        - paragraph [ref=e2455]: 213.230.72.4
+                      - generic [ref=e2456]:
+                        - img [ref=e2457]
+                        - paragraph [ref=e2460]: "Yaratilgan: 2026 M04 9 18:25"
+                      - generic [ref=e2461]:
+                        - img [ref=e2462]
+                        - paragraph [ref=e2465]: "Tugaydi: 2026 M04 16 18:25"
+                  - button [ref=e2466] [cursor=pointer]:
+                    - img [ref=e2468]
+                - generic [ref=e2472]:
+                  - generic [ref=e2473]:
+                    - img [ref=e2475]
+                    - generic [ref=e2477]:
+                      - generic [ref=e2478]:
+                        - paragraph [ref=e2479]: Unknown
+                        - paragraph [ref=e2480]: •
+                        - paragraph [ref=e2481]: Unknown
+                      - generic [ref=e2482]:
+                        - img [ref=e2483]
+                        - img [ref=e2487]
+                        - paragraph [ref=e2491]: Desktop
+                      - generic [ref=e2492]:
+                        - img [ref=e2493]
+                        - paragraph [ref=e2497]: 213.230.72.4
+                      - generic [ref=e2498]:
+                        - img [ref=e2499]
+                        - paragraph [ref=e2502]: "Yaratilgan: 2026 M04 9 17:32"
+                      - generic [ref=e2503]:
+                        - img [ref=e2504]
+                        - paragraph [ref=e2507]: "Tugaydi: 2026 M04 16 17:32"
+                  - button [ref=e2508] [cursor=pointer]:
+                    - img [ref=e2510]
+                - generic [ref=e2514]:
+                  - generic [ref=e2515]:
+                    - img [ref=e2517]
+                    - generic [ref=e2519]:
+                      - generic [ref=e2520]:
+                        - paragraph [ref=e2521]: Unknown
+                        - paragraph [ref=e2522]: •
+                        - paragraph [ref=e2523]: Unknown
+                      - generic [ref=e2524]:
+                        - img [ref=e2525]
+                        - img [ref=e2529]
+                        - paragraph [ref=e2533]: Desktop
+                      - generic [ref=e2534]:
+                        - img [ref=e2535]
+                        - paragraph [ref=e2539]: 213.230.72.4
+                      - generic [ref=e2540]:
+                        - img [ref=e2541]
+                        - paragraph [ref=e2544]: "Yaratilgan: 2026 M04 9 17:26"
+                      - generic [ref=e2545]:
+                        - img [ref=e2546]
+                        - paragraph [ref=e2549]: "Tugaydi: 2026 M04 16 17:26"
+                  - button [ref=e2550] [cursor=pointer]:
+                    - img [ref=e2552]
+                - generic [ref=e2556]:
+                  - generic [ref=e2557]:
+                    - img [ref=e2559]
+                    - generic [ref=e2561]:
+                      - generic [ref=e2562]:
+                        - paragraph [ref=e2563]: Unknown
+                        - paragraph [ref=e2564]: •
+                        - paragraph [ref=e2565]: Unknown
+                      - generic [ref=e2566]:
+                        - img [ref=e2567]
+                        - img [ref=e2571]
+                        - paragraph [ref=e2575]: Desktop
+                      - generic [ref=e2576]:
+                        - img [ref=e2577]
+                        - paragraph [ref=e2581]: 213.230.72.4
+                      - generic [ref=e2582]:
+                        - img [ref=e2583]
+                        - paragraph [ref=e2586]: "Yaratilgan: 2026 M04 9 17:22"
+                      - generic [ref=e2587]:
+                        - img [ref=e2588]
+                        - paragraph [ref=e2591]: "Tugaydi: 2026 M04 16 17:22"
+                  - button [ref=e2592] [cursor=pointer]:
+                    - img [ref=e2594]
+                - generic [ref=e2598]:
+                  - generic [ref=e2599]:
+                    - img [ref=e2601]
+                    - generic [ref=e2603]:
+                      - generic [ref=e2604]:
+                        - paragraph [ref=e2605]: Unknown
+                        - paragraph [ref=e2606]: •
+                        - paragraph [ref=e2607]: Unknown
+                      - generic [ref=e2608]:
+                        - img [ref=e2609]
+                        - img [ref=e2613]
+                        - paragraph [ref=e2617]: Desktop
+                      - generic [ref=e2618]:
+                        - img [ref=e2619]
+                        - paragraph [ref=e2623]: 213.230.72.4
+                      - generic [ref=e2624]:
+                        - img [ref=e2625]
+                        - paragraph [ref=e2628]: "Yaratilgan: 2026 M04 9 17:13"
+                      - generic [ref=e2629]:
+                        - img [ref=e2630]
+                        - paragraph [ref=e2633]: "Tugaydi: 2026 M04 16 17:13"
+                  - button [ref=e2634] [cursor=pointer]:
+                    - img [ref=e2636]
+                - generic [ref=e2640]:
+                  - generic [ref=e2641]:
+                    - img [ref=e2643]
+                    - generic [ref=e2645]:
+                      - generic [ref=e2646]:
+                        - paragraph [ref=e2647]: Unknown
+                        - paragraph [ref=e2648]: •
+                        - paragraph [ref=e2649]: Unknown
+                      - generic [ref=e2650]:
+                        - img [ref=e2651]
+                        - img [ref=e2655]
+                        - paragraph [ref=e2659]: Desktop
+                      - generic [ref=e2660]:
+                        - img [ref=e2661]
+                        - paragraph [ref=e2665]: 213.230.72.4
+                      - generic [ref=e2666]:
+                        - img [ref=e2667]
+                        - paragraph [ref=e2670]: "Yaratilgan: 2026 M04 9 16:03"
+                      - generic [ref=e2671]:
+                        - img [ref=e2672]
+                        - paragraph [ref=e2675]: "Tugaydi: 2026 M04 16 16:03"
+                  - button [ref=e2676] [cursor=pointer]:
+                    - img [ref=e2678]
+                - generic [ref=e2682]:
+                  - generic [ref=e2683]:
+                    - img [ref=e2685]
+                    - generic [ref=e2687]:
+                      - generic [ref=e2688]:
+                        - paragraph [ref=e2689]: Chrome
+                        - paragraph [ref=e2690]: •
+                        - paragraph [ref=e2691]: macOS
+                      - generic [ref=e2692]:
+                        - img [ref=e2693]
+                        - img [ref=e2698]
+                        - paragraph [ref=e2701]: Desktop
+                      - generic [ref=e2702]:
+                        - img [ref=e2703]
+                        - paragraph [ref=e2707]: 213.230.72.4
+                      - generic [ref=e2708]:
+                        - img [ref=e2709]
+                        - paragraph [ref=e2712]: "Yaratilgan: 2026 M04 9 15:46"
+                      - generic [ref=e2713]:
+                        - img [ref=e2714]
+                        - paragraph [ref=e2717]: "Tugaydi: 2026 M04 16 15:46"
+                  - button [ref=e2718] [cursor=pointer]:
+                    - img [ref=e2720]
+                - generic [ref=e2724]:
+                  - generic [ref=e2725]:
+                    - img [ref=e2727]
+                    - generic [ref=e2729]:
+                      - generic [ref=e2730]:
+                        - paragraph [ref=e2731]: Unknown
+                        - paragraph [ref=e2732]: •
+                        - paragraph [ref=e2733]: Unknown
+                      - generic [ref=e2734]:
+                        - img [ref=e2735]
+                        - img [ref=e2739]
+                        - paragraph [ref=e2743]: Desktop
+                      - generic [ref=e2744]:
+                        - img [ref=e2745]
+                        - paragraph [ref=e2749]: 213.230.72.4
+                      - generic [ref=e2750]:
+                        - img [ref=e2751]
+                        - paragraph [ref=e2754]: "Yaratilgan: 2026 M04 9 15:46"
+                      - generic [ref=e2755]:
+                        - img [ref=e2756]
+                        - paragraph [ref=e2759]: "Tugaydi: 2026 M04 16 15:46"
+                  - button [ref=e2760] [cursor=pointer]:
+                    - img [ref=e2762]
+                - generic [ref=e2766]:
+                  - generic [ref=e2767]:
+                    - img [ref=e2769]
+                    - generic [ref=e2771]:
+                      - generic [ref=e2772]:
+                        - paragraph [ref=e2773]: Unknown
+                        - paragraph [ref=e2774]: •
+                        - paragraph [ref=e2775]: Unknown
+                      - generic [ref=e2776]:
+                        - img [ref=e2777]
+                        - img [ref=e2781]
+                        - paragraph [ref=e2785]: Desktop
+                      - generic [ref=e2786]:
+                        - img [ref=e2787]
+                        - paragraph [ref=e2791]: 213.230.72.4
+                      - generic [ref=e2792]:
+                        - img [ref=e2793]
+                        - paragraph [ref=e2796]: "Yaratilgan: 2026 M04 9 15:29"
+                      - generic [ref=e2797]:
+                        - img [ref=e2798]
+                        - paragraph [ref=e2801]: "Tugaydi: 2026 M04 16 15:29"
+                  - button [ref=e2802] [cursor=pointer]:
+                    - img [ref=e2804]
+                - generic [ref=e2808]:
+                  - generic [ref=e2809]:
+                    - img [ref=e2811]
+                    - generic [ref=e2813]:
+                      - generic [ref=e2814]:
+                        - paragraph [ref=e2815]: Unknown
+                        - paragraph [ref=e2816]: •
+                        - paragraph [ref=e2817]: Unknown
+                      - generic [ref=e2818]:
+                        - img [ref=e2819]
+                        - img [ref=e2823]
+                        - paragraph [ref=e2827]: Desktop
+                      - generic [ref=e2828]:
+                        - img [ref=e2829]
+                        - paragraph [ref=e2833]: 213.230.72.4
+                      - generic [ref=e2834]:
+                        - img [ref=e2835]
+                        - paragraph [ref=e2838]: "Yaratilgan: 2026 M04 9 15:27"
+                      - generic [ref=e2839]:
+                        - img [ref=e2840]
+                        - paragraph [ref=e2843]: "Tugaydi: 2026 M04 16 15:27"
+                  - button [ref=e2844] [cursor=pointer]:
+                    - img [ref=e2846]
+                - generic [ref=e2850]:
+                  - generic [ref=e2851]:
+                    - img [ref=e2853]
+                    - generic [ref=e2855]:
+                      - generic [ref=e2856]:
+                        - paragraph [ref=e2857]: Unknown
+                        - paragraph [ref=e2858]: •
+                        - paragraph [ref=e2859]: Unknown
+                      - generic [ref=e2860]:
+                        - img [ref=e2861]
+                        - img [ref=e2865]
+                        - paragraph [ref=e2869]: Desktop
+                      - generic [ref=e2870]:
+                        - img [ref=e2871]
+                        - paragraph [ref=e2875]: 213.230.72.4
+                      - generic [ref=e2876]:
+                        - img [ref=e2877]
+                        - paragraph [ref=e2880]: "Yaratilgan: 2026 M04 9 15:19"
+                      - generic [ref=e2881]:
+                        - img [ref=e2882]
+                        - paragraph [ref=e2885]: "Tugaydi: 2026 M04 16 15:19"
+                  - button [ref=e2886] [cursor=pointer]:
+                    - img [ref=e2888]
+                - generic [ref=e2892]:
+                  - generic [ref=e2893]:
+                    - img [ref=e2895]
+                    - generic [ref=e2897]:
+                      - generic [ref=e2898]:
+                        - paragraph [ref=e2899]: Unknown
+                        - paragraph [ref=e2900]: •
+                        - paragraph [ref=e2901]: Unknown
+                      - generic [ref=e2902]:
+                        - img [ref=e2903]
+                        - img [ref=e2907]
+                        - paragraph [ref=e2911]: Desktop
+                      - generic [ref=e2912]:
+                        - img [ref=e2913]
+                        - paragraph [ref=e2917]: 213.230.72.4
+                      - generic [ref=e2918]:
+                        - img [ref=e2919]
+                        - paragraph [ref=e2922]: "Yaratilgan: 2026 M04 9 15:10"
+                      - generic [ref=e2923]:
+                        - img [ref=e2924]
+                        - paragraph [ref=e2927]: "Tugaydi: 2026 M04 16 15:10"
+                  - button [ref=e2928] [cursor=pointer]:
+                    - img [ref=e2930]
+                - generic [ref=e2934]:
+                  - generic [ref=e2935]:
+                    - img [ref=e2937]
+                    - generic [ref=e2939]:
+                      - generic [ref=e2940]:
+                        - paragraph [ref=e2941]: Unknown
+                        - paragraph [ref=e2942]: •
+                        - paragraph [ref=e2943]: Unknown
+                      - generic [ref=e2944]:
+                        - img [ref=e2945]
+                        - img [ref=e2949]
+                        - paragraph [ref=e2953]: Desktop
+                      - generic [ref=e2954]:
+                        - img [ref=e2955]
+                        - paragraph [ref=e2959]: 213.230.72.4
+                      - generic [ref=e2960]:
+                        - img [ref=e2961]
+                        - paragraph [ref=e2964]: "Yaratilgan: 2026 M04 9 15:07"
+                      - generic [ref=e2965]:
+                        - img [ref=e2966]
+                        - paragraph [ref=e2969]: "Tugaydi: 2026 M04 16 15:07"
+                  - button [ref=e2970] [cursor=pointer]:
+                    - img [ref=e2972]
+                - generic [ref=e2976]:
+                  - generic [ref=e2977]:
+                    - img [ref=e2979]
+                    - generic [ref=e2981]:
+                      - generic [ref=e2982]:
+                        - paragraph [ref=e2983]: Unknown
+                        - paragraph [ref=e2984]: •
+                        - paragraph [ref=e2985]: Unknown
+                      - generic [ref=e2986]:
+                        - img [ref=e2987]
+                        - img [ref=e2991]
+                        - paragraph [ref=e2995]: Desktop
+                      - generic [ref=e2996]:
+                        - img [ref=e2997]
+                        - paragraph [ref=e3001]: 213.230.72.4
+                      - generic [ref=e3002]:
+                        - img [ref=e3003]
+                        - paragraph [ref=e3006]: "Yaratilgan: 2026 M04 9 15:02"
+                      - generic [ref=e3007]:
+                        - img [ref=e3008]
+                        - paragraph [ref=e3011]: "Tugaydi: 2026 M04 16 15:02"
+                  - button [ref=e3012] [cursor=pointer]:
+                    - img [ref=e3014]
+                - generic [ref=e3018]:
+                  - generic [ref=e3019]:
+                    - img [ref=e3021]
+                    - generic [ref=e3023]:
+                      - generic [ref=e3024]:
+                        - paragraph [ref=e3025]: Unknown
+                        - paragraph [ref=e3026]: •
+                        - paragraph [ref=e3027]: Unknown
+                      - generic [ref=e3028]:
+                        - img [ref=e3029]
+                        - img [ref=e3033]
+                        - paragraph [ref=e3037]: Desktop
+                      - generic [ref=e3038]:
+                        - img [ref=e3039]
+                        - paragraph [ref=e3043]: 213.230.72.4
+                      - generic [ref=e3044]:
+                        - img [ref=e3045]
+                        - paragraph [ref=e3048]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3049]:
+                        - img [ref=e3050]
+                        - paragraph [ref=e3053]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3054] [cursor=pointer]:
+                    - img [ref=e3056]
+                - generic [ref=e3060]:
+                  - generic [ref=e3061]:
+                    - img [ref=e3063]
+                    - generic [ref=e3065]:
+                      - generic [ref=e3066]:
+                        - paragraph [ref=e3067]: Unknown
+                        - paragraph [ref=e3068]: •
+                        - paragraph [ref=e3069]: Unknown
+                      - generic [ref=e3070]:
+                        - img [ref=e3071]
+                        - img [ref=e3075]
+                        - paragraph [ref=e3079]: Desktop
+                      - generic [ref=e3080]:
+                        - img [ref=e3081]
+                        - paragraph [ref=e3085]: 213.230.72.4
+                      - generic [ref=e3086]:
+                        - img [ref=e3087]
+                        - paragraph [ref=e3090]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3091]:
+                        - img [ref=e3092]
+                        - paragraph [ref=e3095]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3096] [cursor=pointer]:
+                    - img [ref=e3098]
+                - generic [ref=e3102]:
+                  - generic [ref=e3103]:
+                    - img [ref=e3105]
+                    - generic [ref=e3107]:
+                      - generic [ref=e3108]:
+                        - paragraph [ref=e3109]: Unknown
+                        - paragraph [ref=e3110]: •
+                        - paragraph [ref=e3111]: Unknown
+                      - generic [ref=e3112]:
+                        - img [ref=e3113]
+                        - img [ref=e3117]
+                        - paragraph [ref=e3121]: Desktop
+                      - generic [ref=e3122]:
+                        - img [ref=e3123]
+                        - paragraph [ref=e3127]: 213.230.72.4
+                      - generic [ref=e3128]:
+                        - img [ref=e3129]
+                        - paragraph [ref=e3132]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3133]:
+                        - img [ref=e3134]
+                        - paragraph [ref=e3137]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3138] [cursor=pointer]:
+                    - img [ref=e3140]
+                - generic [ref=e3144]:
+                  - generic [ref=e3145]:
+                    - img [ref=e3147]
+                    - generic [ref=e3149]:
+                      - generic [ref=e3150]:
+                        - paragraph [ref=e3151]: Unknown
+                        - paragraph [ref=e3152]: •
+                        - paragraph [ref=e3153]: Unknown
+                      - generic [ref=e3154]:
+                        - img [ref=e3155]
+                        - img [ref=e3159]
+                        - paragraph [ref=e3163]: Desktop
+                      - generic [ref=e3164]:
+                        - img [ref=e3165]
+                        - paragraph [ref=e3169]: 213.230.72.4
+                      - generic [ref=e3170]:
+                        - img [ref=e3171]
+                        - paragraph [ref=e3174]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3175]:
+                        - img [ref=e3176]
+                        - paragraph [ref=e3179]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3180] [cursor=pointer]:
+                    - img [ref=e3182]
+                - generic [ref=e3186]:
+                  - generic [ref=e3187]:
+                    - img [ref=e3189]
+                    - generic [ref=e3191]:
+                      - generic [ref=e3192]:
+                        - paragraph [ref=e3193]: Unknown
+                        - paragraph [ref=e3194]: •
+                        - paragraph [ref=e3195]: Unknown
+                      - generic [ref=e3196]:
+                        - img [ref=e3197]
+                        - img [ref=e3201]
+                        - paragraph [ref=e3205]: Desktop
+                      - generic [ref=e3206]:
+                        - img [ref=e3207]
+                        - paragraph [ref=e3211]: 213.230.72.4
+                      - generic [ref=e3212]:
+                        - img [ref=e3213]
+                        - paragraph [ref=e3216]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3217]:
+                        - img [ref=e3218]
+                        - paragraph [ref=e3221]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3222] [cursor=pointer]:
+                    - img [ref=e3224]
+                - generic [ref=e3228]:
+                  - generic [ref=e3229]:
+                    - img [ref=e3231]
+                    - generic [ref=e3233]:
+                      - generic [ref=e3234]:
+                        - paragraph [ref=e3235]: Unknown
+                        - paragraph [ref=e3236]: •
+                        - paragraph [ref=e3237]: Unknown
+                      - generic [ref=e3238]:
+                        - img [ref=e3239]
+                        - img [ref=e3243]
+                        - paragraph [ref=e3247]: Desktop
+                      - generic [ref=e3248]:
+                        - img [ref=e3249]
+                        - paragraph [ref=e3253]: 213.230.72.4
+                      - generic [ref=e3254]:
+                        - img [ref=e3255]
+                        - paragraph [ref=e3258]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3259]:
+                        - img [ref=e3260]
+                        - paragraph [ref=e3263]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3264] [cursor=pointer]:
+                    - img [ref=e3266]
+                - generic [ref=e3270]:
+                  - generic [ref=e3271]:
+                    - img [ref=e3273]
+                    - generic [ref=e3275]:
+                      - generic [ref=e3276]:
+                        - paragraph [ref=e3277]: Unknown
+                        - paragraph [ref=e3278]: •
+                        - paragraph [ref=e3279]: Unknown
+                      - generic [ref=e3280]:
+                        - img [ref=e3281]
+                        - img [ref=e3285]
+                        - paragraph [ref=e3289]: Desktop
+                      - generic [ref=e3290]:
+                        - img [ref=e3291]
+                        - paragraph [ref=e3295]: 213.230.72.4
+                      - generic [ref=e3296]:
+                        - img [ref=e3297]
+                        - paragraph [ref=e3300]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3301]:
+                        - img [ref=e3302]
+                        - paragraph [ref=e3305]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3306] [cursor=pointer]:
+                    - img [ref=e3308]
+                - generic [ref=e3312]:
+                  - generic [ref=e3313]:
+                    - img [ref=e3315]
+                    - generic [ref=e3317]:
+                      - generic [ref=e3318]:
+                        - paragraph [ref=e3319]: Unknown
+                        - paragraph [ref=e3320]: •
+                        - paragraph [ref=e3321]: Unknown
+                      - generic [ref=e3322]:
+                        - img [ref=e3323]
+                        - img [ref=e3327]
+                        - paragraph [ref=e3331]: Desktop
+                      - generic [ref=e3332]:
+                        - img [ref=e3333]
+                        - paragraph [ref=e3337]: 213.230.72.4
+                      - generic [ref=e3338]:
+                        - img [ref=e3339]
+                        - paragraph [ref=e3342]: "Yaratilgan: 2026 M04 9 15:01"
+                      - generic [ref=e3343]:
+                        - img [ref=e3344]
+                        - paragraph [ref=e3347]: "Tugaydi: 2026 M04 16 15:01"
+                  - button [ref=e3348] [cursor=pointer]:
+                    - img [ref=e3350]
+                - generic [ref=e3354]:
+                  - generic [ref=e3355]:
+                    - img [ref=e3357]
+                    - generic [ref=e3359]:
+                      - generic [ref=e3360]:
+                        - paragraph [ref=e3361]: Unknown
+                        - paragraph [ref=e3362]: •
+                        - paragraph [ref=e3363]: Unknown
+                      - generic [ref=e3364]:
+                        - img [ref=e3365]
+                        - img [ref=e3369]
+                        - paragraph [ref=e3373]: Desktop
+                      - generic [ref=e3374]:
+                        - img [ref=e3375]
+                        - paragraph [ref=e3379]: 213.230.72.4
+                      - generic [ref=e3380]:
+                        - img [ref=e3381]
+                        - paragraph [ref=e3384]: "Yaratilgan: 2026 M04 9 14:56"
+                      - generic [ref=e3385]:
+                        - img [ref=e3386]
+                        - paragraph [ref=e3389]: "Tugaydi: 2026 M04 16 14:56"
+                  - button [ref=e3390] [cursor=pointer]:
+                    - img [ref=e3392]
+                - generic [ref=e3396]:
+                  - generic [ref=e3397]:
+                    - img [ref=e3399]
+                    - generic [ref=e3401]:
+                      - generic [ref=e3402]:
+                        - paragraph [ref=e3403]: Unknown
+                        - paragraph [ref=e3404]: •
+                        - paragraph [ref=e3405]: Unknown
+                      - generic [ref=e3406]:
+                        - img [ref=e3407]
+                        - img [ref=e3411]
+                        - paragraph [ref=e3415]: Desktop
+                      - generic [ref=e3416]:
+                        - img [ref=e3417]
+                        - paragraph [ref=e3421]: 213.230.72.4
+                      - generic [ref=e3422]:
+                        - img [ref=e3423]
+                        - paragraph [ref=e3426]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3427]:
+                        - img [ref=e3428]
+                        - paragraph [ref=e3431]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3432] [cursor=pointer]:
+                    - img [ref=e3434]
+                - generic [ref=e3438]:
+                  - generic [ref=e3439]:
+                    - img [ref=e3441]
+                    - generic [ref=e3443]:
+                      - generic [ref=e3444]:
+                        - paragraph [ref=e3445]: Unknown
+                        - paragraph [ref=e3446]: •
+                        - paragraph [ref=e3447]: Unknown
+                      - generic [ref=e3448]:
+                        - img [ref=e3449]
+                        - img [ref=e3453]
+                        - paragraph [ref=e3457]: Desktop
+                      - generic [ref=e3458]:
+                        - img [ref=e3459]
+                        - paragraph [ref=e3463]: 213.230.72.4
+                      - generic [ref=e3464]:
+                        - img [ref=e3465]
+                        - paragraph [ref=e3468]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3469]:
+                        - img [ref=e3470]
+                        - paragraph [ref=e3473]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3474] [cursor=pointer]:
+                    - img [ref=e3476]
+                - generic [ref=e3480]:
+                  - generic [ref=e3481]:
+                    - img [ref=e3483]
+                    - generic [ref=e3485]:
+                      - generic [ref=e3486]:
+                        - paragraph [ref=e3487]: Unknown
+                        - paragraph [ref=e3488]: •
+                        - paragraph [ref=e3489]: Unknown
+                      - generic [ref=e3490]:
+                        - img [ref=e3491]
+                        - img [ref=e3495]
+                        - paragraph [ref=e3499]: Desktop
+                      - generic [ref=e3500]:
+                        - img [ref=e3501]
+                        - paragraph [ref=e3505]: 213.230.72.4
+                      - generic [ref=e3506]:
+                        - img [ref=e3507]
+                        - paragraph [ref=e3510]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3511]:
+                        - img [ref=e3512]
+                        - paragraph [ref=e3515]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3516] [cursor=pointer]:
+                    - img [ref=e3518]
+                - generic [ref=e3522]:
+                  - generic [ref=e3523]:
+                    - img [ref=e3525]
+                    - generic [ref=e3527]:
+                      - generic [ref=e3528]:
+                        - paragraph [ref=e3529]: Unknown
+                        - paragraph [ref=e3530]: •
+                        - paragraph [ref=e3531]: Unknown
+                      - generic [ref=e3532]:
+                        - img [ref=e3533]
+                        - img [ref=e3537]
+                        - paragraph [ref=e3541]: Desktop
+                      - generic [ref=e3542]:
+                        - img [ref=e3543]
+                        - paragraph [ref=e3547]: 213.230.72.4
+                      - generic [ref=e3548]:
+                        - img [ref=e3549]
+                        - paragraph [ref=e3552]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3553]:
+                        - img [ref=e3554]
+                        - paragraph [ref=e3557]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3558] [cursor=pointer]:
+                    - img [ref=e3560]
+                - generic [ref=e3564]:
+                  - generic [ref=e3565]:
+                    - img [ref=e3567]
+                    - generic [ref=e3569]:
+                      - generic [ref=e3570]:
+                        - paragraph [ref=e3571]: Unknown
+                        - paragraph [ref=e3572]: •
+                        - paragraph [ref=e3573]: Unknown
+                      - generic [ref=e3574]:
+                        - img [ref=e3575]
+                        - img [ref=e3579]
+                        - paragraph [ref=e3583]: Desktop
+                      - generic [ref=e3584]:
+                        - img [ref=e3585]
+                        - paragraph [ref=e3589]: 213.230.72.4
+                      - generic [ref=e3590]:
+                        - img [ref=e3591]
+                        - paragraph [ref=e3594]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3595]:
+                        - img [ref=e3596]
+                        - paragraph [ref=e3599]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3600] [cursor=pointer]:
+                    - img [ref=e3602]
+                - generic [ref=e3606]:
+                  - generic [ref=e3607]:
+                    - img [ref=e3609]
+                    - generic [ref=e3611]:
+                      - generic [ref=e3612]:
+                        - paragraph [ref=e3613]: Unknown
+                        - paragraph [ref=e3614]: •
+                        - paragraph [ref=e3615]: Unknown
+                      - generic [ref=e3616]:
+                        - img [ref=e3617]
+                        - img [ref=e3621]
+                        - paragraph [ref=e3625]: Desktop
+                      - generic [ref=e3626]:
+                        - img [ref=e3627]
+                        - paragraph [ref=e3631]: 213.230.72.4
+                      - generic [ref=e3632]:
+                        - img [ref=e3633]
+                        - paragraph [ref=e3636]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3637]:
+                        - img [ref=e3638]
+                        - paragraph [ref=e3641]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3642] [cursor=pointer]:
+                    - img [ref=e3644]
+                - generic [ref=e3648]:
+                  - generic [ref=e3649]:
+                    - img [ref=e3651]
+                    - generic [ref=e3653]:
+                      - generic [ref=e3654]:
+                        - paragraph [ref=e3655]: Unknown
+                        - paragraph [ref=e3656]: •
+                        - paragraph [ref=e3657]: Unknown
+                      - generic [ref=e3658]:
+                        - img [ref=e3659]
+                        - img [ref=e3663]
+                        - paragraph [ref=e3667]: Desktop
+                      - generic [ref=e3668]:
+                        - img [ref=e3669]
+                        - paragraph [ref=e3673]: 213.230.72.4
+                      - generic [ref=e3674]:
+                        - img [ref=e3675]
+                        - paragraph [ref=e3678]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3679]:
+                        - img [ref=e3680]
+                        - paragraph [ref=e3683]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3684] [cursor=pointer]:
+                    - img [ref=e3686]
+                - generic [ref=e3690]:
+                  - generic [ref=e3691]:
+                    - img [ref=e3693]
+                    - generic [ref=e3695]:
+                      - generic [ref=e3696]:
+                        - paragraph [ref=e3697]: Unknown
+                        - paragraph [ref=e3698]: •
+                        - paragraph [ref=e3699]: Unknown
+                      - generic [ref=e3700]:
+                        - img [ref=e3701]
+                        - img [ref=e3705]
+                        - paragraph [ref=e3709]: Desktop
+                      - generic [ref=e3710]:
+                        - img [ref=e3711]
+                        - paragraph [ref=e3715]: 213.230.72.4
+                      - generic [ref=e3716]:
+                        - img [ref=e3717]
+                        - paragraph [ref=e3720]: "Yaratilgan: 2026 M04 9 14:55"
+                      - generic [ref=e3721]:
+                        - img [ref=e3722]
+                        - paragraph [ref=e3725]: "Tugaydi: 2026 M04 16 14:55"
+                  - button [ref=e3726] [cursor=pointer]:
+                    - img [ref=e3728]
+                - generic [ref=e3732]:
+                  - generic [ref=e3733]:
+                    - img [ref=e3735]
+                    - generic [ref=e3737]:
+                      - generic [ref=e3738]:
+                        - paragraph [ref=e3739]: Unknown
+                        - paragraph [ref=e3740]: •
+                        - paragraph [ref=e3741]: Unknown
+                      - generic [ref=e3742]:
+                        - img [ref=e3743]
+                        - img [ref=e3747]
+                        - paragraph [ref=e3751]: Desktop
+                      - generic [ref=e3752]:
+                        - img [ref=e3753]
+                        - paragraph [ref=e3757]: 213.230.72.4
+                      - generic [ref=e3758]:
+                        - img [ref=e3759]
+                        - paragraph [ref=e3762]: "Yaratilgan: 2026 M04 9 14:49"
+                      - generic [ref=e3763]:
+                        - img [ref=e3764]
+                        - paragraph [ref=e3767]: "Tugaydi: 2026 M04 16 14:49"
+                  - button [ref=e3768] [cursor=pointer]:
+                    - img [ref=e3770]
+                - generic [ref=e3774]:
+                  - generic [ref=e3775]:
+                    - img [ref=e3777]
+                    - generic [ref=e3779]:
+                      - generic [ref=e3780]:
+                        - paragraph [ref=e3781]: Unknown
+                        - paragraph [ref=e3782]: •
+                        - paragraph [ref=e3783]: Unknown
+                      - generic [ref=e3784]:
+                        - img [ref=e3785]
+                        - img [ref=e3789]
+                        - paragraph [ref=e3793]: Desktop
+                      - generic [ref=e3794]:
+                        - img [ref=e3795]
+                        - paragraph [ref=e3799]: 213.230.72.4
+                      - generic [ref=e3800]:
+                        - img [ref=e3801]
+                        - paragraph [ref=e3804]: "Yaratilgan: 2026 M04 9 14:49"
+                      - generic [ref=e3805]:
+                        - img [ref=e3806]
+                        - paragraph [ref=e3809]: "Tugaydi: 2026 M04 16 14:49"
+                  - button [ref=e3810] [cursor=pointer]:
+                    - img [ref=e3812]
+                - generic [ref=e3816]:
+                  - generic [ref=e3817]:
+                    - img [ref=e3819]
+                    - generic [ref=e3821]:
+                      - generic [ref=e3822]:
+                        - paragraph [ref=e3823]: Unknown
+                        - paragraph [ref=e3824]: •
+                        - paragraph [ref=e3825]: Unknown
+                      - generic [ref=e3826]:
+                        - img [ref=e3827]
+                        - img [ref=e3831]
+                        - paragraph [ref=e3835]: Desktop
+                      - generic [ref=e3836]:
+                        - img [ref=e3837]
+                        - paragraph [ref=e3841]: 213.230.72.4
+                      - generic [ref=e3842]:
+                        - img [ref=e3843]
+                        - paragraph [ref=e3846]: "Yaratilgan: 2026 M04 9 14:48"
+                      - generic [ref=e3847]:
+                        - img [ref=e3848]
+                        - paragraph [ref=e3851]: "Tugaydi: 2026 M04 16 14:48"
+                  - button [ref=e3852] [cursor=pointer]:
+                    - img [ref=e3854]
+                - generic [ref=e3858]:
+                  - generic [ref=e3859]:
+                    - img [ref=e3861]
+                    - generic [ref=e3863]:
+                      - generic [ref=e3864]:
+                        - paragraph [ref=e3865]: Unknown
+                        - paragraph [ref=e3866]: •
+                        - paragraph [ref=e3867]: Unknown
+                      - generic [ref=e3868]:
+                        - img [ref=e3869]
+                        - img [ref=e3873]
+                        - paragraph [ref=e3877]: Desktop
+                      - generic [ref=e3878]:
+                        - img [ref=e3879]
+                        - paragraph [ref=e3883]: 213.230.72.4
+                      - generic [ref=e3884]:
+                        - img [ref=e3885]
+                        - paragraph [ref=e3888]: "Yaratilgan: 2026 M04 9 14:48"
+                      - generic [ref=e3889]:
+                        - img [ref=e3890]
+                        - paragraph [ref=e3893]: "Tugaydi: 2026 M04 16 14:48"
+                  - button [ref=e3894] [cursor=pointer]:
+                    - img [ref=e3896]
+                - generic [ref=e3900]:
+                  - generic [ref=e3901]:
+                    - img [ref=e3903]
+                    - generic [ref=e3905]:
+                      - generic [ref=e3906]:
+                        - paragraph [ref=e3907]: Unknown
+                        - paragraph [ref=e3908]: •
+                        - paragraph [ref=e3909]: Unknown
+                      - generic [ref=e3910]:
+                        - img [ref=e3911]
+                        - img [ref=e3915]
+                        - paragraph [ref=e3919]: Desktop
+                      - generic [ref=e3920]:
+                        - img [ref=e3921]
+                        - paragraph [ref=e3925]: 213.230.72.4
+                      - generic [ref=e3926]:
+                        - img [ref=e3927]
+                        - paragraph [ref=e3930]: "Yaratilgan: 2026 M04 9 14:29"
+                      - generic [ref=e3931]:
+                        - img [ref=e3932]
+                        - paragraph [ref=e3935]: "Tugaydi: 2026 M04 16 14:29"
+                  - button [ref=e3936] [cursor=pointer]:
+                    - img [ref=e3938]
+                - generic [ref=e3942]:
+                  - generic [ref=e3943]:
+                    - img [ref=e3945]
+                    - generic [ref=e3947]:
+                      - generic [ref=e3948]:
+                        - paragraph [ref=e3949]: Unknown
+                        - paragraph [ref=e3950]: •
+                        - paragraph [ref=e3951]: Unknown
+                      - generic [ref=e3952]:
+                        - img [ref=e3953]
+                        - img [ref=e3957]
+                        - paragraph [ref=e3961]: Desktop
+                      - generic [ref=e3962]:
+                        - img [ref=e3963]
+                        - paragraph [ref=e3967]: 213.230.72.4
+                      - generic [ref=e3968]:
+                        - img [ref=e3969]
+                        - paragraph [ref=e3972]: "Yaratilgan: 2026 M04 9 13:06"
+                      - generic [ref=e3973]:
+                        - img [ref=e3974]
+                        - paragraph [ref=e3977]: "Tugaydi: 2026 M04 16 13:06"
+                  - button [ref=e3978] [cursor=pointer]:
+                    - img [ref=e3980]
+                - generic [ref=e3984]:
+                  - generic [ref=e3985]:
+                    - img [ref=e3987]
+                    - generic [ref=e3989]:
+                      - generic [ref=e3990]:
+                        - paragraph [ref=e3991]: Unknown
+                        - paragraph [ref=e3992]: •
+                        - paragraph [ref=e3993]: Unknown
+                      - generic [ref=e3994]:
+                        - img [ref=e3995]
+                        - img [ref=e3999]
+                        - paragraph [ref=e4003]: Desktop
+                      - generic [ref=e4004]:
+                        - img [ref=e4005]
+                        - paragraph [ref=e4009]: 213.230.72.4
+                      - generic [ref=e4010]:
+                        - img [ref=e4011]
+                        - paragraph [ref=e4014]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4015]:
+                        - img [ref=e4016]
+                        - paragraph [ref=e4019]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4020] [cursor=pointer]:
+                    - img [ref=e4022]
+                - generic [ref=e4026]:
+                  - generic [ref=e4027]:
+                    - img [ref=e4029]
+                    - generic [ref=e4031]:
+                      - generic [ref=e4032]:
+                        - paragraph [ref=e4033]: Unknown
+                        - paragraph [ref=e4034]: •
+                        - paragraph [ref=e4035]: Unknown
+                      - generic [ref=e4036]:
+                        - img [ref=e4037]
+                        - img [ref=e4041]
+                        - paragraph [ref=e4045]: Desktop
+                      - generic [ref=e4046]:
+                        - img [ref=e4047]
+                        - paragraph [ref=e4051]: 213.230.72.4
+                      - generic [ref=e4052]:
+                        - img [ref=e4053]
+                        - paragraph [ref=e4056]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4057]:
+                        - img [ref=e4058]
+                        - paragraph [ref=e4061]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4062] [cursor=pointer]:
+                    - img [ref=e4064]
+                - generic [ref=e4068]:
+                  - generic [ref=e4069]:
+                    - img [ref=e4071]
+                    - generic [ref=e4073]:
+                      - generic [ref=e4074]:
+                        - paragraph [ref=e4075]: Unknown
+                        - paragraph [ref=e4076]: •
+                        - paragraph [ref=e4077]: Unknown
+                      - generic [ref=e4078]:
+                        - img [ref=e4079]
+                        - img [ref=e4083]
+                        - paragraph [ref=e4087]: Desktop
+                      - generic [ref=e4088]:
+                        - img [ref=e4089]
+                        - paragraph [ref=e4093]: 213.230.72.4
+                      - generic [ref=e4094]:
+                        - img [ref=e4095]
+                        - paragraph [ref=e4098]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4099]:
+                        - img [ref=e4100]
+                        - paragraph [ref=e4103]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4104] [cursor=pointer]:
+                    - img [ref=e4106]
+                - generic [ref=e4110]:
+                  - generic [ref=e4111]:
+                    - img [ref=e4113]
+                    - generic [ref=e4115]:
+                      - generic [ref=e4116]:
+                        - paragraph [ref=e4117]: Unknown
+                        - paragraph [ref=e4118]: •
+                        - paragraph [ref=e4119]: Unknown
+                      - generic [ref=e4120]:
+                        - img [ref=e4121]
+                        - img [ref=e4125]
+                        - paragraph [ref=e4129]: Desktop
+                      - generic [ref=e4130]:
+                        - img [ref=e4131]
+                        - paragraph [ref=e4135]: 213.230.72.4
+                      - generic [ref=e4136]:
+                        - img [ref=e4137]
+                        - paragraph [ref=e4140]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4141]:
+                        - img [ref=e4142]
+                        - paragraph [ref=e4145]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4146] [cursor=pointer]:
+                    - img [ref=e4148]
+                - generic [ref=e4152]:
+                  - generic [ref=e4153]:
+                    - img [ref=e4155]
+                    - generic [ref=e4157]:
+                      - generic [ref=e4158]:
+                        - paragraph [ref=e4159]: Unknown
+                        - paragraph [ref=e4160]: •
+                        - paragraph [ref=e4161]: Unknown
+                      - generic [ref=e4162]:
+                        - img [ref=e4163]
+                        - img [ref=e4167]
+                        - paragraph [ref=e4171]: Desktop
+                      - generic [ref=e4172]:
+                        - img [ref=e4173]
+                        - paragraph [ref=e4177]: 213.230.72.4
+                      - generic [ref=e4178]:
+                        - img [ref=e4179]
+                        - paragraph [ref=e4182]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4183]:
+                        - img [ref=e4184]
+                        - paragraph [ref=e4187]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4188] [cursor=pointer]:
+                    - img [ref=e4190]
+                - generic [ref=e4194]:
+                  - generic [ref=e4195]:
+                    - img [ref=e4197]
+                    - generic [ref=e4199]:
+                      - generic [ref=e4200]:
+                        - paragraph [ref=e4201]: Unknown
+                        - paragraph [ref=e4202]: •
+                        - paragraph [ref=e4203]: Unknown
+                      - generic [ref=e4204]:
+                        - img [ref=e4205]
+                        - img [ref=e4209]
+                        - paragraph [ref=e4213]: Desktop
+                      - generic [ref=e4214]:
+                        - img [ref=e4215]
+                        - paragraph [ref=e4219]: 213.230.72.4
+                      - generic [ref=e4220]:
+                        - img [ref=e4221]
+                        - paragraph [ref=e4224]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4225]:
+                        - img [ref=e4226]
+                        - paragraph [ref=e4229]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4230] [cursor=pointer]:
+                    - img [ref=e4232]
+                - generic [ref=e4236]:
+                  - generic [ref=e4237]:
+                    - img [ref=e4239]
+                    - generic [ref=e4241]:
+                      - generic [ref=e4242]:
+                        - paragraph [ref=e4243]: Unknown
+                        - paragraph [ref=e4244]: •
+                        - paragraph [ref=e4245]: Unknown
+                      - generic [ref=e4246]:
+                        - img [ref=e4247]
+                        - img [ref=e4251]
+                        - paragraph [ref=e4255]: Desktop
+                      - generic [ref=e4256]:
+                        - img [ref=e4257]
+                        - paragraph [ref=e4261]: 213.230.72.4
+                      - generic [ref=e4262]:
+                        - img [ref=e4263]
+                        - paragraph [ref=e4266]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4267]:
+                        - img [ref=e4268]
+                        - paragraph [ref=e4271]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4272] [cursor=pointer]:
+                    - img [ref=e4274]
+                - generic [ref=e4278]:
+                  - generic [ref=e4279]:
+                    - img [ref=e4281]
+                    - generic [ref=e4283]:
+                      - generic [ref=e4284]:
+                        - paragraph [ref=e4285]: Unknown
+                        - paragraph [ref=e4286]: •
+                        - paragraph [ref=e4287]: Unknown
+                      - generic [ref=e4288]:
+                        - img [ref=e4289]
+                        - img [ref=e4293]
+                        - paragraph [ref=e4297]: Desktop
+                      - generic [ref=e4298]:
+                        - img [ref=e4299]
+                        - paragraph [ref=e4303]: 213.230.72.4
+                      - generic [ref=e4304]:
+                        - img [ref=e4305]
+                        - paragraph [ref=e4308]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4309]:
+                        - img [ref=e4310]
+                        - paragraph [ref=e4313]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4314] [cursor=pointer]:
+                    - img [ref=e4316]
+                - generic [ref=e4320]:
+                  - generic [ref=e4321]:
+                    - img [ref=e4323]
+                    - generic [ref=e4325]:
+                      - generic [ref=e4326]:
+                        - paragraph [ref=e4327]: Unknown
+                        - paragraph [ref=e4328]: •
+                        - paragraph [ref=e4329]: Unknown
+                      - generic [ref=e4330]:
+                        - img [ref=e4331]
+                        - img [ref=e4335]
+                        - paragraph [ref=e4339]: Desktop
+                      - generic [ref=e4340]:
+                        - img [ref=e4341]
+                        - paragraph [ref=e4345]: 213.230.72.4
+                      - generic [ref=e4346]:
+                        - img [ref=e4347]
+                        - paragraph [ref=e4350]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4351]:
+                        - img [ref=e4352]
+                        - paragraph [ref=e4355]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4356] [cursor=pointer]:
+                    - img [ref=e4358]
+                - generic [ref=e4362]:
+                  - generic [ref=e4363]:
+                    - img [ref=e4365]
+                    - generic [ref=e4367]:
+                      - generic [ref=e4368]:
+                        - paragraph [ref=e4369]: Unknown
+                        - paragraph [ref=e4370]: •
+                        - paragraph [ref=e4371]: Unknown
+                      - generic [ref=e4372]:
+                        - img [ref=e4373]
+                        - img [ref=e4377]
+                        - paragraph [ref=e4381]: Desktop
+                      - generic [ref=e4382]:
+                        - img [ref=e4383]
+                        - paragraph [ref=e4387]: 213.230.72.4
+                      - generic [ref=e4388]:
+                        - img [ref=e4389]
+                        - paragraph [ref=e4392]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4393]:
+                        - img [ref=e4394]
+                        - paragraph [ref=e4397]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4398] [cursor=pointer]:
+                    - img [ref=e4400]
+                - generic [ref=e4404]:
+                  - generic [ref=e4405]:
+                    - img [ref=e4407]
+                    - generic [ref=e4409]:
+                      - generic [ref=e4410]:
+                        - paragraph [ref=e4411]: Unknown
+                        - paragraph [ref=e4412]: •
+                        - paragraph [ref=e4413]: Unknown
+                      - generic [ref=e4414]:
+                        - img [ref=e4415]
+                        - img [ref=e4419]
+                        - paragraph [ref=e4423]: Desktop
+                      - generic [ref=e4424]:
+                        - img [ref=e4425]
+                        - paragraph [ref=e4429]: 213.230.72.4
+                      - generic [ref=e4430]:
+                        - img [ref=e4431]
+                        - paragraph [ref=e4434]: "Yaratilgan: 2026 M04 9 12:28"
+                      - generic [ref=e4435]:
+                        - img [ref=e4436]
+                        - paragraph [ref=e4439]: "Tugaydi: 2026 M04 16 12:28"
+                  - button [ref=e4440] [cursor=pointer]:
+                    - img [ref=e4442]
+  - button [ref=e4447] [cursor=pointer]:
+    - img [ref=e4449]
+  - alert [ref=e4453]
+```
+
+# Test source
+
+```ts
+  1   | import { test, expect, Page } from '@playwright/test'
+  2   | 
+  3   | const BASE = 'https://docverse.uz'
+  4   | 
+  5   | async function login(page: Page) {
+  6   |   await page.goto(`${BASE}/login`)
+  7   |   await page.getByPlaceholder('Foydalanuvchi nomini kiriting').fill('superadmin')
+  8   |   await page.getByPlaceholder('Parolni kiriting').fill('12345678')
+  9   |   await page.getByRole('button', { name: 'Kirish' }).click()
+  10  |   await page.waitForURL('**/dashboard**', { timeout: 15000 })
+  11  | }
+  12  | 
+  13  | function ss(name: string) {
+  14  |   return { path: `test/browser/screenshots/${name}.png` }
+  15  | }
+  16  | 
+  17  | // ============ BARCHA SAHIFALAR ============
+  18  | 
+  19  | test.describe('Barcha sahifalar yuklanadi', () => {
+  20  |   test.beforeEach(async ({ page }) => {
+  21  |     await login(page)
+  22  |   })
+  23  | 
+  24  |   const pages = [
+  25  |     { name: 'Dashboard', url: '/dashboard', expect: 'Statistika' },
+  26  |     { name: 'Hujjatlar', url: '/dashboard/document' },
+  27  |     { name: 'Hujjat turlari', url: '/dashboard/document-type' },
+  28  |     { name: 'Andozalar', url: '/dashboard/document-template' },
+  29  |     { name: 'Jurnallar', url: '/dashboard/journal' },
+  30  |     { name: 'Workflow', url: '/dashboard/workflow' },
+  31  |     { name: 'Workflow template', url: '/dashboard/workflow-template' },
+  32  |     { name: 'Workflow calendar', url: '/dashboard/workflow-calendar' },
+  33  |     { name: 'Chat', url: '/dashboard/chat' },
+  34  |     { name: 'Bo\'limlar', url: '/dashboard/department' },
+  35  |     { name: 'Audit log', url: '/dashboard/audit-log' },
+  36  |     { name: 'KPI - Task score', url: '/dashboard/kpi/task-score-config' },
+  37  |     { name: 'KPI - Monthly', url: '/dashboard/kpi/monthly-kpi' },
+  38  |     { name: 'KPI - Rewards', url: '/dashboard/kpi/rewards' },
+  39  |     { name: 'KPI - Reward tiers', url: '/dashboard/kpi/reward-tiers' },
+  40  |     { name: 'Admin', url: '/dashboard/admin' },
+  41  |     { name: 'Analytics', url: '/dashboard/analytics' },
+  42  |     { name: 'Settings - Profile', url: '/dashboard/setting/profile' },
+  43  |     { name: 'Settings - Sessions', url: '/dashboard/setting/sessions' },
+  44  |     { name: 'Project', url: '/dashboard/project' },
+  45  |     { name: 'Task', url: '/dashboard/task' },
+  46  |     { name: 'Users (admin)', url: '/dashboard/admin' },
+  47  |   ]
+  48  | 
+  49  |   for (const p of pages) {
+  50  |     test(`${p.name} sahifasi (${p.url})`, async ({ page }) => {
+  51  |       await page.goto(`${BASE}${p.url}`)
+  52  |       await page.waitForTimeout(3000)
+  53  |       // 404 bo'lmasligi kerak
+  54  |       const body = await page.textContent('body')
+  55  |       const is404 = body?.includes('This page could not be found')
+  56  |       if (is404) {
+  57  |         console.log(`⚠️  ${p.name} → 404`)
+  58  |       } else {
+  59  |         console.log(`✅ ${p.name} → OK`)
+  60  |         if (p.expect) {
+  61  |           await expect(page.locator(`text=${p.expect}`)).toBeVisible({ timeout: 5000 }).catch(() => {})
+  62  |         }
+  63  |       }
+> 64  |       expect(is404).toBeFalsy()
+      |                     ^ Error: expect(received).toBeFalsy()
+  65  |       await page.screenshot(ss(`page-${p.url.replace(/\//g, '_')}`))
+  66  |     })
+  67  |   }
+  68  | })
+  69  | 
+  70  | // ============ HUJJAT YARATISH FLOW ============
+  71  | 
+  72  | test.describe('Hujjat yaratish', () => {
+  73  |   test('Hujjat sahifasiga kirish va yaratish tugmasi', async ({ page }) => {
+  74  |     await login(page)
+  75  |     await page.goto(`${BASE}/dashboard/document`)
+  76  |     await page.waitForTimeout(3000)
+  77  |     await page.screenshot(ss('document-list'))
+  78  | 
+  79  |     // Yaratish tugmasi bormi
+  80  |     const createBtn = page.locator('button:has-text("Yaratish"), button:has-text("Yangi"), button:has-text("Qo\'shish"), a:has-text("Yaratish")')
+  81  |     const visible = await createBtn.first().isVisible().catch(() => false)
+  82  |     console.log(`Yaratish tugmasi: ${visible ? '✅ bor' : '❌ yo\'q'}`)
+  83  |     if (visible) {
+  84  |       await createBtn.first().click()
+  85  |       await page.waitForTimeout(2000)
+  86  |       await page.screenshot(ss('document-create'))
+  87  |     }
+  88  |   })
+  89  | })
+  90  | 
+  91  | // ============ WORKFLOW ============
+  92  | 
+  93  | test.describe('Workflow', () => {
+  94  |   test('Workflow ro\'yxati', async ({ page }) => {
+  95  |     await login(page)
+  96  |     await page.goto(`${BASE}/dashboard/workflow`)
+  97  |     await page.waitForTimeout(3000)
+  98  |     await page.screenshot(ss('workflow-list'))
+  99  | 
+  100 |     const body = await page.textContent('body')
+  101 |     console.log(`Workflow sahifasi: ${body?.includes('404') ? '❌ 404' : '✅ OK'}`)
+  102 |   })
+  103 | })
+  104 | 
+  105 | // ============ CHAT ============
+  106 | 
+  107 | test.describe('Chat', () => {
+  108 |   test('Chat sahifasi ochiladi', async ({ page }) => {
+  109 |     await login(page)
+  110 |     await page.goto(`${BASE}/dashboard/chat`)
+  111 |     await page.waitForTimeout(3000)
+  112 |     await page.screenshot(ss('chat-full'))
+  113 | 
+  114 |     const body = await page.textContent('body')
+  115 |     console.log(`Chat: ${body?.includes('404') ? '❌ 404' : '✅ OK'}`)
+  116 |   })
+  117 | })
+  118 | 
+  119 | // ============ TASK / PROJECT ============
+  120 | 
+  121 | test.describe('Task va Project', () => {
+  122 |   test('Loyihalar ro\'yxati', async ({ page }) => {
+  123 |     await login(page)
+  124 |     await page.goto(`${BASE}/dashboard/project`)
+  125 |     await page.waitForTimeout(3000)
+  126 |     await page.screenshot(ss('project-list'))
+  127 |   })
+  128 | 
+  129 |   test('Task sahifasi', async ({ page }) => {
+  130 |     await login(page)
+  131 |     await page.goto(`${BASE}/dashboard/task`)
+  132 |     await page.waitForTimeout(3000)
+  133 |     await page.screenshot(ss('task-board'))
+  134 |   })
+  135 | })
+  136 | 
+  137 | // ============ XAVFSIZLIK ============
+  138 | 
+  139 | test.describe('Xavfsizlik testlari', () => {
+  140 |   test('Auth yo\'q → login redirect', async ({ page }) => {
+  141 |     await page.goto(`${BASE}/dashboard`)
+  142 |     await page.waitForTimeout(3000)
+  143 |     // login'ga redirect bo'lishi yoki dashboard ochilmasligi kerak
+  144 |     const url = page.url()
+  145 |     console.log(`Auth check: ${url}`)
+  146 |   })
+  147 | 
+  148 |   test('Boshqa user ma\'lumotiga kirib bo\'lmasligi', async ({ page }) => {
+  149 |     await login(page)
+  150 |     // Mavjud bo'lmagan hujjatga kirish
+  151 |     await page.goto(`${BASE}/dashboard/document/00000000-0000-0000-0000-000000000000`)
+  152 |     await page.waitForTimeout(2000)
+  153 |     await page.screenshot(ss('security-invalid-doc'))
+  154 |   })
+  155 | })
+  156 | 
+```

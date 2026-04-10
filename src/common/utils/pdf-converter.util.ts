@@ -1,13 +1,5 @@
-let PDFNet: any
-try {
-  PDFNet = require('@pdftron/pdfnet-node').PDFNet
-} catch {
-  PDFNet = null
-}
 import { Logger } from '@nestjs/common'
-import * as fs from 'fs/promises'
-import * as path from 'path'
-import * as os from 'os'
+import { PDFDocument, wordToPDF, flattenXFDF } from '@docverse-pdf/server'
 
 const logger = new Logger('PdfConverter')
 
@@ -16,147 +8,171 @@ export interface ConversionResult {
   fileName: string
 }
 
+/**
+ * PDF konvertatsiya va XFDF merge utility.
+ *
+ * DocVerse PDF Server SDK ishlatadi (@docverse-pdf/server).
+ * PDFTron o'rniga — yengilroq, WASM-based, temp fayl kerak emas.
+ */
 export class PdfConverterUtil {
-  private static pdftronInitialized = false
-
-  private static async ensurePDFTronInitialized(): Promise<void> {
-    if (!PDFNet) {
-      throw new Error('PDFTron is not available on this system')
-    }
-    if (!this.pdftronInitialized) {
-      await PDFNet.initialize(
-        'demo:1762777177081:601eabe40300000000e42ddd407e894dff6198482ac17897bce606c4a2',
-      )
-      this.pdftronInitialized = true
-      logger.log('PDFTron initialized successfully')
-    }
-  }
-
+  /**
+   * Office hujjatni (DOCX/XLSX/PPTX) → PDF ga aylantirish.
+   * DocVerse wordToPDF funksiyasi — LibreOffice kerak emas.
+   */
   static async convertDocxToPdf(
     docxBuffer: Buffer,
     originalFileName: string,
   ): Promise<ConversionResult> {
-    await this.ensurePDFTronInitialized()
-
     const pdfFileName = originalFileName.replace(
       /\.(docx|doc|xlsx|xls|pptx|ppt)$/i,
       '.pdf',
     )
 
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'office-convert-'))
-    const inputPath = path.join(tempDir, originalFileName)
-    const outputPath = path.join(tempDir, pdfFileName)
-
     try {
-      logger.log(
-        `[PDFTron] Starting Office to PDF conversion for: ${originalFileName}`,
-      )
+      logger.log(`Converting to PDF: ${originalFileName}`)
 
-      // Write input buffer to temporary file
-      await fs.writeFile(inputPath, docxBuffer)
-      logger.log('[PDFTron] Input file written to temporary path')
+      const pdfBuffer = await wordToPDF(docxBuffer)
 
-      // Convert Office document to PDF using PDFTron
-      await PDFNet.runWithCleanup(async () => {
-        const pdfdoc = await PDFNet.PDFDoc.create()
-        await pdfdoc.initSecurityHandler()
-
-        // Use Convert class to convert Office formats to PDF
-        await PDFNet.Convert.toPdf(pdfdoc, inputPath)
-
-        await pdfdoc.save(outputPath, PDFNet.SDFDoc.SaveOptions.e_linearized)
-        logger.log(`[PDFTron] Office document converted to PDF: ${outputPath}`)
-      })
-
-      // Read the converted PDF file
-      const pdfBuffer = await fs.readFile(outputPath)
-      logger.log(
-        `[PDFTron] PDF conversion successful, size: ${pdfBuffer.length} bytes`,
-      )
+      logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)
 
       return {
-        pdfBuffer,
+        pdfBuffer: Buffer.from(pdfBuffer),
         fileName: pdfFileName,
       }
-    } catch (error) {
-      logger.error(`[PDFTron] Error converting Office to PDF: ${error.message}`)
-      logger.error(`[PDFTron] Error stack: ${error.stack}`)
-      throw new Error(`Failed to convert Office to PDF: ${error.message}`)
-    } finally {
-      // Clean up temporary files
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true })
-        logger.log(`[PDFTron] Temporary directory cleaned up: ${tempDir}`)
-      } catch (cleanupError) {
-        logger.warn(
-          `[PDFTron] Failed to clean up temporary directory: ${cleanupError.message}`,
-        )
-      }
+    } catch (error: any) {
+      logger.error(`PDF conversion failed: ${error.message}`)
+      throw new Error(`Failed to convert to PDF: ${error.message}`)
     }
   }
 
+  /**
+   * XFDF annotatsiyalarni PDF ichiga birlashtirish va flatten qilish.
+   * DocVerse flattenXFDF funksiyasi — temp fayl kerak emas, memory'da ishlaydi.
+   */
   static async mergeXfdfToPdf(
     pdfBuffer: Buffer,
     xfdfBuffer: Buffer,
     originalFileName: string,
   ): Promise<ConversionResult> {
-    await this.ensurePDFTronInitialized()
-
-    // Tozalangan nom — "merged-" prefixlarini olib tashlash
     const cleanName = originalFileName.replace(/^(merged-)+/g, '')
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'xfdf-merge-'))
-    const pdfPath = path.join(tempDir, 'input.pdf')
-    const xfdfPath = path.join(tempDir, 'annotations.xfdf')
-    const outputPdfPath = path.join(tempDir, cleanName)
 
     try {
-      logger.log(`Starting XFDF merge for: ${originalFileName}`)
+      logger.log(`XFDF merge: ${originalFileName}`)
 
-      // Write buffers to temporary files
-      await fs.writeFile(pdfPath, pdfBuffer)
-      await fs.writeFile(xfdfPath, xfdfBuffer)
-      logger.log('PDF and XFDF files written to temporary paths')
+      const xfdfString = xfdfBuffer.toString('utf-8')
+      const mergedPdf = await flattenXFDF(pdfBuffer, xfdfString)
 
-      // Merge XFDF annotations into PDF using PDFTron
-      await PDFNet.runWithCleanup(async () => {
-        const pdfdoc = await PDFNet.PDFDoc.createFromFilePath(pdfPath)
-        await pdfdoc.initSecurityHandler()
-
-        // Import XFDF annotations
-        const fdfDoc = await PDFNet.FDFDoc.createFromXFDF(xfdfPath)
-        await pdfdoc.fdfMerge(fdfDoc)
-
-        // Flatten annotations to make them part of the PDF content
-        await pdfdoc.flattenAnnotations()
-
-        await pdfdoc.save(outputPdfPath, PDFNet.SDFDoc.SaveOptions.e_linearized)
-        logger.log(`XFDF merged into PDF successfully: ${outputPdfPath}`)
-      })
-
-      // Read the merged PDF file
-      const mergedPdfBuffer = await fs.readFile(outputPdfPath)
-      logger.log(
-        `Merged PDF buffer read successfully, size: ${mergedPdfBuffer.length} bytes`,
-      )
+      logger.log(`XFDF merged: ${mergedPdf.length} bytes`)
 
       return {
-        pdfBuffer: mergedPdfBuffer,
+        pdfBuffer: Buffer.from(mergedPdf),
         fileName: cleanName,
       }
-    } catch (error) {
-      logger.error(`Error merging XFDF to PDF: ${error.message}`)
-      logger.error(`Error stack: ${error.stack}`)
-      throw new Error(`Failed to merge XFDF to PDF: ${error.message}`)
-    } finally {
-      // Clean up temporary files
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true })
-        logger.log(`Temporary directory cleaned up: ${tempDir}`)
-      } catch (cleanupError) {
-        logger.warn(
-          `Failed to clean up temporary directory: ${cleanupError.message}`,
-        )
-      }
+    } catch (error: any) {
+      logger.error(`XFDF merge failed: ${error.message}`)
+      throw new Error(`Failed to merge XFDF: ${error.message}`)
     }
+  }
+
+  /**
+   * PDF'ga watermark qo'shish.
+   */
+  static async addWatermark(
+    pdfBuffer: Buffer,
+    text: string,
+    options?: { fontSize?: number; rotation?: number; opacity?: number },
+  ): Promise<Buffer> {
+    try {
+      const doc = await PDFDocument.load(pdfBuffer)
+      doc.addWatermark(text, {
+        fontSize: options?.fontSize || 48,
+        rotation: options?.rotation || 45,
+        r: 200,
+        g: 200,
+        b: 200,
+        a: options?.opacity ? Math.round(options.opacity * 255) : 80,
+      })
+      const result = doc.save()
+      doc.close()
+      return Buffer.from(result)
+    } catch (error: any) {
+      logger.error(`Watermark failed: ${error.message}`)
+      throw error
+    }
+  }
+
+  /**
+   * PDF sahifalar sonini olish.
+   */
+  static async getPageCount(pdfBuffer: Buffer): Promise<number> {
+    const doc = await PDFDocument.load(pdfBuffer)
+    const count = doc.getPageCount()
+    doc.close()
+    return count
+  }
+
+  /**
+   * PDF'dan matn ajratib olish.
+   */
+  static async extractText(pdfBuffer: Buffer, pageIndex = 0): Promise<string> {
+    const doc = await PDFDocument.load(pdfBuffer)
+    const text = doc.extractText(pageIndex)
+    doc.close()
+    return text
+  }
+
+  /**
+   * PDF sahifani PNG rasmga aylantirish (thumbnail uchun).
+   */
+  static async renderPageToPng(
+    pdfBuffer: Buffer,
+    pageIndex = 0,
+    width = 300,
+  ): Promise<Buffer> {
+    const doc = await PDFDocument.load(pdfBuffer)
+    const png = await doc.generateThumbnail(pageIndex, width, 'png', 90)
+    doc.close()
+    return png
+  }
+
+  /**
+   * Imzolarni tekshirish.
+   */
+  static async verifySignatures(pdfBuffer: Buffer) {
+    const doc = await PDFDocument.load(pdfBuffer)
+    const count = doc.getSignatureCount()
+    const results = []
+    for (let i = 0; i < count; i++) {
+      results.push(doc.verifySignature(i, pdfBuffer))
+    }
+    doc.close()
+    return { count, results, tampered: results.some((r) => !r.integrityValid) }
+  }
+
+  /**
+   * PDF'ga elektron imzo qo'yish.
+   */
+  static async signPdf(
+    pdfBuffer: Buffer,
+    options: {
+      cert: string
+      key: string
+      reason?: string
+      location?: string
+      pageIndex?: number
+      rect?: { left: number; bottom: number; right: number; top: number }
+    },
+  ): Promise<Buffer> {
+    const doc = await PDFDocument.load(pdfBuffer)
+    const signed = await doc.sign({
+      cert: options.cert,
+      key: options.key,
+      reason: options.reason || 'Tasdiqlandi',
+      location: options.location || 'Tashkent, Uzbekistan',
+      pageIndex: options.pageIndex || 0,
+      rect: options.rect || { left: 50, bottom: 50, right: 250, top: 120 },
+    })
+    doc.close()
+    return Buffer.from(signed)
   }
 }
