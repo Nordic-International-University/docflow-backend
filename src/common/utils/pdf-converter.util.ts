@@ -2,11 +2,12 @@ import { Logger } from '@nestjs/common'
 
 const logger = new Logger('PdfConverter')
 
-// ESM package — dynamic import kerak (CJS proyektda)
+// ESM package — haqiqiy dynamic import kerak (TypeScript require() ga aylantirib yubormasligi uchun)
 let _sdk: any = null
+const importSDK = new Function('return import("@docverse-pdf/server")') as () => Promise<any>
 async function getSDK() {
   if (!_sdk) {
-    _sdk = await import('@docverse-pdf/server')
+    _sdk = await importSDK()
   }
   return _sdk
 }
