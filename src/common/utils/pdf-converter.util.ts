@@ -11,6 +11,21 @@ async function getSDK() {
   return _sdk
 }
 
+// LibreOffice Pool — singleton, 3 ta parallel worker
+let _pool: any = null
+async function getPool() {
+  if (!_pool) {
+    const { LibreOfficePool } = await getSDK()
+    _pool = new LibreOfficePool({
+      workers: 3,
+      convertTimeout: 30000,
+    })
+    await _pool.start()
+    logger.log('LibreOffice pool started (3 workers)')
+  }
+  return _pool
+}
+
 export interface ConversionResult {
   pdfBuffer: Buffer
   fileName: string
@@ -38,11 +53,10 @@ export class PdfConverterUtil {
 
     try {
       logger.log(`Converting to PDF: ${originalFileName}`)
-      const { wordToPDF } = await getSDK()
-      // LibreOffice listener mode (port 2002) — 10x tez
-      const pdfBuffer = await wordToPDF(docxBuffer, {
-        socketUrl: 'socket,host=127.0.0.1,port=2002;urp;',
-      })
+      const pool = await getPool()
+      const start = Date.now()
+      const pdfBuffer = await pool.convert(docxBuffer)
+      logger.log(`PDF conversion: ${Date.now() - start}ms`)
 
       logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)
 
