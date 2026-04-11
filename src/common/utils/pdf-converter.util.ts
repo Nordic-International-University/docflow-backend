@@ -12,26 +12,48 @@ async function getSDK() {
   return _sdk
 }
 
-// UnoServer Pool — singleton, warm LibreOffice daemon(lar), ~10x tezroq eski
+// UnoServer Pool — singleton, warm LibreOffice daemon, ~10x tezroq eski
 // LibreOfficePool'dan. Host'da `unoserver` Python paketi bo'lishi shart
 // (pip install unoserver).
+//
+// Diqqat: SDK v1.1.0'da workers > 1 bo'lsa, barcha worker'lar default
+// UNO port 2002 ga soffice spawn qiladi va konfliktga uchraydi (har worker
+// uchun alohida uno-port o'tkaza olmaydi). Shuning uchun default = 1.
+// Kelajakda SDK yangilansa yoki boshqa yechim topilsa, UNO_WORKERS orqali
+// kengaytirish mumkin.
 let _pool: any = null
+let _poolStartPromise: Promise<any> | null = null
 async function getPool() {
-  if (!_pool) {
+  if (_pool) return _pool
+  if (_poolStartPromise) return _poolStartPromise
+  _poolStartPromise = (async () => {
     const { UnoServerPool } = await getSDK()
-    const workers = Number(process.env.UNO_WORKERS ?? 2)
+    const workers = Number(process.env.UNO_WORKERS ?? 1)
     const basePort = Number(process.env.UNO_BASE_PORT ?? 2003)
-    _pool = new UnoServerPool({
+    const pool = new UnoServerPool({
       workers,
       basePort,
       convertTimeout: 60_000,
     })
-    await _pool.start()
+    try {
+      await pool.start()
+    } catch (err: any) {
+      // Broken pool'ni cache'da qoldirmaslik — keyingi chaqiriq qayta urinishi uchun
+      logger.error(`UnoServer pool start failed: ${err?.message}`)
+      try {
+        await pool.stop?.()
+      } catch {}
+      _poolStartPromise = null
+      throw err
+    }
+    _pool = pool
+    _poolStartPromise = null
     logger.log(
-      `UnoServer pool started (${workers} workers, basePort=${basePort})`,
+      `UnoServer pool started (${workers} worker(s), basePort=${basePort})`,
     )
-  }
-  return _pool
+    return pool
+  })()
+  return _poolStartPromise
 }
 
 /**
