@@ -35,7 +35,7 @@
   "dependencies": {
     "@casl/ability": "^6.8.0",
     "@casl/prisma": "^1.6.2",
-    "@docverse-pdf/server": "^1.1.0",
+    "@docverse-pdf/server": "^1.1.1",
     "@nestjs/common": "^11.0.12",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.12",
