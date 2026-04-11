@@ -22,6 +22,13 @@ import { ROLE_NAMES } from '@constants'
 import { isAdmin } from '@common/helpers'
 
 import { parsePagination } from '@common/helpers'
+import { PdfConverterUtil } from '@common/utils/pdf-converter.util'
+import { setCachedPdf } from '@common/utils/pdf-conversion-cache'
+
+const DOCX_MIMETYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+])
 @Injectable()
 export class AttachmentService {
   private readonly logger = new Logger(AttachmentService.name)
@@ -337,6 +344,27 @@ export class AttachmentService {
       },
     })
 
+    // DOCX → PDF pre-convert optimizatsiyasi.
+    // Faqat DOCX/DOC mimetype uchun ishlaydi — boshqa fayl turlariga (PDF, rasm,
+    // va h.k.) hech qanday ta'siri yo'q. Gotenberg chaqirig'i xato bersa,
+    // xato log qilinadi va yutiladi — attachment upload aynan shu bilan fail
+    // bo'lmaydi. DocumentService.convertDocxToPdfForDocument fallback sifatida
+    // MinIO'dan qayta yuklab olishda davom etadi (eski xulq saqlanib qoladi).
+    if (
+      DOCX_MIMETYPES.has(payload.file.mimetype) &&
+      Buffer.isBuffer(payload.file.buffer)
+    ) {
+      await this.preconvertDocxToPdf(
+        attachment.id,
+        payload.file.buffer,
+        decodedFileName,
+      ).catch((err) => {
+        this.logger.warn(
+          `DOCX pre-convert failed (safe fallback to on-demand path): ${err?.message}`,
+        )
+      })
+    }
+
     return {
       id: attachment.id,
       fileName: attachment.fileName,
@@ -344,6 +372,46 @@ export class AttachmentService {
       fileSize: attachment.fileSize,
       mimeType: attachment.mimeType,
     }
+  }
+
+  /**
+   * DOCX bufferini darhol PDF'ga aylantirib, MinIO'ga yuklash va natijani
+   * in-memory cache'ga joylash. Bu usul attachment upload request'ining
+   * ichida chaqiriladi — buffer hali memory'da turganda — shuning uchun
+   * MinIO'dan qayta yuklab olish kerak emas.
+   *
+   * Xato bersa throw qiladi (chaqiruvchi catch qiladi va yutadi).
+   */
+  private async preconvertDocxToPdf(
+    attachmentId: string,
+    docxBuffer: Buffer,
+    originalFileName: string,
+  ): Promise<void> {
+    const t0 = Date.now()
+    const { pdfBuffer, fileName: pdfFileName } =
+      await PdfConverterUtil.convertDocxToPdf(docxBuffer, originalFileName)
+    const tConvert = Date.now() - t0
+
+    const sanitized = this.#_minio.sanitizeFileName(pdfFileName)
+    const pdfKey = `attachments/${Date.now()}-${sanitized}`
+
+    const tUploadStart = Date.now()
+    await this.#_minio.putFile(pdfKey, pdfBuffer, 'application/pdf')
+    const tUpload = Date.now() - tUploadStart
+
+    const pdfUrl = this.#_minio.buildFileUrl(pdfKey)
+
+    setCachedPdf(attachmentId, {
+      pdfUrl,
+      pdfFileName,
+      pdfFileSize: pdfBuffer.length,
+    })
+
+    this.logger.log(
+      `[preconvert] attachment=${attachmentId} ` +
+        `convert=${tConvert}ms minio-upload=${tUpload}ms ` +
+        `pdf=${(pdfBuffer.length / 1024).toFixed(1)}KB cached`,
+    )
   }
 
   async attachmentUpdate(payload: AttachmentUpdateRequest): Promise<void> {
