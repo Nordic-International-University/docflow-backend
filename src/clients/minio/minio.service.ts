@@ -13,11 +13,15 @@ export class MinioService implements OnModuleInit {
     this.bucketName = process.env.MINIO_BUCKET || 'docflow-files'
     this.cdnBaseUrl = process.env.CDN_BASE_URL || `https://${process.env.MINIO_ENDPOINT || 'cdn.nordicuniversity.org'}/${this.bucketName}`
 
+    const minioPort = process.env.MINIO_PORT
+      ? parseInt(process.env.MINIO_PORT, 10)
+      : undefined
     this.minioClient = new Minio.Client({
       endPoint: process.env.MINIO_ENDPOINT || 'cdn.nordicuniversity.org',
       useSSL: process.env.MINIO_USE_SSL !== 'false',
       accessKey: process.env.MINIO_ACCESS_KEY || '',
       secretKey: process.env.MINIO_SECRET_KEY || '',
+      ...(minioPort ? { port: minioPort } : {}),
     })
   }
 
