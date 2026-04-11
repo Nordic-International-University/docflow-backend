@@ -114,6 +114,20 @@ export class WorkflowService {
     })
     if (!document) return
 
+    // OPTIMIZATION: DocumentService.convertDocxToPdfForDocument hujjat
+    // yaratilganda allaqachon DOCX → PDF konvertatsiyasini bajarib,
+    // document.pdfUrl'ni yangilagan bo'ladi. Workflow yaratish paytida
+    // aynan shu ishni takrorlash — ~9s MinIO download + ~2s Gotenberg
+    // chaqirig'i — tamoman behuda. Agar PDF allaqachon mavjud bo'lsa
+    // darhol qaytish. Eski "freeze" logikasi faqat PDF yo'q bo'lgan
+    // edge-case'lar uchun fallback sifatida saqlanadi.
+    if (document.pdfUrl) {
+      this.logger.log(
+        `Document ${documentId} already has pdfUrl — skipping freeze conversion (reuse)`,
+      )
+      return
+    }
+
     const officeAttachment = document.attachments.find((a) =>
       OFFICE_MIME_TYPES.includes(a.mimeType),
     )
