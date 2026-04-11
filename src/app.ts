@@ -71,21 +71,26 @@ console.log('Sandbox mode is active.')
       }),
     }),
     // Rate limiting — brute force va DoS himoyasi
+    // Eslatma: barcha 3 profil har requestga parallel qo'llanadi, shuning uchun
+    // eng past limit (short) global "bottleneck" bo'ladi. Dashboard bitta sahifada
+    // 5-8 parallel so'rov yuboradi, navigatsiya + refresh bilan 100+/min oson chiqadi.
+    // Qattiqroq cheklov kerak bo'lsa — endpointga `@Throttle({ short: { ttl, limit } })`
+    // dekoratori orqali lokal override qilinadi (masalan, auth.controller.ts).
     ThrottlerModule.forRoot([
       {
-        name: 'short',   // qisqa muddatli — login/auth uchun
+        name: 'short',   // burst himoyasi
         ttl: 60000,       // 1 daqiqa oynasi
-        limit: 10,        // 10 so'rov / daqiqa
+        limit: 200,       // 200 so'rov / daqiqa
       },
       {
-        name: 'medium',  // o'rtacha — oddiy API uchun
+        name: 'medium',  // oddiy API
         ttl: 60000,
-        limit: 60,        // 60 so'rov / daqiqa
+        limit: 500,       // 500 so'rov / daqiqa
       },
       {
-        name: 'long',    // uzun — list/read uchun
+        name: 'long',    // list/read ko'p chaqiriluvchi endpointlar
         ttl: 60000,
-        limit: 120,       // 120 so'rov / daqiqa
+        limit: 1500,      // 1500 so'rov / daqiqa
       },
     ]),
     MulterModule.register({
