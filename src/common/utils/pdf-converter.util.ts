@@ -12,19 +12,60 @@ async function getSDK() {
   return _sdk
 }
 
-// LibreOffice Pool — singleton, 3 ta parallel worker
+// UnoServer Pool — singleton, warm LibreOffice daemon(lar), ~10x tezroq eski
+// LibreOfficePool'dan. Host'da `unoserver` Python paketi bo'lishi shart
+// (pip install unoserver).
 let _pool: any = null
 async function getPool() {
   if (!_pool) {
-    const { LibreOfficePool } = await getSDK()
-    _pool = new LibreOfficePool({
-      workers: 3,
-      convertTimeout: 30000,
+    const { UnoServerPool } = await getSDK()
+    const workers = Number(process.env.UNO_WORKERS ?? 2)
+    const basePort = Number(process.env.UNO_BASE_PORT ?? 2003)
+    _pool = new UnoServerPool({
+      workers,
+      basePort,
+      convertTimeout: 60_000,
     })
     await _pool.start()
-    logger.log('LibreOffice pool started (3 workers)')
+    logger.log(
+      `UnoServer pool started (${workers} workers, basePort=${basePort})`,
+    )
   }
   return _pool
+}
+
+/**
+ * Pool'ni to'xtatish — graceful shutdown uchun `main.ts`'dan chaqiriladi.
+ * Chaqirilmasa, daemon orphan bo'lib qoladi va port band bo'ladi.
+ */
+export async function stopPdfConverterPool(): Promise<void> {
+  if (!_pool) return
+  try {
+    await _pool.stop()
+    logger.log('UnoServer pool stopped')
+  } catch (e: any) {
+    logger.error(`UnoServer pool stop failed: ${e?.message}`)
+  } finally {
+    _pool = null
+  }
+}
+
+/**
+ * Health/readiness probe uchun pool statistikasi.
+ * { workers, ready, busy, queued } qaytaradi.
+ */
+export function getPdfConverterPoolStats(): {
+  workers: number
+  ready: number
+  busy: number
+  queued: number
+} | null {
+  if (!_pool) return null
+  try {
+    return _pool.getStats()
+  } catch {
+    return null
+  }
 }
 
 export interface ConversionResult {
@@ -41,7 +82,7 @@ export interface ConversionResult {
 export class PdfConverterUtil {
   /**
    * Office hujjatni (DOCX/XLSX/PPTX) → PDF ga aylantirish.
-   * LibreOfficePool orqali (3 parallel worker).
+   * UnoServerPool orqali — warm LibreOffice daemon'lar bilan ~200–500ms.
    */
   static async convertDocxToPdf(
     docxBuffer: Buffer,
@@ -56,7 +97,7 @@ export class PdfConverterUtil {
       logger.log(`Converting to PDF: ${originalFileName}`)
       const pool = await getPool()
       const start = Date.now()
-      const pdfBuffer = await pool.convert(docxBuffer)
+      const pdfBuffer = await pool.convert(docxBuffer, 'pdf')
       logger.log(`PDF conversion: ${Date.now() - start}ms`)
 
       logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)

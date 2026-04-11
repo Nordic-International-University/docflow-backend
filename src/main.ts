@@ -1,10 +1,11 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common'
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { App } from './app'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { HttpExceptionFilter } from './filters/http-exception.filter'
 import { ResponseInterceptor } from '@common'
+import { stopPdfConverterPool } from './common/utils/pdf-converter.util'
 
 setImmediate(async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(App)
@@ -58,4 +59,25 @@ setImmediate(async (): Promise<void> => {
 
   const port = parseInt(process.env.PORT || '5072', 10)
   await app.listen(port, '0.0.0.0')
+
+  // Graceful shutdown — UnoServerPool daemon'larini to'xtatib, portlarni bo'shatish.
+  // Bularsiz pm2 restart'dan keyin unoserver daemon'lari orphan bo'lib qoladi
+  // va keyingi process port 2003+ ni band ko'radi.
+  const shutdownLogger = new Logger('Shutdown')
+  let shuttingDown = false
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return
+    shuttingDown = true
+    shutdownLogger.log(`Received ${signal}, shutting down…`)
+    try {
+      await stopPdfConverterPool()
+      await app.close()
+    } catch (e: any) {
+      shutdownLogger.error(`Shutdown error: ${e?.message}`)
+    } finally {
+      process.exit(0)
+    }
+  }
+  process.on('SIGTERM', () => void shutdown('SIGTERM'))
+  process.on('SIGINT', () => void shutdown('SIGINT'))
 })
