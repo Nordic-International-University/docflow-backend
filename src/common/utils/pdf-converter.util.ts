@@ -115,21 +115,38 @@ export class PdfConverterUtil {
       '.pdf',
     )
 
+    const inKB = (docxBuffer.length / 1024).toFixed(1)
+    const t0 = Date.now()
     try {
-      logger.log(`Converting to PDF: ${originalFileName}`)
-      const pool = await getPool()
-      const start = Date.now()
-      const pdfBuffer = await pool.convert(docxBuffer, 'pdf')
-      logger.log(`PDF conversion: ${Date.now() - start}ms`)
+      logger.log(`[docx→pdf] START file="${originalFileName}" size=${inKB}KB`)
 
-      logger.log(`PDF conversion done: ${pdfBuffer.length} bytes`)
+      const tPoolStart = Date.now()
+      const pool = await getPool()
+      const tPool = Date.now() - tPoolStart
+      const statsBefore = pool.getStats?.() ?? null
+
+      const tConvStart = Date.now()
+      const pdfBuffer = await pool.convert(docxBuffer, 'pdf')
+      const tConv = Date.now() - tConvStart
+
+      const outKB = (pdfBuffer.length / 1024).toFixed(1)
+      const total = Date.now() - t0
+      logger.log(
+        `[docx→pdf] DONE file="${originalFileName}" ` +
+          `in=${inKB}KB → out=${outKB}KB ` +
+          `| pool.acquire=${tPool}ms convert=${tConv}ms total=${total}ms ` +
+          `| stats-before=${JSON.stringify(statsBefore)}`,
+      )
 
       return {
         pdfBuffer: Buffer.from(pdfBuffer),
         fileName: pdfFileName,
       }
     } catch (error: any) {
-      logger.error(`PDF conversion failed: ${error.message}`)
+      const total = Date.now() - t0
+      logger.error(
+        `[docx→pdf] FAIL file="${originalFileName}" in=${inKB}KB total=${total}ms error=${error?.message}`,
+      )
       throw new Error(`Failed to convert to PDF: ${error.message}`)
     }
   }
@@ -145,20 +162,41 @@ export class PdfConverterUtil {
   ): Promise<ConversionResult> {
     const cleanName = originalFileName.replace(/^(merged-)+/g, '')
 
+    const pdfKB = (pdfBuffer.length / 1024).toFixed(1)
+    const xfdfKB = (xfdfBuffer.length / 1024).toFixed(1)
+    const t0 = Date.now()
     try {
-      logger.log(`XFDF merge: ${originalFileName}`)
-      const { flattenXFDF } = await getSDK()
-      const xfdfString = xfdfBuffer.toString('utf-8')
-      const mergedPdf = await flattenXFDF(pdfBuffer, xfdfString)
+      logger.log(
+        `[xfdf-merge] START file="${originalFileName}" pdf=${pdfKB}KB xfdf=${xfdfKB}KB`,
+      )
 
-      logger.log(`XFDF merged: ${mergedPdf.length} bytes`)
+      const tSdkStart = Date.now()
+      const { flattenXFDF } = await getSDK()
+      const tSdk = Date.now() - tSdkStart
+
+      const xfdfString = xfdfBuffer.toString('utf-8')
+
+      const tMergeStart = Date.now()
+      const mergedPdf = await flattenXFDF(pdfBuffer, xfdfString)
+      const tMerge = Date.now() - tMergeStart
+
+      const outKB = (mergedPdf.length / 1024).toFixed(1)
+      const total = Date.now() - t0
+      logger.log(
+        `[xfdf-merge] DONE file="${originalFileName}" ` +
+          `pdf=${pdfKB}KB + xfdf=${xfdfKB}KB → out=${outKB}KB ` +
+          `| sdk.load=${tSdk}ms merge=${tMerge}ms total=${total}ms`,
+      )
 
       return {
         pdfBuffer: Buffer.from(mergedPdf),
         fileName: cleanName,
       }
     } catch (error: any) {
-      logger.error(`XFDF merge failed: ${error.message}`)
+      const total = Date.now() - t0
+      logger.error(
+        `[xfdf-merge] FAIL file="${originalFileName}" pdf=${pdfKB}KB xfdf=${xfdfKB}KB total=${total}ms error=${error?.message}`,
+      )
       throw new Error(`Failed to merge XFDF: ${error.message}`)
     }
   }
