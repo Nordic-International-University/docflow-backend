@@ -5,7 +5,7 @@ import { App } from './app'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { HttpExceptionFilter } from './filters/http-exception.filter'
 import { ResponseInterceptor } from '@common'
-import { stopPdfConverterPool } from './common/utils/pdf-converter.util'
+import { warmPdfConverter } from './common/utils/pdf-converter.util'
 
 setImmediate(async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(App)
@@ -60,9 +60,13 @@ setImmediate(async (): Promise<void> => {
   const port = parseInt(process.env.PORT || '5072', 10)
   await app.listen(port, '0.0.0.0')
 
-  // Graceful shutdown — UnoServerPool daemon'larini to'xtatib, portlarni bo'shatish.
-  // Bularsiz pm2 restart'dan keyin unoserver daemon'lari orphan bo'lib qoladi
-  // va keyingi process port 2003+ ni band ko'radi.
+  // Gotenberg ping — fire-and-forget, bloklamasdan health'ni log qiladi.
+  // Muvaffaqiyatsiz bo'lsa backend shunchaki warning chiqaradi, boshqa
+  // API'lar ishlayveradi; faqat PDF konversiya endpointlari fail bo'ladi.
+  void warmPdfConverter()
+
+  // Graceful shutdown — GotenbergClient stateless, maxsus to'xtatish kerak emas,
+  // faqat NestJS app.close() chaqirib ochiq resurslar (DB, Redis, WS) tozalanadi.
   const shutdownLogger = new Logger('Shutdown')
   let shuttingDown = false
   const shutdown = async (signal: string) => {
@@ -70,7 +74,6 @@ setImmediate(async (): Promise<void> => {
     shuttingDown = true
     shutdownLogger.log(`Received ${signal}, shutting down…`)
     try {
-      await stopPdfConverterPool()
       await app.close()
     } catch (e: any) {
       shutdownLogger.error(`Shutdown error: ${e?.message}`)

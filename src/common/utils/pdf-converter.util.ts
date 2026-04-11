@@ -12,81 +12,51 @@ async function getSDK() {
   return _sdk
 }
 
-// UnoServer Pool — singleton, warm LibreOffice daemon(lar), ~10x tezroq eski
-// LibreOfficePool'dan. Host'da `unoserver` Python paketi bo'lishi shart
-// (pip install unoserver).
-//
-// SDK v1.1.1'da multi-worker to'liq qo'llab-quvvatlanadi: har worker o'z RPC
-// portiga (basePort+i, default 2003,2004,...) va o'z LibreOffice UNO socketiga
-// (unoBasePort+i, default 2100,2101,...) ega bo'ladi.
-let _pool: any = null
-let _poolStartPromise: Promise<any> | null = null
-async function getPool() {
-  if (_pool) return _pool
-  if (_poolStartPromise) return _poolStartPromise
-  _poolStartPromise = (async () => {
-    const { UnoServerPool } = await getSDK()
-    const workers = Number(process.env.UNO_WORKERS ?? 2)
-    const basePort = Number(process.env.UNO_BASE_PORT ?? 2003)
-    const unoBasePort = Number(process.env.UNO_BASE_UNO_PORT ?? 2100)
-    const pool = new UnoServerPool({
-      workers,
-      basePort,
-      unoBasePort,
-      convertTimeout: 60_000,
-    })
-    try {
-      await pool.start()
-    } catch (err: any) {
-      // Broken pool'ni cache'da qoldirmaslik — keyingi chaqiriq qayta urinishi uchun
-      logger.error(`UnoServer pool start failed: ${err?.message}`)
-      try {
-        await pool.stop?.()
-      } catch {}
-      _poolStartPromise = null
-      throw err
-    }
-    _pool = pool
-    _poolStartPromise = null
-    logger.log(
-      `UnoServer pool started (${workers} worker(s), rpc=${basePort}+, uno=${unoBasePort}+)`,
-    )
-    return pool
-  })()
-  return _poolStartPromise
+// Gotenberg client — stateless HTTP client. Start/stop yo'q, instance arzon —
+// bitta singleton boot paytida yaratiladi va HTTP keep-alive'ni qayta ishlatadi.
+// Docker konteyner: gotenberg/gotenberg:8 (odatda localhost:3001 yoki ichki
+// service name:3000).
+let _client: any = null
+async function getClient() {
+  if (_client) return _client
+  const { GotenbergClient } = await getSDK()
+  const url = process.env.GOTENBERG_URL || 'http://localhost:3001'
+  const timeout = Number(process.env.GOTENBERG_TIMEOUT_MS ?? 120_000)
+  _client = new GotenbergClient({ url, timeout })
+  logger.log(`Gotenberg client initialized (url=${url}, timeout=${timeout}ms)`)
+  return _client
 }
 
 /**
- * Pool'ni to'xtatish — graceful shutdown uchun `main.ts`'dan chaqiriladi.
- * Chaqirilmasa, daemon orphan bo'lib qoladi va port band bo'ladi.
+ * Gotenberg servisining mavjudligini tekshirish (readiness probe uchun).
+ * Boot vaqtida ogohlantirish va /healthz endpoint uchun ishlatilishi mumkin.
  */
-export async function stopPdfConverterPool(): Promise<void> {
-  if (!_pool) return
+export async function pingGotenberg(timeoutMs = 3000): Promise<boolean> {
   try {
-    await _pool.stop()
-    logger.log('UnoServer pool stopped')
-  } catch (e: any) {
-    logger.error(`UnoServer pool stop failed: ${e?.message}`)
-  } finally {
-    _pool = null
+    const client = await getClient()
+    return await client.ping(timeoutMs)
+  } catch {
+    return false
   }
 }
 
 /**
- * Health/readiness probe uchun pool statistikasi.
- * { workers, ready, busy, queued } qaytaradi.
+ * Boot vaqtida Gotenberg client'ni lazy-init qilish va health check qilish.
+ * Muvaffaqiyatsiz bo'lsa ham throw qilmaydi — boshqa API endpointlari ishlayveradi,
+ * faqat PDF konversiyalari fail bo'ladi. Konsolga warning chiqariladi.
  */
-export function getPdfConverterPoolStats(): {
-  workers: number
-  ready: number
-  busy: number
-  queued: number
-} | null {
-  if (!_pool) return null
+export async function warmPdfConverter(): Promise<void> {
   try {
-    return _pool.getStats()
-  } catch {
-    return null
+    const ok = await pingGotenberg(5000)
+    if (ok) {
+      logger.log('Gotenberg is reachable — PDF conversion ready')
+    } else {
+      logger.warn(
+        'Gotenberg is NOT reachable — PDF conversions will fail. Check GOTENBERG_URL and container status.',
+      )
+    }
+  } catch (e: any) {
+    logger.warn(`Gotenberg warmup failed: ${e?.message}`)
   }
 }
 
@@ -103,15 +73,15 @@ export interface ConversionResult {
  */
 export class PdfConverterUtil {
   /**
-   * Office hujjatni (DOCX/XLSX/PPTX) → PDF ga aylantirish.
-   * UnoServerPool orqali — warm LibreOffice daemon'lar bilan ~200–500ms.
+   * Office hujjatni (DOCX/XLSX/PPTX/ODT/RTF/...) → PDF ga aylantirish.
+   * Gotenberg (LibreOffice route) orqali — HTTP multipart POST.
    */
   static async convertDocxToPdf(
     docxBuffer: Buffer,
     originalFileName: string,
   ): Promise<ConversionResult> {
     const pdfFileName = originalFileName.replace(
-      /\.(docx|doc|xlsx|xls|pptx|ppt)$/i,
+      /\.(docx|doc|xlsx|xls|pptx|ppt|odt|rtf)$/i,
       '.pdf',
     )
 
@@ -120,13 +90,14 @@ export class PdfConverterUtil {
     try {
       logger.log(`[docx→pdf] START file="${originalFileName}" size=${inKB}KB`)
 
-      const tPoolStart = Date.now()
-      const pool = await getPool()
-      const tPool = Date.now() - tPoolStart
-      const statsBefore = pool.getStats?.() ?? null
+      const tClientStart = Date.now()
+      const client = await getClient()
+      const tClient = Date.now() - tClientStart
 
       const tConvStart = Date.now()
-      const pdfBuffer = await pool.convert(docxBuffer, 'pdf')
+      const pdfBuffer = await client.convert(docxBuffer, {
+        filename: originalFileName,
+      })
       const tConv = Date.now() - tConvStart
 
       const outKB = (pdfBuffer.length / 1024).toFixed(1)
@@ -134,8 +105,7 @@ export class PdfConverterUtil {
       logger.log(
         `[docx→pdf] DONE file="${originalFileName}" ` +
           `in=${inKB}KB → out=${outKB}KB ` +
-          `| pool.acquire=${tPool}ms convert=${tConv}ms total=${total}ms ` +
-          `| stats-before=${JSON.stringify(statsBefore)}`,
+          `| client.acquire=${tClient}ms convert=${tConv}ms total=${total}ms`,
       )
 
       return {
