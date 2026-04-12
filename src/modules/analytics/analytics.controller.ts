@@ -26,7 +26,6 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get overall dashboard analytics' })
   @ApiResponse({
     status: 200,
@@ -48,7 +47,6 @@ export class AnalyticsController {
   }
 
   @Get('documents')
-  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get document-specific analytics' })
   @ApiResponse({
     status: 200,
@@ -62,7 +60,6 @@ export class AnalyticsController {
   }
 
   @Get('workflows')
-  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get workflow analytics' })
   @ApiResponse({
     status: 200,
@@ -76,7 +73,6 @@ export class AnalyticsController {
   }
 
   @Get('users')
-  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({ summary: 'Get user activity analytics' })
   @ApiResponse({
     status: 200,
@@ -90,7 +86,6 @@ export class AnalyticsController {
   }
 
   @Get('kpi')
-  @Permissions(PERMISSIONS.ADMIN.VIEW_ANALYTICS)
   @ApiOperation({
     summary: "To'liq KPI statistikasi (dashboard uchun)",
     description:
