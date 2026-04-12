@@ -11,6 +11,8 @@ import {
   JournalRetrieveOneResponse,
 } from './interfaces'
 import { parsePagination } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+import type { AppAbility } from '../../casl/casl.types'
 
 @Injectable()
 export class JournalService {
@@ -19,14 +21,23 @@ export class JournalService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  async journalRetrieveAll(payload): Promise<JournalRetrieveAllResponse> {
+  async journalRetrieveAll(
+    payload: { pageNumber?: number; pageSize?: number; search?: string; ability?: AppAbility },
+  ): Promise<JournalRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
     const search = payload.search ? payload.search : undefined
 
+    // ABAC: department hierarchy bo'yicha filter
+    // Admin → hamma, DeptHead → o'z + subordinate depts, Regular → o'z dept only
+    const abilityFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').Journal
+      : {}
+
     const journalList = await this.prisma.journal.findMany({
       where: {
         deletedAt: null,
+        ...abilityFilter,
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
@@ -63,6 +74,7 @@ export class JournalService {
     const total = await this.prisma.journal.count({
       where: {
         deletedAt: null,
+        ...abilityFilter,
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },

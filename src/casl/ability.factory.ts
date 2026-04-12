@@ -57,6 +57,7 @@ export class AbilityFactory {
       can('manage', 'User')
       can('manage', 'Attachment')
       can('manage', 'Notification')
+      can('manage', 'Journal')
 
       // APPROVED/ARCHIVED hujjatlar immutable
       cannot('update', 'Document', { status: 'APPROVED' })
@@ -222,6 +223,34 @@ export class AbilityFactory {
     can('delete', 'ChatMessage', { senderId: user.id })
     can('forward', 'ChatMessage')
     can('call', 'Chat')
+
+    // ════════════════════════════════════════════
+    //  JOURNAL — department hierarchy bo'yicha
+    // ════════════════════════════════════════════
+
+    // Read — o'z bo'limining jurnali
+    if (user.departmentId) {
+      can('read', 'Journal', { departmentId: user.departmentId })
+    }
+
+    // Read — global jurnallar (departmentId null)
+    can('read', 'Journal', { departmentId: null } as any)
+
+    // Read — mas'ul shaxs sifatida
+    can('read', 'Journal', { responsibleUserId: user.id })
+
+    // Read + manage — dept head subordinate bo'limlar jurnallari
+    if (isDeptHead && subordinateDeptIds.length > 0) {
+      can('read', 'Journal', {
+        departmentId: { in: subordinateDeptIds },
+      } as any)
+      can('manage', 'Journal', {
+        departmentId: { in: subordinateDeptIds },
+      } as any)
+    }
+
+    // Manage — o'zi mas'ul bo'lgan jurnal
+    can('manage', 'Journal', { responsibleUserId: user.id })
 
     // ════════════════════════════════════════════
     //  NOTIFICATION — faqat o'ziniki

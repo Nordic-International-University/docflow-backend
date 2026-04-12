@@ -19,6 +19,7 @@ import {
   User,
   Attachment,
   Notification,
+  Journal,
 } from '@prisma/client'
 
 /** ABAC action'lar — CRUD + domain-specific */
@@ -51,6 +52,7 @@ export type AppSubjects = Subjects<{
   User: User
   Attachment: Attachment
   Notification: Notification
+  Journal: Journal
 }>
 
 /** Main ability type — barcha joyda shu ishlatiladi */

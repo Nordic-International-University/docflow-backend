@@ -33,10 +33,11 @@ import {
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 
 @ApiBearerAuth()
 @ApiTags('Journal')
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({
   path: 'journal',
   version: '1',
@@ -46,6 +47,7 @@ export class JournalController {
 
   @Get()
   @Permissions(PERMISSIONS.JOURNAL.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Journal'))
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Retrieve all journals with pagination and search' })
   @ApiResponse({
@@ -76,16 +78,19 @@ export class JournalController {
     @Query('pageNumber') pageNumber?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
+    @Req() req?: any,
   ): Promise<JournalListResponseDto> {
     return this.journalService.journalRetrieveAll({
       pageNumber,
       pageSize,
       search,
+      ability: req?.ability,
     })
   }
 
   @Get(':id')
   @Permissions(PERMISSIONS.JOURNAL.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Journal'))
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Retrieve a single journal by ID' })
   @ApiResponse({
@@ -110,6 +115,7 @@ export class JournalController {
 
   @Post()
   @Permissions(PERMISSIONS.JOURNAL.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'Journal'))
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new journal' })
   @ApiResponse({
@@ -129,6 +135,7 @@ export class JournalController {
 
   @Patch(':id')
   @Permissions(PERMISSIONS.JOURNAL.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'Journal'))
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update an existing journal' })
   @ApiResponse({
@@ -159,6 +166,7 @@ export class JournalController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.JOURNAL.DELETE)
+  @CheckPolicies((ability) => ability.can('delete', 'Journal'))
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a journal' })
   @ApiResponse({
