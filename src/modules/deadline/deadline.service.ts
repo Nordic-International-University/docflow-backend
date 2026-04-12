@@ -18,7 +18,7 @@ interface DeadlineCandidate {
   title: string
   deadline: Date
   assigneeUserIds: string[]
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 @Injectable()

@@ -201,7 +201,7 @@ export class RoleService {
         )
       : []
 
-    const roleUpdateData: Record<string, any> = {}
+    const roleUpdateData: Record<string, unknown> = {}
     if (updateData.name !== undefined) {
       roleUpdateData.name = updateData.name
     }
@@ -248,7 +248,7 @@ export class RoleService {
     }
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingRole.name) {
       changes.name = { old: existingRole.name, new: updateData.name }
     }

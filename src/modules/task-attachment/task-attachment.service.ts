@@ -215,7 +215,7 @@ export class TaskAttachmentService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (
       updateData.description !== undefined &&
       updateData.description !== existingAttachment.description

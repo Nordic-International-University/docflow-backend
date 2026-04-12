@@ -104,5 +104,5 @@ export class DocumentCreateDto implements Omit<
   })
   @IsOptional()
   @IsObject()
-  tags?: Record<string, any>
+  tags?: Record<string, unknown>
 }

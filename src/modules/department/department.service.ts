@@ -240,7 +240,7 @@ export class DepartmentService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingDepartment.name) {
       changes.name = { old: existingDepartment.name, new: updateData.name }
     }

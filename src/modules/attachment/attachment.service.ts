@@ -637,7 +637,7 @@ export class AttachmentService {
       }
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       fileName: payload.fileName,
       fileUrl: payload.fileUrl,
       fileSize: payload.fileSize,

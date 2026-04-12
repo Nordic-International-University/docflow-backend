@@ -421,7 +421,7 @@ export class ProjectService {
       }
     }
 
-    const updatePayload: Record<string, any> = {
+    const updatePayload: Record<string, unknown> = {
       ...updateData,
       updatedAt: new Date(),
     }
@@ -441,7 +441,7 @@ export class ProjectService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingProject.name) {
       changes.name = { old: existingProject.name, new: updateData.name }
     }

@@ -73,7 +73,7 @@ export class KpiRewardTierService {
   async kpiRewardTierRetrieveAll(
     payload: KpiRewardTierRetrieveAllRequest,
   ): Promise<KpiRewardTierRetrieveAllResponse> {
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
       deletedAt: null,
     }
 
@@ -182,7 +182,7 @@ export class KpiRewardTierService {
       throw new NotFoundException('KPI reward tier not found')
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     }
 

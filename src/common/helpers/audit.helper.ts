@@ -7,9 +7,9 @@ export interface AuditLogParams {
   entityId: string
   action: string
   userId: string
-  changes?: Record<string, any>
-  oldValues?: Record<string, any>
-  newValues?: Record<string, any>
+  changes?: Record<string, unknown>
+  oldValues?: Record<string, unknown>
+  newValues?: Record<string, unknown>
   ipAddress?: string
 }
 

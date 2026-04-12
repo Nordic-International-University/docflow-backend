@@ -5,7 +5,7 @@ import PizZip from 'pizzip'
 export class DocumentGeneratorUtil {
   static generateDocumentFromTemplate(
     templateBuffer: Buffer,
-    tags: Record<string, any>,
+    tags: Record<string, unknown>,
   ): Buffer {
     try {
       const zip = new PizZip(templateBuffer)
@@ -29,8 +29,8 @@ export class DocumentGeneratorUtil {
   }
 
   static validateTags(
-    requiredTags: string[] | Record<string, any>,
-    providedTags: Record<string, any>,
+    requiredTags: string[] | Record<string, unknown>,
+    providedTags: Record<string, unknown>,
   ): { valid: boolean; missing: string[] } {
     const requiredTagsList = Array.isArray(requiredTags)
       ? requiredTags

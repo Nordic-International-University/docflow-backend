@@ -1,4 +1,4 @@
-export function withSoftDelete<T extends Record<string, any>>(
+export function withSoftDelete<T extends Record<string, unknown>>(
   where: T,
 ): T & { deletedAt: null } {
   if ('deletedAt' in where) return where as any

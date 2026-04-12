@@ -11,15 +11,15 @@ export interface AiCard {
   id: string
   title: string
   subtitle?: string
-  meta?: Record<string, unknown>
+  meta?: Record<string, any>
   actions?: Array<{ label: string; url: string; external?: boolean }>
 }
 
 /** Logged tool result */
 interface ToolResultLog {
   name: string
-  args: Record<string, unknown>
-  result: Record<string, unknown>
+  args: Record<string, any>
+  result: Record<string, any>
 }
 
 @Injectable()
@@ -192,7 +192,7 @@ AGAR SO'ROV DOCFLOW GA ALOQASI BO'LMASA: "Men faqat DocFlow tizimi bo'yicha yord
       })
 
       for (const tc of response.tool_calls) {
-        const args = JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>
+        const args = JSON.parse(tc.function.arguments || '{}') as Record<string, any>
         const result = await this.tools.executeTool(tc.function.name, args, ctx)
 
         toolResultsLog.push({ name: tc.function.name, args, result })

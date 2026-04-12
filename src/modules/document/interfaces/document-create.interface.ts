@@ -10,7 +10,7 @@ export interface DocumentCreateRequest {
   documentTypeId: string
   journalId: string
   templateId?: string | null
-  tags?: Record<string, any>
+  tags?: Record<string, unknown>
   /** ABAC: department hierarchy — boshliq'ning subordinate deptlari */
   subordinateDeptIds?: string[]
   roleName?: string

@@ -198,7 +198,7 @@ export class BoardColumnService {
     }
 
     // Build update payload
-    const updatePayload: Record<string, any> = {
+    const updatePayload: Record<string, unknown> = {
       updatedAt: new Date(),
     }
 
@@ -227,7 +227,7 @@ export class BoardColumnService {
     })
 
     // Track changes for audit
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingColumn.name) {
       changes.name = { old: existingColumn.name, new: updateData.name }
     }

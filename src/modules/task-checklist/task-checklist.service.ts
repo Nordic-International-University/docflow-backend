@@ -199,7 +199,7 @@ export class TaskChecklistService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.title && updateData.title !== existingChecklist.title) {
       changes.title = { old: existingChecklist.title, new: updateData.title }
     }
@@ -407,7 +407,7 @@ export class TaskChecklistService {
     }
 
     // Handle completion status change
-    const data: Record<string, any> = {
+    const data: Record<string, unknown> = {
       ...updateData,
       updatedAt: new Date(),
     }
@@ -429,7 +429,7 @@ export class TaskChecklistService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.title && updateData.title !== existingItem.title) {
       changes.title = { old: existingItem.title, new: updateData.title }
     }

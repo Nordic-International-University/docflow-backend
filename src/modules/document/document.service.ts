@@ -450,7 +450,7 @@ export class DocumentService {
       }
 
       // O'z bo'limi + subordinate bo'limlar (boshliq bo'lsa)
-      const subordinateDeptIds: string[] = (payload as any).subordinateDeptIds ?? []
+      const subordinateDeptIds: string[] = payload.subordinateDeptIds ?? []
       const allowedDeptIds = new Set([user.departmentId, ...subordinateDeptIds])
 
       if (!allowedDeptIds.has(journal.departmentId)) {

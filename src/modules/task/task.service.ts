@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
-import { TaskPriority } from '@prisma/client'
+import { Prisma, TaskPriority } from '@prisma/client'
 import { NotificationService } from '../notification'
 import { KpiCalculationService } from '../user-monthly-kpi'
 import { TaskGateway } from './task.gateway'
@@ -22,6 +22,7 @@ import {
   parsePagination,
 } from '@common/helpers'
 import { accessibleBy } from '@casl/prisma'
+import type { AppAbility } from '../../casl/casl.types'
 
 @Injectable()
 export class TaskService {
@@ -338,59 +339,52 @@ export class TaskService {
       userId?: string
       roleName?: string
       userDepartmentId?: string
-      ability?: any
+      ability?: AppAbility
     },
   ) {
     const { page, limit, skip } = parsePagination(payload)
 
-    // ABAC: ability borsa CASL, yo'qsa eski manual project visibility filter
-    const projectAccessFilter: any = payload.ability
-      ? accessibleBy(payload.ability, 'read').Task
-      : isAdmin(payload.roleName)
-        ? {}
-        : {
-            project: {
-              OR: [
-                { visibility: 'PUBLIC' },
-                { createdById: payload.userId },
-                { members: { some: { userId: payload.userId } } },
-                ...(payload.userDepartmentId
-                  ? [
-                      {
-                        visibility: 'DEPARTMENT',
-                        departmentId: payload.userDepartmentId,
-                      },
-                    ]
-                  : []),
-              ],
-            },
-          }
+    // Type-safe AND array pattern — har shart alohida push qilinadi
+    const conditions: Prisma.TaskWhereInput[] = [
+      { deletedAt: null },
+      { isArchived: false },
+    ]
 
-    const where: any = {
-      deletedAt: null,
-      isArchived: false,
-      ...projectAccessFilter,
-      ...(payload.search && {
-        OR: [
-          { title: { contains: payload.search, mode: 'insensitive' as const } },
-          {
-            description: {
-              contains: payload.search,
-              mode: 'insensitive' as const,
-            },
-          },
-        ],
-      }),
-      ...(payload.projectId && { projectId: payload.projectId }),
-      ...(payload.priority && { priority: payload.priority as TaskPriority }),
-      ...(payload.assigneeId && {
-        assignees: { some: { userId: payload.assigneeId } },
-      }),
-      ...(payload.createdById && { createdById: payload.createdById }),
-      ...(payload.categoryId && { categoryId: payload.categoryId }),
-      ...(payload.parentTaskId && { parentTaskId: payload.parentTaskId }),
-      ...(payload.boardColumnId && { boardColumnId: payload.boardColumnId }),
+    // ABAC: ability borsa CASL, yo'qsa eski manual project visibility filter
+    if (payload.ability) {
+      conditions.push(accessibleBy(payload.ability, 'read').Task)
+    } else if (!isAdmin(payload.roleName)) {
+      const projectOr: Prisma.ProjectWhereInput[] = [
+        { visibility: 'PUBLIC' },
+        { createdById: payload.userId },
+        { members: { some: { userId: payload.userId } } },
+      ]
+      if (payload.userDepartmentId) {
+        projectOr.push({
+          visibility: 'DEPARTMENT',
+          departmentId: payload.userDepartmentId,
+        })
+      }
+      conditions.push({ project: { OR: projectOr } })
     }
+
+    if (payload.search) {
+      conditions.push({
+        OR: [
+          { title: { contains: payload.search, mode: 'insensitive' } },
+          { description: { contains: payload.search, mode: 'insensitive' } },
+        ],
+      })
+    }
+    if (payload.projectId) conditions.push({ projectId: payload.projectId })
+    if (payload.priority) conditions.push({ priority: payload.priority as TaskPriority })
+    if (payload.assigneeId) conditions.push({ assignees: { some: { userId: payload.assigneeId } } })
+    if (payload.createdById) conditions.push({ createdById: payload.createdById })
+    if (payload.categoryId) conditions.push({ categoryId: payload.categoryId })
+    if (payload.parentTaskId) conditions.push({ parentTaskId: payload.parentTaskId })
+    if (payload.boardColumnId) conditions.push({ boardColumnId: payload.boardColumnId })
+
+    const where: Prisma.TaskWhereInput = { AND: conditions }
 
     const taskList = await this.#_prisma.task.findMany({
       where,
@@ -626,7 +620,7 @@ export class TaskService {
 
     const now = new Date()
 
-    const updatePayload: any = {
+    const updatePayload: Record<string, unknown> = {
       updatedAt: now,
     }
 

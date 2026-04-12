@@ -22,5 +22,5 @@ export interface PriorityCount {
 export interface TimeSeriesData {
   period: string
   count: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }

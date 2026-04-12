@@ -435,7 +435,7 @@ export class TaskCommentService {
       },
     })
 
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (content !== existingComment.content) {
       changes.content = { old: existingComment.content, new: content }
     }

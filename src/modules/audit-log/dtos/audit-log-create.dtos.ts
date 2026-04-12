@@ -40,7 +40,7 @@ export class AuditLogCreateDto {
   })
   @IsOptional()
   @IsObject()
-  changes?: Record<string, any>
+  changes?: Record<string, unknown>
 
   @ApiPropertyOptional({
     description: 'JSON object containing the old values before the change',
@@ -48,7 +48,7 @@ export class AuditLogCreateDto {
   })
   @IsOptional()
   @IsObject()
-  oldValues?: Record<string, any>
+  oldValues?: Record<string, unknown>
 
   @ApiPropertyOptional({
     description: 'JSON object containing the new values after the change',
@@ -56,7 +56,7 @@ export class AuditLogCreateDto {
   })
   @IsOptional()
   @IsObject()
-  newValues?: Record<string, any>
+  newValues?: Record<string, unknown>
 
   @ApiPropertyOptional({
     description: 'IP address of the user performing the action',

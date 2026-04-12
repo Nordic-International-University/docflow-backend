@@ -241,7 +241,7 @@ export class JournalService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingJournal.name) {
       changes.name = { old: existingJournal.name, new: updateData.name }
     }

@@ -208,7 +208,7 @@ export class ProjectLabelService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingLabel.name) {
       changes.name = { old: existingLabel.name, new: updateData.name }
     }

@@ -82,10 +82,10 @@ export class TaskActivityResponseDto {
   action: string
 
   @ApiProperty({ required: false })
-  changes?: Record<string, any>
+  changes?: Record<string, unknown>
 
   @ApiProperty({ required: false })
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 
   @ApiProperty({ type: TaskActivityUserDto })
   user: TaskActivityUserDto

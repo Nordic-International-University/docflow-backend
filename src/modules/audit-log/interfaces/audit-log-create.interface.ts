@@ -4,9 +4,9 @@ export interface AuditLogCreateRequest {
   entity: string
   entityId: string
   action: AuditAction
-  changes?: Record<string, any>
-  oldValues?: Record<string, any>
-  newValues?: Record<string, any>
+  changes?: Record<string, unknown>
+  oldValues?: Record<string, unknown>
+  newValues?: Record<string, unknown>
   ipAddress?: string
   userAgent?: string
   performedByUserId: string

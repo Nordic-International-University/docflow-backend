@@ -196,7 +196,7 @@ export class TaskTimeEntryService {
       throw new NotFoundException('Time entry not found')
     }
 
-    const dataToUpdate: Record<string, any> = {
+    const dataToUpdate: Record<string, unknown> = {
       updatedAt: new Date(),
     }
 
@@ -224,7 +224,7 @@ export class TaskTimeEntryService {
     }
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (
       updateData.hours !== undefined &&
       Number(existingEntry.hours) !== updateData.hours

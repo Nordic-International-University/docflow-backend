@@ -193,7 +193,7 @@ export class TaskCategoryService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingCategory.name) {
       changes.name = { old: existingCategory.name, new: updateData.name }
     }

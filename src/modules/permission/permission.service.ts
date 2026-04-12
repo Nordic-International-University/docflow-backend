@@ -166,7 +166,7 @@ export class PermissionService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingPermission.name) {
       changes.name = { old: existingPermission.name, new: updateData.name }
     }

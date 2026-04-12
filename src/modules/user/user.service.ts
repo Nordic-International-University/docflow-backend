@@ -74,7 +74,7 @@ export class UserService {
       }
     }
 
-    const baseWhere: Record<string, any> = {
+    const baseWhere: Record<string, unknown> = {
       deletedAt: null,
       isActive: true,
       ...(search && {
@@ -329,7 +329,7 @@ export class UserService {
       }
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       fullname: payload.fullname,
       username: payload.username,
       roleId: payload.roleId,
@@ -351,7 +351,7 @@ export class UserService {
     })
 
     // Log user update
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (payload.fullname && payload.fullname !== user.fullname) {
       changes.fullname = { old: user.fullname, new: payload.fullname }
     }

@@ -54,7 +54,7 @@ export class TaskScoreConfigService {
   async taskScoreConfigRetrieveAll(
     payload: TaskScoreConfigRetrieveAllRequest,
   ): Promise<TaskScoreConfigRetrieveAllResponse> {
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
       deletedAt: null,
     }
 
@@ -163,7 +163,7 @@ export class TaskScoreConfigService {
       throw new NotFoundException('Task score config not found')
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     }
 

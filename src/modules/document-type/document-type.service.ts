@@ -188,7 +188,7 @@ export class DocumentTypeService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingDocumentType.name) {
       changes.name = { old: existingDocumentType.name, new: updateData.name }
     }

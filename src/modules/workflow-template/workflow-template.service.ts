@@ -546,7 +546,7 @@ export class WorkflowTemplateService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.name && updateData.name !== existingTemplate.name) {
       changes.name = { old: existingTemplate.name, new: updateData.name }
     }

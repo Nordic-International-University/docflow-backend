@@ -19,7 +19,7 @@ export interface SearchResult {
   title: string
   description: string | null
   score: number
-  meta: Record<string, any>
+  meta: Record<string, unknown>
 }
 
 export interface SearchResponse {

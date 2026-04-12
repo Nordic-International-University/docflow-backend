@@ -43,7 +43,7 @@ export class SessionService {
     const pageSize = payload.pageSize ? Number(payload.pageSize) : 10
     const skip = (pageNumber - 1) * pageSize
 
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
       userId,
       isRevoked: false,
       expiresAt: { gte: new Date() },
@@ -144,7 +144,7 @@ export class SessionService {
     userId: string,
     exceptSessionId?: string,
   ): Promise<number> {
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
       userId,
       isRevoked: false,
       deletedAt: null,

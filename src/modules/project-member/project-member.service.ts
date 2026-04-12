@@ -96,7 +96,7 @@ export class ProjectMemberService {
   ): Promise<ProjectMemberRetrieveAllResponse> {
     const { page, limit, skip } = parsePagination(payload)
 
-    const where: Record<string, any> = {
+    const where: Record<string, unknown> = {
       deletedAt: null,
       ...(payload.projectId && { projectId: payload.projectId }),
       ...(payload.userId && { userId: payload.userId }),
@@ -234,7 +234,7 @@ export class ProjectMemberService {
     })
 
     // Track changes for audit log
-    const changes: Record<string, any> = {}
+    const changes: Record<string, unknown> = {}
     if (updateData.role && updateData.role !== existingMember.role) {
       changes.role = { old: existingMember.role, new: updateData.role }
     }
