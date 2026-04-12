@@ -1,15 +1,7 @@
 /**
- * PoliciesGuard — ABAC (CASL) asosidagi ruxsat guard.
- *
+ * PoliciesGuard — ABAC guard.
  * @CheckPolicies dekoratori metadata'sini o'qib, har policy handler'ini
- * ability bilan chaqiradi. Biri false qaytarsa → 403 ForbiddenException.
- *
- * AuthGuard'dan KEYIN ishlaydi — req.user allaqachon mavjud.
- * PermissionGuard bilan PARALLEL ishlaydi (ikkalasi ham @UseGuards da):
- *   - PermissionGuard → "bu endpoint'ga kirish huquqi bormi?" (string match)
- *   - PoliciesGuard   → "bu operatsiyaga ruxsat bormi?" (ABAC/attribute)
- *
- * Agar @CheckPolicies qo'yilmagan bo'lsa — guard o'tkazadi (backward compat).
+ * ability bilan chaqiradi.
  */
 
 import {
@@ -36,8 +28,6 @@ export class PoliciesGuard implements CanActivate {
         CHECK_POLICIES_KEY,
         context.getHandler(),
       ) ?? []
-
-    // @CheckPolicies qo'yilmagan endpoint — o'tkazish (backward compat)
     if (handlers.length === 0) return true
 
     const request = context.switchToHttp().getRequest()
@@ -58,14 +48,11 @@ export class PoliciesGuard implements CanActivate {
 
     const ability = this.abilityFactory.createForUser(caslUser)
 
-    // Attach ability to request — service'larda accessibleBy() uchun
     request.ability = ability
 
     for (const handler of handlers) {
       if (!handler(ability)) {
-        throw new ForbiddenException(
-          'Bu operatsiyani bajarish huquqingiz yo\'q',
-        )
+        throw new ForbiddenException("Bu operatsiyani bajarish huquqingiz yo'q")
       }
     }
 

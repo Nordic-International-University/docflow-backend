@@ -30,6 +30,8 @@ import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
 import { isAdmin } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+import type { AppAbility } from '../../casl/casl.types'
 
 @Injectable()
 export class WorkflowStepService {
@@ -46,6 +48,7 @@ export class WorkflowStepService {
     payload: WorkflowStepRetrieveAllDto & {
       userId?: string
       roleName?: string
+      ability?: AppAbility
     },
   ): Promise<WorkflowStepListResponseDto> {
     const {
@@ -58,17 +61,21 @@ export class WorkflowStepService {
       roleName,
     } = payload
 
-    const admin = isAdmin(roleName)
-
     const skip = (pageNumber - 1) * pageSize
+
+    // ABAC: ability borsa CASL, yo'qsa eski manual filter
+    const abilityFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').WorkflowStep
+      : !isAdmin(roleName) && userId
+        ? { assignedToUserId: userId }
+        : {}
 
     const where = {
       ...(workflowId && { workflowId }),
       ...(assignedToUserId && { assignedToUserId }),
       ...(status && { status }),
       deletedAt: null,
-      // Filter by user access: only show steps assigned to the user
-      ...(!admin && userId && { assignedToUserId: userId }),
+      ...abilityFilter,
     }
 
     const [workflowSteps, total] = await Promise.all([
@@ -127,18 +134,20 @@ export class WorkflowStepService {
     id: string
     userId?: string
     roleName?: string
+    ability?: AppAbility
   }): Promise<WorkflowStepResponseDto> {
-    const admin = isAdmin(payload.roleName)
+    // ABAC: ability borsa CASL, yo'qsa eski manual filter
+    const abilityFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').WorkflowStep
+      : !isAdmin(payload.roleName) && payload.userId
+        ? { assignedToUserId: payload.userId }
+        : {}
 
     const workflowStep = await this.prisma.workflowStep.findFirst({
       where: {
         id: payload.id,
         deletedAt: null,
-        // Filter by user access: only show steps assigned to the user
-        // SECURITY FIX: `!isAdmin` was referencing the imported function
-        // (always truthy), so the filter was effectively always-false and
-        // never applied — any user could see any workflow step.
-        ...(!admin && payload.userId && { assignedToUserId: payload.userId }),
+        ...abilityFilter,
       },
       include: {
         workflow: {

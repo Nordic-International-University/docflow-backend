@@ -38,9 +38,10 @@ import {
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @ApiTags('Workflow Step')
 @Controller({
   path: 'workflow-step',
@@ -51,6 +52,7 @@ export class WorkflowStepController {
 
   @Get()
   @Permissions(PERMISSIONS.WORKFLOW_STEP.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'WorkflowStep'))
   @ApiOperation({ summary: 'Workflow Step Retrieve All' })
   @ApiResponse({ status: 200, type: WorkflowStepListResponseDto })
   async workflowStepRetrieveAll(
@@ -61,11 +63,13 @@ export class WorkflowStepController {
       ...payload,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 
   @Get(':id')
   @Permissions(PERMISSIONS.WORKFLOW_STEP.READ)
+  @CheckPolicies((ability) => ability.can('read', 'WorkflowStep'))
   @ApiOperation({ summary: 'Workflow Step Retrieve One' })
   @ApiResponse({ status: 200, type: WorkflowStepResponseDto })
   async workflowStepRetrieveOne(@Param('id') id: string, @Req() req: any) {
@@ -73,6 +77,7 @@ export class WorkflowStepController {
       id,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 

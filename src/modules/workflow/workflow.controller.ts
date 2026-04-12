@@ -28,9 +28,10 @@ import {
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @ApiTags('Workflow')
 @Controller({
   path: 'workflow',
@@ -41,6 +42,7 @@ export class WorkflowController {
 
   @Get()
   @Permissions(PERMISSIONS.WORKFLOW.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Workflow'))
   @ApiOperation({ summary: 'Workflow Retrieve All' })
   @ApiResponse({ status: 200, type: WorkflowListResponseDto })
   async workflowRetrieveAll(
@@ -51,11 +53,13 @@ export class WorkflowController {
       ...payload,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 
   @Get(':id')
   @Permissions(PERMISSIONS.WORKFLOW.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Workflow'))
   @ApiOperation({ summary: 'Workflow Retrieve One' })
   @ApiResponse({ status: 200, type: WorkflowResponseDto })
   async workflowRetrieveOne(@Param('id') id: string, @Req() req: any) {
@@ -63,11 +67,13 @@ export class WorkflowController {
       id,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 
   @Post()
   @Permissions(PERMISSIONS.WORKFLOW.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'Workflow'))
   @ApiOperation({ summary: 'Workflow Create' })
   @ApiResponse({ status: 201, description: 'Workflow created successfully' })
   async workflowCreate(@Body() payload: WorkflowCreateDto) {

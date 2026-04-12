@@ -31,6 +31,8 @@ import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { translateActionTypeToUzbek, formatDateToUzbek } from '@common'
 import { isAdmin } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+import type { AppAbility } from '../../casl/casl.types'
 
 type WorkflowWithRelations = Prisma.WorkflowGetPayload<{
   include: {
@@ -196,7 +198,7 @@ export class WorkflowService {
   }
 
   async workflowRetrieveAll(
-    payload: WorkflowRetrieveAllDto & { userId?: string; roleName?: string },
+    payload: WorkflowRetrieveAllDto & { userId?: string; roleName?: string; ability?: AppAbility },
   ): Promise<WorkflowListResponseDto> {
     const {
       documentId,
@@ -217,8 +219,6 @@ export class WorkflowService {
       userId,
       roleName,
     } = payload
-
-    const admin = isAdmin(roleName)
 
     const skip = (page - 1) * limit
 
@@ -285,7 +285,10 @@ export class WorkflowService {
       })
     }
 
-    if (!admin && userId) {
+    // ABAC: ability borsa CASL, yo'qsa eski manual filter
+    if ((payload as any).ability) {
+      andConditions.push(accessibleBy((payload as any).ability, 'read').Workflow)
+    } else if (!isAdmin(roleName) && userId) {
       andConditions.push({
         OR: [
           { document: { createdById: userId } },
@@ -386,16 +389,13 @@ export class WorkflowService {
     id: string
     userId?: string
     roleName?: string
+    ability?: AppAbility
   }): Promise<WorkflowResponseDto> {
-    const admin = isAdmin(payload.roleName)
-
-    const workflow = await this.prisma.workflow.findFirst({
-      where: {
-        id: payload.id,
-        deletedAt: null,
-        // Filter by user access: user created document OR assigned to any workflow step (for viewing details)
-        ...(!admin &&
-          payload.userId && {
+    // ABAC: ability borsa CASL, yo'qsa eski manual filter
+    const abilityFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').Workflow
+      : !isAdmin(payload.roleName) && payload.userId
+        ? {
             OR: [
               { document: { createdById: payload.userId } },
               {
@@ -407,7 +407,14 @@ export class WorkflowService {
                 },
               },
             ],
-          }),
+          }
+        : {}
+
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        id: payload.id,
+        deletedAt: null,
+        ...abilityFilter,
       },
       include: {
         document: {
