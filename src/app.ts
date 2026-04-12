@@ -43,9 +43,12 @@ import {
   AiModule,
   ChatModule,
 } from '@modules'
+import { DeadlineModule } from './modules/deadline/deadline.module'
+import { SearchModule } from './modules/search/search.module'
 import { databaseConfig, jwtConfig, minioConfig, redisConfig } from '@config'
 import { JwtModule } from '@nestjs/jwt'
 import { ThrottlerModule } from '@nestjs/throttler'
+import { ScheduleModule } from '@nestjs/schedule'
 import { CustomThrottlerGuard } from './guards/throttler.guard'
 import { APP_GUARD } from '@nestjs/core'
 import { RedisModule } from '@clients'
@@ -60,6 +63,7 @@ Logger.log('Sandbox mode is active.', 'Bootstrap')
       isGlobal: true,
       load: [databaseConfig, jwtConfig, minioConfig, redisConfig],
     }),
+    ScheduleModule.forRoot(),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
@@ -142,6 +146,8 @@ Logger.log('Sandbox mode is active.', 'Bootstrap')
     KpiRewardModule,
     AiModule,
     ChatModule,
+    DeadlineModule,
+    SearchModule,
   ],
   providers: [
     // Global rate limiting — barcha endpointlarga qo'llanadi

@@ -140,6 +140,8 @@ model User {
   blocksMade            UserBlock[]             @relation("UserBlockBlocker")
   blocksReceived        UserBlock[]             @relation("UserBlockBlocked")
 
+  notificationSettings  UserNotificationSettings?
+
   createdAt           DateTime                   @map("created_at")     @db.Timestamp       @default(now())
   updatedAt           DateTime                   @map("updated_at")     @db.Timestamp       @updatedAt
   deletedAt           DateTime?                  @map("deleted_at")     @db.Timestamp
@@ -1655,4 +1657,68 @@ model DocumentSequence {
   updatedAt  DateTime @map("updated_at")  @db.Timestamp @default(now())
 
   @@map("document_sequence")
+}
+
+// ═══════════════════════════════════════════════════
+// DEADLINE NOTIFICATION — foydalanuvchi sozlamalari
+// ═══════════════════════════════════════════════════
+
+model UserNotificationSettings {
+  id        String  @id @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  userId    String  @unique @map("user_id") @db.Uuid
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Reminder windows — minutes before deadline (JSON array)
+  // Default: [1440, 120] = 24 soat + 2 soat oldin
+  workflowReminders     Json @default("[1440, 120]") @map("workflow_reminders")
+  taskReminders         Json @default("[1440, 60]")  @map("task_reminders")
+
+  // Kanallar
+  inAppEnabled    Boolean @default(true)  @map("in_app_enabled")
+  telegramEnabled Boolean @default(true)  @map("telegram_enabled")
+
+  // On/off
+  notifyOnExpired    Boolean @default(true) @map("notify_on_expired")
+  notifyOnApproaching Boolean @default(true) @map("notify_on_approaching")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamp
+
+  @@map("user_notification_settings")
+}
+
+// Idempotency — har (user, entity, window) uchun faqat 1 marta yuborish
+model NotificationDelivery {
+  id            String   @id @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  userId        String   @map("user_id")     @db.Uuid
+  entityType    String   @map("entity_type") @db.VarChar(50)  // workflow, workflow_step, task
+  entityId      String   @map("entity_id")   @db.Uuid
+  deliveryKey   String   @map("delivery_key") @db.VarChar(100) // approaching_1440, expired
+  sentAt        DateTime @default(now())      @map("sent_at")  @db.Timestamp
+  deadlineSnapshot DateTime @map("deadline_snapshot") @db.Timestamp
+
+  @@unique([userId, entityType, entityId, deliveryKey])
+  @@index([entityType, entityId])
+  @@map("notification_deliveries")
+}
+
+// ═══════════════════════════════════════════════════
+// SEARCH — hujjat kontenti (PDF/Word ichidagi matn)
+// ═══════════════════════════════════════════════════
+
+model SearchIndex {
+  id          String   @id @default(dbgenerated("GEN_RANDOM_UUID()")) @db.Uuid
+  entityType  String   @map("entity_type") @db.VarChar(50)  // document, task, project
+  entityId    String   @map("entity_id")   @db.Uuid
+  title       String?  @db.VarChar(500)
+  content     String?  @db.Text           // extracted text from PDF/DOCX
+  metadata    Json?                        // { status, department, createdBy, ... }
+  searchVector Unsupported("tsvector")?    @map("search_vector")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
+  updatedAt   DateTime @updatedAt     @map("updated_at")  @db.Timestamp
+
+  @@unique([entityType, entityId])
+  @@index([entityType])
+  @@map("search_index")
 }

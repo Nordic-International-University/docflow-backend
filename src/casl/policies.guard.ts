@@ -46,6 +46,7 @@ export class PoliciesGuard implements CanActivate {
       isDeptHead: user.isDeptHead,
     }
 
+
     const ability = this.abilityFactory.createForUser(caslUser)
 
     request.ability = ability

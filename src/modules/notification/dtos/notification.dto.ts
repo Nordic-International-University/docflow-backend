@@ -18,6 +18,13 @@ export enum NotificationType {
   DOCUMENT_STATUS = 'document_status',
   CHAT_MESSAGE = 'chat_message',
   PROJECT_MEMBER = 'project_member',
+  // Deadline notifications
+  WORKFLOW_DEADLINE_APPROACHING = 'workflow_deadline_approaching',
+  WORKFLOW_DEADLINE_EXPIRED = 'workflow_deadline_expired',
+  WORKFLOW_STEP_DEADLINE_APPROACHING = 'workflow_step_deadline_approaching',
+  WORKFLOW_STEP_DEADLINE_EXPIRED = 'workflow_step_deadline_expired',
+  TASK_DEADLINE_APPROACHING = 'task_deadline_approaching',
+  TASK_DEADLINE_EXPIRED = 'task_deadline_expired',
 }
 
 export class CreateNotificationDto {
