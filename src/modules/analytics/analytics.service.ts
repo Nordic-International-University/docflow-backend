@@ -1,6 +1,7 @@
 import { ROLE_NAMES } from '@constants'
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@prisma'
+import { isAdmin } from '@common/helpers'
 import { AnalyticsQueryDto, TimeRange } from './dtos/analytics-query.dto'
 import {
   DashboardAnalyticsResponseDto,
@@ -1102,9 +1103,7 @@ export class AnalyticsService {
     currentUserDepartmentId?: string
   }) {
     const { userId, year, month } = payload
-    const isAdmin =
-      payload.currentUserRole === ROLE_NAMES.SUPER_ADMIN ||
-      payload.currentUserRole === ROLE_NAMES.ADMIN
+    const admin = isAdmin(payload.currentUserRole)
 
     // ============ 1. SHAXSIY KPI (joriy oy) ============
     const personalKpi = await this.prisma.userMonthlyKpi.findFirst({
@@ -1134,7 +1133,7 @@ export class AnalyticsService {
       where: {
         year,
         month,
-        ...(payload.currentUserDepartmentId && !isAdmin
+        ...(payload.currentUserDepartmentId && !admin
           ? { departmentId: payload.currentUserDepartmentId }
           : {}),
       },
@@ -1221,7 +1220,7 @@ export class AnalyticsService {
 
     // ============ 6. BARCHA DEPARTAMENT REYTINGI (admin uchun) ============
     let allDepartments: any[] = []
-    if (isAdmin) {
+    if (admin) {
       const depts = await this.prisma.departmentMonthlyKpi.findMany({
         where: { year, month },
         orderBy: { averageScore: 'desc' },

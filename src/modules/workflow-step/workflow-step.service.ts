@@ -59,8 +59,7 @@ export class WorkflowStepService {
       roleName,
     } = payload
 
-    const isAdmin =
-      roleName === ROLE_NAMES.ADMIN || roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(roleName)
 
     const skip = (pageNumber - 1) * pageSize
 
@@ -70,7 +69,7 @@ export class WorkflowStepService {
       ...(status && { status }),
       deletedAt: null,
       // Filter by user access: only show steps assigned to the user
-      ...(!isAdmin && userId && { assignedToUserId: userId }),
+      ...(!admin && userId && { assignedToUserId: userId }),
     }
 
     const [workflowSteps, total] = await Promise.all([
@@ -137,7 +136,10 @@ export class WorkflowStepService {
         id: payload.id,
         deletedAt: null,
         // Filter by user access: only show steps assigned to the user
-        ...(!isAdmin && payload.userId && { assignedToUserId: payload.userId }),
+        // SECURITY FIX: `!isAdmin` was referencing the imported function
+        // (always truthy), so the filter was effectively always-false and
+        // never applied — any user could see any workflow step.
+        ...(!admin && payload.userId && { assignedToUserId: payload.userId }),
       },
       include: {
         workflow: {

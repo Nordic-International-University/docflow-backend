@@ -126,7 +126,7 @@ import { WorkflowPermissionService } from '../wopi/workflow-permission.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { ROLE_NAMES } from '@constants'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
-import { isAdmin } from '@common/helpers'
+import { isAdmin, isSuperAdmin } from '@common/helpers'
 
 import { parsePagination } from '@common/helpers'
 @Injectable()
@@ -392,9 +392,7 @@ export class DocumentService {
 
     // Foydalanuvchi roli
     const isCreator = document.createdBy?.id === payload.userId
-    const isPlatformAdmin =
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN ||
-      payload.roleName === ROLE_NAMES.ADMIN
+    const isPlatformAdmin = isAdmin(payload.roleName)
 
     // Mantiq:
     //  - DRAFT/REJECTED + creator/admin → DOCX edit (Collabora full edit)
@@ -835,9 +833,9 @@ export class DocumentService {
     // Validate user can create document with this journal
     // Super Admin can create documents with any journal
     // Other users can only create documents with journals from their own department
-    const isSuperAdmin = user.role?.name === ROLE_NAMES.SUPER_ADMIN
+    const isSuper = isSuperAdmin(user.role?.name)
 
-    if (journal.departmentId && !isSuperAdmin) {
+    if (journal.departmentId && !isSuper) {
       if (!user.departmentId) {
         throw new ForbiddenException(
           'You must be assigned to a department to create documents',
@@ -1365,10 +1363,10 @@ export class DocumentService {
         where: { id: userId, deletedAt: null },
         select: { role: { select: { name: true } } },
       })
-      const isSuperAdmin = user?.role?.name === ROLE_NAMES.SUPER_ADMIN
+      const isSuper = isSuperAdmin(user?.role?.name)
 
       // If not creator and not super admin, verify workflow permission
-      if (!isCreator && !isSuperAdmin) {
+      if (!isCreator && !isSuper) {
         await this.#_workflowPermissionService.verifyXfdfEditPermission(
           userId,
           documentId,

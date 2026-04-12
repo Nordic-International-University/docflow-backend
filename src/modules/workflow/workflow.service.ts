@@ -218,8 +218,7 @@ export class WorkflowService {
       roleName,
     } = payload
 
-    const isAdmin =
-      roleName === ROLE_NAMES.ADMIN || roleName === ROLE_NAMES.SUPER_ADMIN
+    const admin = isAdmin(roleName)
 
     const skip = (page - 1) * limit
 
@@ -286,7 +285,7 @@ export class WorkflowService {
       })
     }
 
-    if (!isAdmin && userId) {
+    if (!admin && userId) {
       andConditions.push({
         OR: [
           { document: { createdById: userId } },

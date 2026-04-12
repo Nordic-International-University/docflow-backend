@@ -14,6 +14,7 @@ const VALID_PRIORITIES = Object.values(TaskPriority)
 import {
   bestEffort,
   bestEffortWithRetry,
+  isAdmin,
   parsePagination,
 } from '@common/helpers'
 @Injectable()
@@ -336,10 +337,9 @@ export class TaskService {
     const { page, limit, skip } = parsePagination(payload)
 
     // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
-    const isAdmin =
-      payload.roleName === ROLE_NAMES.SUPER_ADMIN || payload.roleName === ROLE_NAMES.ADMIN
+    const admin = isAdmin(payload.roleName)
 
-    const projectAccessFilter: any = isAdmin
+    const projectAccessFilter: any = admin
       ? {}
       : {
           project: {

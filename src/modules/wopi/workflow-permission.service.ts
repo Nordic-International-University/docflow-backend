@@ -3,6 +3,7 @@ import { Injectable, ForbiddenException, Logger } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { StepActionType } from '@prisma/client'
 import { STEP_ACTION_WOPI_PERMISSIONS } from '@constants'
+import { isSuperAdmin } from '@common/helpers'
 
 export interface WorkflowPermissions {
   UserCanWrite: boolean
@@ -30,7 +31,7 @@ export class WorkflowPermissionService {
       where: { id: userId, deletedAt: null },
       select: { role: { select: { name: true } } },
     })
-    const isSuperAdmin = currentUser?.role?.name === ROLE_NAMES.SUPER_ADMIN
+    const isSuper = isSuperAdmin(currentUser?.role?.name)
 
     const attachment = await this.#_prisma.attachment.findFirst({
       where: { id: fileId, deletedAt: null },
@@ -91,7 +92,7 @@ export class WorkflowPermissionService {
     // ============ DRAFT — faqat creator DOCX edit qila oladi ============
     if (document.status === 'DRAFT' || document.status === 'REJECTED') {
       // Faqat creator yoki Super Admin
-      if (document.createdById === userId || isSuperAdmin) {
+      if (document.createdById === userId || isSuper) {
         return {
           UserCanWrite: true,
           UserCanRead: true,
@@ -143,7 +144,7 @@ export class WorkflowPermissionService {
     }
 
     // Super Admin — read-only ham (workflow active'da Super Admin ham edit qilmasligi kerak)
-    if (isSuperAdmin) {
+    if (isSuper) {
       this.logger.log(
         `Super Admin viewing active workflow document — read-only`,
       )
@@ -214,7 +215,7 @@ export class WorkflowPermissionService {
       where: { id: userId, deletedAt: null },
       select: { role: { select: { name: true } } },
     })
-    if (user?.role?.name === ROLE_NAMES.SUPER_ADMIN) {
+    if (isSuperAdmin(user?.role?.name)) {
       this.logger.log(
         `User ${userId} is Super Administrator, granting XFDF edit permission`,
       )

@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
+import { isAdmin } from '@common/helpers'
 import { AttachmentService } from './attachment.service'
 import {
   AttachmentCreateDto,
@@ -160,11 +161,7 @@ export class AttachmentController {
   })
   async repairFilenames(@Req() req: any) {
     // Only allow super admin or admin to run this
-    const isAdmin =
-      req.user.roleName === 'System Administrator' ||
-      req.user.roleName === 'Admin'
-
-    if (!isAdmin) {
+    if (!isAdmin(req.user.roleName)) {
       throw new Error('Only administrators can repair filenames')
     }
 
