@@ -2,7 +2,7 @@
  * PoliciesGuard — ABAC guard.
  * @CheckPolicies dekoratori metadata'sini o'qib, har policy handler'ini
  * ability bilan chaqiradi.
- */
+ **/
 
 import {
   Injectable,

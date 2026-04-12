@@ -14,12 +14,13 @@ import { TaskService } from './task.service'
 import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthGuard, PermissionGuard } from '@guards'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
 
 @ApiBearerAuth()
 @ApiTags('Task')
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({
   path: 'task',
   version: '1',
@@ -29,6 +30,7 @@ export class TaskController {
 
   @Get()
   @Permissions(PERMISSIONS.TASK.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Task'))
   async taskRetrieveAll(
     @Query() payload: TaskRetrieveQueryDto,
     @Req() req: any,
@@ -43,12 +45,14 @@ export class TaskController {
 
   @Get(':id')
   @Permissions(PERMISSIONS.TASK.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Task'))
   async taskRetrieveOne(@Param('id') id: string) {
     return await this.taskService.taskRetrieveOne({ id })
   }
 
   @Post()
   @Permissions(PERMISSIONS.TASK.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'Task'))
   async taskCreate(@Body() payload: TaskCreateDto, @Req() req: any) {
     return await this.taskService.taskCreate({
       ...payload,
@@ -58,6 +62,7 @@ export class TaskController {
 
   @Patch(':id')
   @Permissions(PERMISSIONS.TASK.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'Task'))
   async taskUpdate(
     @Param('id') id: string,
     @Body() payload: TaskUpdateDto,

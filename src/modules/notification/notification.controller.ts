@@ -23,11 +23,12 @@ import { NotificationListResponseDto, NotificationResponseDto } from './dtos'
 import { PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @Controller({ path: 'notifications', version: '1' })
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 export class NotificationController {
   constructor(
     private readonly notificationService: NotificationService,
@@ -36,6 +37,7 @@ export class NotificationController {
 
   @Get()
   @Permissions(PERMISSIONS.NOTIFICATION.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Notification'))
   @ApiOperation({
     summary: 'Foydalanuvchi bildirishnomalarini olish',
     description:
@@ -80,6 +82,7 @@ export class NotificationController {
 
   @Get('unread-count')
   @Permissions(PERMISSIONS.NOTIFICATION.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Notification'))
   @ApiOperation({
     summary: "O'qilmagan bildirishnomalar sonini olish",
     description:
@@ -103,6 +106,7 @@ export class NotificationController {
 
   @Post(':id/read')
   @Permissions(PERMISSIONS.NOTIFICATION.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Notification'))
   @ApiOperation({
     summary: "Bildirishnomani o'qilgan deb belgilash",
     description:
@@ -127,6 +131,7 @@ export class NotificationController {
 
   @Post('read-all')
   @Permissions(PERMISSIONS.NOTIFICATION.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Notification'))
   @ApiOperation({
     summary: "Barcha bildirishnomalarni o'qilgan deb belgilash",
     description:
@@ -154,6 +159,7 @@ export class NotificationController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.NOTIFICATION.MANAGE)
+  @CheckPolicies((ability) => ability.can('delete', 'Notification'))
   @ApiOperation({
     summary: "Bildirishnomani o'chirish",
     description:
@@ -186,6 +192,7 @@ export class NotificationController {
 
   @Get('online-users')
   @Permissions(PERMISSIONS.NOTIFICATION.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Notification'))
   @ApiOperation({
     summary: 'Get Online Users',
     description:

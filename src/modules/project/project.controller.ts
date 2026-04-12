@@ -18,12 +18,13 @@ import {
 } from './dtos'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { AuthGuard, PermissionGuard } from '@guards'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
 
 @ApiBearerAuth()
 @ApiTags('Project')
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({
   path: 'project',
   version: '1',
@@ -33,6 +34,7 @@ export class ProjectController {
 
   @Get()
   @Permissions(PERMISSIONS.PROJECT.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Project'))
   async projectRetrieveAll(
     @Query() payload: ProjectRetrieveQueryDto,
     @Req() req: any,
@@ -47,6 +49,7 @@ export class ProjectController {
 
   @Get(':id')
   @Permissions(PERMISSIONS.PROJECT.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Project'))
   async projectRetrieveOne(@Param('id') id: string, @Req() req: any) {
     return await this.projectService.projectRetrieveOne({
       id,
@@ -58,6 +61,7 @@ export class ProjectController {
 
   @Post()
   @Permissions(PERMISSIONS.PROJECT.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'Project'))
   async projectCreate(@Body() payload: ProjectCreateDto, @Req() req: any) {
     return await this.projectService.projectCreate({
       ...payload,
@@ -67,6 +71,7 @@ export class ProjectController {
 
   @Patch(':id')
   @Permissions(PERMISSIONS.PROJECT.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'Project'))
   async projectUpdate(
     @Param('id') id: string,
     @Body() payload: ProjectUpdateDto,
@@ -81,6 +86,7 @@ export class ProjectController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.PROJECT.DELETE)
+  @CheckPolicies((ability) => ability.can('delete', 'Project'))
   async projectDelete(@Param('id') id: string, @Req() req: any) {
     return await this.projectService.projectDelete({
       id,
