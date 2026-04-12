@@ -102,9 +102,20 @@ export class AbilityFactory {
       } as any)
     }
 
-    // Read — workflow ishtirokchisi (assignee)
-    // Bu Prisma nested relation — accessibleBy() qo'llab-quvvatlamasligi mumkin
-    // Fallback: service'da qo'shimcha OR shart qo'shish
+    // Read — workflow ishtirokchisi (step assignee bo'lgan hujjatlar)
+    can('read', 'Document', {
+      workflow: {
+        some: {
+          deletedAt: null,
+          workflowSteps: {
+            some: {
+              assignedToUserId: user.id,
+              deletedAt: null,
+            },
+          },
+        },
+      },
+    } as any)
 
     // Update — faqat DRAFT/REJECTED va yaratuvchi
     can('update', 'Document', { createdById: user.id, status: 'DRAFT' })

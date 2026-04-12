@@ -34,9 +34,10 @@ import {
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions, Public } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @ApiTags('Document')
 @Controller({ path: 'document', version: '1' })
 export class DocumentController {
@@ -44,6 +45,7 @@ export class DocumentController {
 
   @Get()
   @Permissions(PERMISSIONS.DOCUMENT.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Document'))
   @ApiOperation({
     summary: 'Retrieve all documents with pagination and search',
   })
@@ -78,11 +80,13 @@ export class DocumentController {
       templateId,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 
   @Get(':id')
   @Permissions(PERMISSIONS.DOCUMENT.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Document'))
   @ApiOperation({ summary: 'Retrieve a single document by its ID' })
   @ApiParam({
     name: 'id',
@@ -101,11 +105,13 @@ export class DocumentController {
       id,
       userId: req.user.userId,
       roleName: req.user.roleName,
+      ability: req.ability,
     })
   }
 
   @Post()
   @Permissions(PERMISSIONS.DOCUMENT.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'Document'))
   @ApiOperation({
     summary: 'Create a new document',
     description:
@@ -127,6 +133,7 @@ export class DocumentController {
 
   @Patch(':id')
   @Permissions(PERMISSIONS.DOCUMENT.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'Document'))
   @ApiOperation({ summary: 'Update an existing document' })
   @ApiParam({
     name: 'id',
@@ -146,6 +153,7 @@ export class DocumentController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.DOCUMENT.DELETE)
+  @CheckPolicies((ability) => ability.can('delete', 'Document'))
   @ApiOperation({ summary: 'Delete a document' })
   @ApiParam({
     name: 'id',
@@ -166,6 +174,7 @@ export class DocumentController {
 
   @Get(':id/history')
   @Permissions(PERMISSIONS.DOCUMENT.VIEW_HISTORY)
+  @CheckPolicies((ability) => ability.can('read', 'Document'))
   @ApiOperation({
     summary: 'Hujjat tarixi: barcha versiyalar, bosqichlar, harakatlar',
     description:

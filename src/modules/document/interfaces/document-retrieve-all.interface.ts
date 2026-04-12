@@ -1,10 +1,11 @@
-import { DocumentStatus as LocalDocumentStatus } from './document-enums'
 import { DocumentStatus } from '@prisma/client'
+import type { AppAbility } from '../../../casl/casl.types'
 
 export interface DocumentRetrieveOneRequest {
   id: string
   userId?: string
   roleName?: string
+  ability?: AppAbility
 }
 
 export interface DocumentRetrieveOneResponse {
@@ -46,6 +47,7 @@ export interface DocumentRetrieveAllRequest {
   templateId?: string
   userId?: string
   roleName?: string
+  ability?: AppAbility
 }
 
 export interface DocumentList {

@@ -62,6 +62,8 @@ import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
 import { isAdmin, isSuperAdmin } from '@common/helpers'
 import { parsePagination } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+import { AppAbility } from '../../casl/casl.types'
 
 @Injectable()
 export class DocumentService {
@@ -95,8 +97,6 @@ export class DocumentService {
     const { page, limit, skip } = parsePagination(payload)
     const search = payload.search ? payload.search : undefined
 
-    const admin = isAdmin(payload.roleName)
-
     const searchCondition = search
       ? [
           { title: { contains: search, mode: 'insensitive' as const } },
@@ -107,11 +107,10 @@ export class DocumentService {
         ]
       : undefined
 
-    // Non-admin foydalanuvchilar faqat:
-    //  1) O'zi yaratgan hujjatlarni
-    //  2) Workflow'da ishtirok etgan (step assignee) hujjatlarni ko'radi
-    const userAccessFilter =
-      !admin && payload.userId
+    // ABAC: ability borsa CASL accessibleBy, yo'qsa eski manual filter (backward compat)
+    const userAccessFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').Document
+      : !isAdmin(payload.roleName) && payload.userId
         ? {
             OR: [
               { createdById: payload.userId },
@@ -237,12 +236,11 @@ export class DocumentService {
   ): Promise<DocumentRetrieveOneResponse> {
     const admin = isAdmin(payload.roleName)
 
-    const document = await this.#_prisma.document.findFirst({
-      where: {
-        id: payload.id,
-        deletedAt: null,
-        ...(!admin &&
-          payload.userId && {
+    // ABAC: ability borsa CASL, yo'qsa eski manual filter
+    const abilityFilter = payload.ability
+      ? accessibleBy(payload.ability, 'read').Document
+      : !admin && payload.userId
+        ? {
             OR: [
               { createdById: payload.userId },
               {
@@ -259,7 +257,14 @@ export class DocumentService {
                 },
               },
             ],
-          }),
+          }
+        : {}
+
+    const document = await this.#_prisma.document.findFirst({
+      where: {
+        id: payload.id,
+        deletedAt: null,
+        ...abilityFilter,
       },
       select: {
         id: true,
@@ -351,8 +356,6 @@ export class DocumentService {
     } else if (isWorkflowActive && latestPdf) {
       // Workflow active — PDF'ni ochish (annotation user huquqiga bog'liq)
       primaryAttachment = latestPdf
-      // canEdit'ni aniqlash uchun WOPI permission service kerak,
-      // hozircha frontend WOPI token olganda CheckFileInfo'dan UserCanWrite'ni oladi
       displayMode = 'ANNOTATE_PDF'
       canEdit = false // frontend WOPI orqali aniqlaydi
     } else if (isFinal && latestPdf) {
@@ -360,12 +363,10 @@ export class DocumentService {
       displayMode = 'VIEW_PDF'
       canEdit = false
     } else if (latestPdf) {
-      // Fallback: PDF mavjud bo'lsa view-only
       primaryAttachment = latestPdf
       displayMode = 'VIEW_PDF'
       canEdit = false
     } else if (latestDocx && (isCreator || isPlatformAdmin)) {
-      // PDF hali yaratilmagan, lekin DOCX bor
       primaryAttachment = latestDocx
       displayMode = 'EDIT_DOCX'
       canEdit = true
@@ -373,9 +374,7 @@ export class DocumentService {
 
     return {
       ...document,
-      // Eski API uyumi: attachments PDFni qaytaradi, lekin DOCX ham mavjud (frontend kerak bo'lsa)
       attachments: latestPdf ? [latestPdf] : latestDocx ? [latestDocx] : [],
-      // YANGI maydonlar — frontend shu asosida qaror qiladi
       primaryAttachment,
       displayMode,
       canEdit,
@@ -386,7 +385,6 @@ export class DocumentService {
     } as DocumentRetrieveOneExtended
   }
 
-  // ─── Delegate: DocumentHistoryService ───
   async documentHistory(payload: {
     id: string
     userId: string
@@ -421,7 +419,6 @@ export class DocumentService {
       throw new NotFoundException('Journal not found')
     }
 
-    // Fetch user with department and role information
     const user = await this.#_prisma.user.findFirst({
       where: {
         id: payload.userId,
@@ -442,9 +439,6 @@ export class DocumentService {
       throw new NotFoundException('User not found')
     }
 
-    // Validate user can create document with this journal
-    // Super Admin can create documents with any journal
-    // Other users can only create documents with journals from their own department
     const isSuper = isSuperAdmin(user.role?.name)
 
     if (journal.departmentId && !isSuper) {
@@ -461,7 +455,6 @@ export class DocumentService {
       }
     }
 
-    // Auto-generate document number based on journal format
     const documentNumber = await DocumentNumberGenerator.generate(
       this.#_prisma,
       payload.journalId,
@@ -1085,7 +1078,6 @@ export class DocumentService {
       const mergedPdfUrl = this.#_minio.buildFileUrl(uploadedPdfFileName)
       this.logger.log('Merged PDF uploaded to MinIO:', mergedPdfUrl)
 
-      // Create attachment for merged PDF
       let displayFileName = versionedName
       if (displayFileName.length > 255) {
         const ext = displayFileName.substring(displayFileName.lastIndexOf('.'))
@@ -1103,7 +1095,6 @@ export class DocumentService {
         },
       })
 
-      // Update document with XFDF content and new PDF URL
       await this.#_prisma.document.update({
         where: {
           id: documentId,
@@ -1117,7 +1108,6 @@ export class DocumentService {
 
       this.logger.log('Document updated with XFDF content and merged PDF URL')
 
-      // Record XFDF submission in workflow step action if user has an active workflow step
       if (userWorkflowStep && userId) {
         this.logger.log(userWorkflowStep)
         await this.#_prisma.workflowStepAction.create({
@@ -1143,7 +1133,6 @@ export class DocumentService {
     }
   }
 
-  // ─── Delegate: DocumentPublicService ───
   async documentPublicVerification(
     documentId: string,
   ): Promise<DocumentPublicVerificationResponse> {
@@ -1157,10 +1146,6 @@ export class DocumentService {
     return this.#_publicService.downloadAccepted(documentId, userId)
   }
 
-  /**
-   * Create a blank office document (docx/xlsx/pptx), upload to MinIO,
-   * create attachment + document record, return Collabora editor URL
-   */
   async documentCreateWithOffice(payload: {
     title: string
     description?: string
@@ -1214,7 +1199,6 @@ export class DocumentService {
 
     const fileUrl = this.#_minio.buildFileUrl(uploadedFileName)
 
-    // Create attachment record
     const attachment = await this.#_prisma.attachment.create({
       data: {
         fileName,
@@ -1226,13 +1210,11 @@ export class DocumentService {
       },
     })
 
-    // Generate document number
     const documentNumber = await DocumentNumberGenerator.generate(
       this.#_prisma,
       payload.journalId,
     )
 
-    // Create document
     const document = await this.#_prisma.document.create({
       data: {
         title: payload.title,
@@ -1246,13 +1228,11 @@ export class DocumentService {
       },
     })
 
-    // Link attachment to document
     await this.#_prisma.attachment.update({
       where: { id: attachment.id },
       data: { documentId: document.id },
     })
 
-    // Construct Collabora editor URL
     const wopiSrc = encodeURIComponent(
       `${process.env.WOPI_HOST_URL || 'https://api.docverse.uz'}/api/v1/wopi/files/${attachment.id}`,
     )
