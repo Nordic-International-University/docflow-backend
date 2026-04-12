@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
@@ -17,7 +18,7 @@ import {
   TaskCommentRetrieveOneResponse,
   TaskCommentUpdateRequest,
 } from './interfaces'
-import { parsePagination } from '@common/helpers'
+import { bestEffort, parsePagination } from '@common/helpers'
 
 // Reusable select for comment with all nested data
 const COMMENT_SELECT = {
@@ -94,6 +95,7 @@ const REPLY_SELECT = {
 
 @Injectable()
 export class TaskCommentService {
+  private readonly logger = new Logger(TaskCommentService.name)
   readonly #_prisma: PrismaService
   readonly #_auditLogService: AuditLogService
   readonly #_taskGateway: TaskGateway
@@ -237,16 +239,21 @@ export class TaskCommentService {
       ...task.assignees.map((a) => a.userId),
       task.createdById,
     ].filter((id, i, arr) => arr.indexOf(id) === i)
-    this.#_notificationService.createTaskCommentNotification({
-      taskId: task.id,
-      taskTitle: task.title,
-      taskNumber: task.taskNumber,
-      projectKey: task.project?.key || '',
-      commentByUserId: payload.userId,
-      commentByName: commentUser?.fullname || '',
-      commentPreview: payload.content || '',
-      notifyUserIds: notifyIds,
-    }).catch(() => {})
+    bestEffort(
+      () =>
+        this.#_notificationService.createTaskCommentNotification({
+          taskId: task.id,
+          taskTitle: task.title,
+          taskNumber: task.taskNumber,
+          projectKey: task.project?.key || '',
+          commentByUserId: payload.userId,
+          commentByName: commentUser?.fullname || '',
+          commentPreview: payload.content || '',
+          notifyUserIds: notifyIds,
+        }),
+      `notify task comment added (task=${task.id}, recipients=${notifyIds.length})`,
+      this.logger,
+    )
 
     return fullComment
   }

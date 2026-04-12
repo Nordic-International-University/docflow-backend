@@ -11,7 +11,11 @@ import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 
 const VALID_PRIORITIES = Object.values(TaskPriority)
 
-import { parsePagination } from '@common/helpers'
+import {
+  bestEffort,
+  bestEffortWithRetry,
+  parsePagination,
+} from '@common/helpers'
 @Injectable()
 export class TaskService {
   private readonly logger = new Logger(TaskService.name)
@@ -115,14 +119,18 @@ export class TaskService {
       ),
     )
 
-    // Monthly KPI yangilash (parallel)
+    // Monthly KPI yangilash (parallel, retry bilan — DB lock/blip uchun)
+    // Raw taskKpiScore allaqachon saqlangan (tepadagi await), bu faqat
+    // oylik aggregatsiya. Fail bo'lsa ma'lumot yo'qolmaydi, keyingi
+    // task completion yoki manual re-aggregate bilan yangilanadi.
     await Promise.all(
       assigneeUserIds.map((userId) =>
-        this.#_kpiService
-          .updateUserMonthlyKpi(userId, periodYear, periodMonth)
-          .catch((err: any) =>
-            this.logger.warn(`KPI update failed for ${userId}: ${err.message}`),
-          ),
+        bestEffortWithRetry(
+          () => this.#_kpiService.updateUserMonthlyKpi(userId, periodYear, periodMonth),
+          `KPI monthly update (user=${userId}, period=${periodYear}-${periodMonth})`,
+          this.logger,
+          { retries: 3, delayMs: 500 },
+        ),
       ),
     )
   }
@@ -140,14 +148,20 @@ export class TaskService {
 
     await this.#_prisma.taskKpiScore.deleteMany({ where: { taskId } })
 
-    // N+1 fix: Re-aggregate monthly KPI (parallel)
+    // N+1 fix: Re-aggregate monthly KPI (parallel, retry bilan)
     await Promise.all(
       existing.map((score) =>
-        this.#_kpiService
-          .updateUserMonthlyKpi(score.userId, score.periodYear, score.periodMonth)
-          .catch((err: any) =>
-            this.logger.warn(`KPI re-aggregate failed: ${err.message}`),
-          ),
+        bestEffortWithRetry(
+          () =>
+            this.#_kpiService.updateUserMonthlyKpi(
+              score.userId,
+              score.periodYear,
+              score.periodMonth,
+            ),
+          `KPI re-aggregate (user=${score.userId}, period=${score.periodYear}-${score.periodMonth})`,
+          this.logger,
+          { retries: 3, delayMs: 500 },
+        ),
       ),
     )
   }
@@ -887,16 +901,21 @@ export class TaskService {
       ...task.assignees.map((a) => a.userId),
       task.createdById,
     ].filter((id, i, arr) => arr.indexOf(id) === i)
-    this.#_notificationService.createTaskCompletedNotification({
-      taskId: payload.id,
-      taskTitle: task.title,
-      taskNumber: task.taskNumber,
-      projectKey: task.project?.key || '',
-      completedByUserId: payload.completedBy,
-      completedByName: completedByUser?.fullname || '',
-      score,
-      notifyUserIds: notifyIds,
-    }).catch(() => {})
+    bestEffort(
+      () =>
+        this.#_notificationService.createTaskCompletedNotification({
+          taskId: payload.id,
+          taskTitle: task.title,
+          taskNumber: task.taskNumber,
+          projectKey: task.project?.key || '',
+          completedByUserId: payload.completedBy,
+          completedByName: completedByUser?.fullname || '',
+          score,
+          notifyUserIds: notifyIds,
+        }),
+      `notify task completed (task=${payload.id}, score=${score})`,
+      this.logger,
+    )
 
     return {
       message: 'Topshiriq yakunlandi',

@@ -32,6 +32,7 @@ interface Ctx {
 }
 
 import { ROLE_NAMES } from '@constants'
+import { bestEffort } from '@common/helpers'
 
 const ADMIN_ROLES: string[] = [ROLE_NAMES.SUPER_ADMIN, ROLE_NAMES.ADMIN]
 
@@ -787,25 +788,30 @@ export class ChatService {
       },
     })
 
-    // Telegram push (non-blocking)
+    // Telegram push (non-blocking, best-effort)
     const senderName = message.sender.fullname
     const chatTitle =
       chat.type === 'GROUP'
         ? chat.title || 'Guruh'
         : chat.members[0]?.user?.fullname || 'Chat'
-    this.pushTelegramNotification(
-      chatId,
-      {
-        id: message.id,
-        type: message.type,
-        content: payload.content || null,
-        senderId: message.senderId,
-        fileName: message.fileName,
-        refSnapshot: message.refSnapshot,
-      },
-      senderName,
-      chatTitle,
-    ).catch(() => {})
+    bestEffort(
+      () =>
+        this.pushTelegramNotification(
+          chatId,
+          {
+            id: message.id,
+            type: message.type,
+            content: payload.content || null,
+            senderId: message.senderId,
+            fileName: message.fileName,
+            refSnapshot: message.refSnapshot,
+          },
+          senderName,
+          chatTitle,
+        ),
+      `telegram push chat message (chat=${chatId}, msg=${message.id})`,
+      this.logger,
+    )
 
     return {
       ...message,

@@ -1,27 +1,6 @@
-/**
- * Audit log helper — 66 joyda takrorlangan audit chaqiruvlarni qisqartirish.
- *
- * Oldin:
- *   await this.#_auditLogService.logAction(
- *     'Document',
- *     document.id,
- *     AuditAction.CREATE,
- *     payload.userId,
- *     { newValues: { title, status } },
- *     payload.ipAddress,
- *   )
- *
- * Keyin:
- *   await auditLog(this.#_auditLogService, {
- *     entity: 'Document',
- *     entityId: document.id,
- *     action: AuditAction.CREATE,
- *     userId: payload.userId,
- *     changes: { title, status },
- *   })
- *
- * Bu function qisqartirish uchun — tashqi API o'zgarmaydi.
- */
+import { Logger } from '@nestjs/common'
+
+const auditLogger = new Logger('AuditHelper')
 
 export interface AuditLogParams {
   entity: string
@@ -34,14 +13,6 @@ export interface AuditLogParams {
   ipAddress?: string
 }
 
-/**
- * Audit log yozish — auditLogService.logAction() ni wrap qiladi.
- * Service'da to'g'ridan-to'g'ri chaqirish mumkin:
- *
- *   await auditLog(this.auditLogService, { ... })
- *
- * Agar auditLogService null/undefined bo'lsa — skip (xavfsiz).
- */
 export async function auditLog(
   service: { logAction: (...args: any[]) => Promise<any> } | null | undefined,
   params: AuditLogParams,
@@ -61,7 +32,11 @@ export async function auditLog(
       },
       params.ipAddress,
     )
-  } catch {
-    // Audit log xatosi asosiy operatsiyani to'xtatmasligi kerak
+  } catch (err: any) {
+    auditLogger.warn(
+      `[audit-log] write FAILED (entity=${params.entity}, id=${params.entityId}, ` +
+        `action=${params.action}, user=${params.userId}): ${err?.message ?? err}`,
+      err?.stack,
+    )
   }
 }

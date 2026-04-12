@@ -71,6 +71,7 @@ import {
   handleWsAuthError,
   type AuthenticatedSocket as AuthSocket,
 } from '@common/ws-auth.helper'
+import { bestEffort } from '@common/helpers'
 
 /**
  * Chat WebSocket gateway.
@@ -249,8 +250,13 @@ export class ChatGateway
     if (sockets.size === 0) {
       this.connectedUsers.delete(client.userId)
       const lastSeen = new Date()
-      // Redis'ga so'nggi faollik yozish
-      await this.redis.setLastSeen(client.userId, lastSeen).catch(() => {})
+      // Redis'ga so'nggi faollik yozish (best-effort — Redis blip bo'lsa ham
+      // foydalanuvchi offline holatga o'tishi kerak)
+      await bestEffort(
+        () => this.redis.setLastSeen(client.userId!, lastSeen),
+        `redis setLastSeen (user=${client.userId})`,
+        this.logger,
+      )
       // Offline broadcast
       await this.broadcastPresence(client.userId, false, lastSeen)
     }
