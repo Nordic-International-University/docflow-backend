@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
@@ -467,7 +472,11 @@ export class TaskService {
     }
   }
 
-  async taskRetrieveOne(payload: { id: string }) {
+  async taskRetrieveOne(payload: {
+    id: string
+    userId?: string
+    roleName?: string
+  }) {
     const task = await this.#_prisma.task.findFirst({
       where: { id: payload.id, deletedAt: null },
       select: {
@@ -575,7 +584,7 @@ export class TaskService {
   }
 
   async taskUpdate(
-    payload: TaskUpdateDto & { id: string; updatedBy: string },
+    payload: TaskUpdateDto & { id: string; updatedBy: string; roleName?: string },
   ): Promise<void> {
     const { id, updatedBy, assigneeIds, scoreConfigId, ...updateData } = payload
 
@@ -583,12 +592,36 @@ export class TaskService {
       where: { id, deletedAt: null },
       include: {
         assignees: { select: { userId: true } },
-        project: { select: { key: true, penaltyPerDay: true } },
+        project: {
+          select: {
+            key: true,
+            penaltyPerDay: true,
+            members: { select: { userId: true, role: true } },
+          },
+        },
       },
     })
 
     if (!existingTask) {
       throw new NotFoundException('Task not found')
+    }
+
+    // SECURITY: ownership/membership check — creator, assignee, yoki project owner/manager
+    if (!isAdmin(payload.roleName)) {
+      const isCreator = existingTask.createdById === updatedBy
+      const isAssignee = existingTask.assignees.some(
+        (a) => a.userId === updatedBy,
+      )
+      const isProjectOwner = existingTask.project?.members?.some(
+        (m) =>
+          m.userId === updatedBy &&
+          (m.role === 'OWNER' || m.role === 'MANAGER'),
+      )
+      if (!isCreator && !isAssignee && !isProjectOwner) {
+        throw new ForbiddenException(
+          'Bu topshiriqni tahrirlash huquqingiz yo\'q',
+        )
+      }
     }
 
     const now = new Date()
@@ -825,6 +858,17 @@ export class TaskService {
 
     if (!task) throw new NotFoundException('Topshiriq topilmadi')
 
+    // SECURITY: faqat creator yoki assignee yakunlay oladi
+    const isCreator = task.createdById === payload.completedBy
+    const isAssignee = task.assignees.some(
+      (a) => a.userId === payload.completedBy,
+    )
+    if (!isCreator && !isAssignee) {
+      throw new ForbiddenException(
+        "Bu topshiriqni yakunlash huquqingiz yo'q",
+      )
+    }
+
     const now = new Date()
 
     // Set completedAt if not already set (boardMove may have set it already)
@@ -999,10 +1043,28 @@ export class TaskService {
   async taskDelete(payload: { id: string; deletedBy: string }): Promise<void> {
     const existingTask = await this.#_prisma.task.findFirst({
       where: { id: payload.id, deletedAt: null },
+      include: {
+        project: {
+          select: {
+            members: { select: { userId: true, role: true } },
+          },
+        },
+      },
     })
 
     if (!existingTask) {
       throw new NotFoundException('Task not found')
+    }
+
+    // SECURITY: faqat creator yoki project owner o'chira oladi
+    const isCreator = existingTask.createdById === payload.deletedBy
+    const isProjectOwner = existingTask.project?.members?.some(
+      (m) => m.userId === payload.deletedBy && m.role === 'OWNER',
+    )
+    if (!isCreator && !isProjectOwner) {
+      throw new ForbiddenException(
+        "Bu topshiriqni o'chirish huquqingiz yo'q",
+      )
     }
 
     await this.#_prisma.task.update({

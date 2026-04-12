@@ -787,6 +787,17 @@ export class DocumentService {
       throw new NotFoundException('Document not found')
     }
 
+    // SECURITY: faqat yaratuvchi yoki admin tahrirlashi mumkin
+    if (
+      payload.userId &&
+      !isAdmin(payload.roleName) &&
+      existingDocument.createdById !== payload.userId
+    ) {
+      throw new ForbiddenException(
+        "Bu hujjatni tahrirlash huquqingiz yo'q",
+      )
+    }
+
     if (
       payload.documentNumber &&
       payload.documentNumber !== existingDocument.documentNumber

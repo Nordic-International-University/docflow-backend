@@ -9,4 +9,5 @@ export interface DocumentUpdateRequest {
   documentTypeId?: string
   journalId?: string
   userId?: string
+  roleName?: string
 }

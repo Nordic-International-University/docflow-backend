@@ -47,8 +47,12 @@ export class TaskController {
   @Get(':id')
   @Permissions(PERMISSIONS.TASK.READ)
   @CheckPolicies((ability) => ability.can('read', 'Task'))
-  async taskRetrieveOne(@Param('id') id: string) {
-    return await this.taskService.taskRetrieveOne({ id })
+  async taskRetrieveOne(@Param('id') id: string, @Req() req: any) {
+    return await this.taskService.taskRetrieveOne({
+      id,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+    })
   }
 
   @Post()
@@ -73,6 +77,7 @@ export class TaskController {
       id,
       ...payload,
       updatedBy: req.user.userId,
+      roleName: req.user.roleName,
     })
   }
 

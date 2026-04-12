@@ -149,8 +149,14 @@ export class DocumentController {
   async documentUpdate(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() payload: DocumentUpdateDto,
+    @Req() req: any,
   ): Promise<any> {
-    return await this.documentService.documentUpdate({ id, ...payload })
+    return await this.documentService.documentUpdate({
+      id,
+      ...payload,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+    })
   }
 
   @Delete(':id')
