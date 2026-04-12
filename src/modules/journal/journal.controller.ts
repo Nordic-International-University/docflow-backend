@@ -13,6 +13,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { JournalService } from './journal.service'
 import {
   ApiOperation,
@@ -75,10 +76,10 @@ export class JournalController {
     description: 'Search term for filtering journals',
   })
   async journalRetrieveAll(
+    @Req() req: AuthenticatedRequest,
     @Query('pageNumber') pageNumber?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
-    @Req() req?: any,
   ): Promise<JournalListResponseDto> {
     return this.journalService.journalRetrieveAll({
       pageNumber,
@@ -126,7 +127,7 @@ export class JournalController {
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiBody({ type: JournalCreateDto })
-  async journalCreate(@Body() createDto: JournalCreateDto, @Req() req: any) {
+  async journalCreate(@Body() createDto: JournalCreateDto, @Req() req: AuthenticatedRequest) {
     return this.journalService.journalCreate({
       ...createDto,
       createdBy: req.user?.userId,
@@ -155,7 +156,7 @@ export class JournalController {
   async journalUpdate(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: JournalUpdateDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.journalService.journalUpdate({
       id,
@@ -181,7 +182,7 @@ export class JournalController {
     description: 'Journal ID',
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
-  async journalDelete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+  async journalDelete(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthenticatedRequest) {
     return this.journalService.journalDelete({
       id,
       deletedBy: req.user?.userId,

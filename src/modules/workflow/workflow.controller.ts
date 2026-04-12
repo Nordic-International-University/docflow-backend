@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { WorkflowService } from './workflow.service'
 import {
   WorkflowCreateDto,
@@ -47,7 +48,7 @@ export class WorkflowController {
   @ApiResponse({ status: 200, type: WorkflowListResponseDto })
   async workflowRetrieveAll(
     @Query() payload: WorkflowRetrieveAllDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowService.workflowRetrieveAll({
       ...payload,
@@ -62,7 +63,7 @@ export class WorkflowController {
   @CheckPolicies((ability) => ability.can('read', 'Workflow'))
   @ApiOperation({ summary: 'Workflow Retrieve One' })
   @ApiResponse({ status: 200, type: WorkflowResponseDto })
-  async workflowRetrieveOne(@Param('id') id: string, @Req() req: any) {
+  async workflowRetrieveOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.workflowService.workflowRetrieveOne({
       id,
       userId: req.user.userId,

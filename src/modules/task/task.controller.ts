@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { TaskService } from './task.service'
 import { TaskCreateDto, TaskUpdateDto, TaskRetrieveQueryDto } from './dtos'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
@@ -33,7 +34,7 @@ export class TaskController {
   @CheckPolicies((ability) => ability.can('read', 'Task'))
   async taskRetrieveAll(
     @Query() payload: TaskRetrieveQueryDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.taskService.taskRetrieveAll({
       ...payload,
@@ -47,7 +48,7 @@ export class TaskController {
   @Get(':id')
   @Permissions(PERMISSIONS.TASK.READ)
   @CheckPolicies((ability) => ability.can('read', 'Task'))
-  async taskRetrieveOne(@Param('id') id: string, @Req() req: any) {
+  async taskRetrieveOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.taskService.taskRetrieveOne({
       id,
       userId: req.user.userId,
@@ -58,7 +59,7 @@ export class TaskController {
   @Post()
   @Permissions(PERMISSIONS.TASK.CREATE)
   @CheckPolicies((ability) => ability.can('create', 'Task'))
-  async taskCreate(@Body() payload: TaskCreateDto, @Req() req: any) {
+  async taskCreate(@Body() payload: TaskCreateDto, @Req() req: AuthenticatedRequest) {
     return await this.taskService.taskCreate({
       ...payload,
       createdById: req.user.userId,
@@ -71,7 +72,7 @@ export class TaskController {
   async taskUpdate(
     @Param('id') id: string,
     @Body() payload: TaskUpdateDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.taskService.taskUpdate({
       id,
@@ -84,7 +85,7 @@ export class TaskController {
   @Post(':id/complete')
   @Permissions(PERMISSIONS.TASK.COMPLETE)
   @ApiOperation({ summary: 'Topshiriqni yakunlash — KPI hisoblanadi' })
-  async taskComplete(@Param('id') id: string, @Req() req: any) {
+  async taskComplete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.taskService.taskComplete({
       id,
       completedBy: req.user.userId,
@@ -94,7 +95,7 @@ export class TaskController {
   @Post(':id/uncomplete')
   @Permissions(PERMISSIONS.TASK.COMPLETE)
   @ApiOperation({ summary: 'Topshiriqni qayta ochish — KPI bekor qilinadi' })
-  async taskUncomplete(@Param('id') id: string, @Req() req: any) {
+  async taskUncomplete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.taskService.taskUncomplete({
       id,
       reopenedBy: req.user.userId,
@@ -103,7 +104,7 @@ export class TaskController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.TASK.DELETE)
-  async taskDelete(@Param('id') id: string, @Req() req: any) {
+  async taskDelete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.taskService.taskDelete({ id, deletedBy: req.user.userId })
   }
 }

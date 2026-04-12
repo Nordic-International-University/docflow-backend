@@ -1,4 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import {
   ApiTags,
   ApiOperation,
@@ -34,7 +35,7 @@ export class AnalyticsController {
   })
   async getDashboardAnalytics(
     @Query() query: AnalyticsQueryDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<DashboardAnalyticsResponseDto> {
     return this.analyticsService.getDashboardAnalytics({
       ...query,
@@ -92,7 +93,7 @@ export class AnalyticsController {
       "Barcha KPI ma'lumotlari bitta endpoint'da: shaxsiy KPI, departament o'rtachasi, leaderboard, oylar trendi, top tasklar, achievementlar, score breakdown",
   })
   async getKpiStatistics(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('year') year?: string,
     @Query('month') month?: string,
     @Query('userId') userId?: string,

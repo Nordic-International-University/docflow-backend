@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { isAdmin } from '@common/helpers'
 import { AttachmentService } from './attachment.service'
 import {
@@ -53,7 +54,7 @@ export class AttachmentController {
   @ApiResponse({ status: 200, type: AttachmentListResponseDto })
   async attachmentRetrieveAll(
     @Query() payload: AttachmentRetrieveAllDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.attachmentService.attachmentRetrieveAll({
       ...payload,
@@ -67,7 +68,7 @@ export class AttachmentController {
   @CheckPolicies((ability) => ability.can('read', 'Attachment'))
   @ApiOperation({ summary: 'Attachment Retrieve One' })
   @ApiResponse({ status: 200, type: AttachmentResponseDto })
-  async attachmentRetrieveOne(@Param('id') id: string, @Req() req: any) {
+  async attachmentRetrieveOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.attachmentService.attachmentRetrieveOne({
       id,
       userId: req.user.userId,
@@ -95,7 +96,7 @@ export class AttachmentController {
   @ApiResponse({ status: 201, description: 'Attachment created successfully' })
   async attachmentCreate(
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.attachmentService.attachmentCreate({
       file,
@@ -166,7 +167,7 @@ export class AttachmentController {
       },
     },
   })
-  async repairFilenames(@Req() req: any) {
+  async repairFilenames(@Req() req: AuthenticatedRequest) {
     // Only allow super admin or admin to run this
     if (!isAdmin(req.user.roleName)) {
       throw new Error('Only administrators can repair filenames')

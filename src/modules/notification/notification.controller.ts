@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import {
   ApiTags,
   ApiOperation,

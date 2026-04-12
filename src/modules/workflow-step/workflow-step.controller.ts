@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { FilesInterceptor } from '@nestjs/platform-express'
 import { WorkflowStepService } from './workflow-step.service'
 import {
@@ -57,7 +58,7 @@ export class WorkflowStepController {
   @ApiResponse({ status: 200, type: WorkflowStepListResponseDto })
   async workflowStepRetrieveAll(
     @Query() payload: WorkflowStepRetrieveAllDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.workflowStepRetrieveAll({
       ...payload,
@@ -72,7 +73,7 @@ export class WorkflowStepController {
   @CheckPolicies((ability) => ability.can('read', 'WorkflowStep'))
   @ApiOperation({ summary: 'Workflow Step Retrieve One' })
   @ApiResponse({ status: 200, type: WorkflowStepResponseDto })
-  async workflowStepRetrieveOne(@Param('id') id: string, @Req() req: any) {
+  async workflowStepRetrieveOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.workflowStepService.workflowStepRetrieveOne({
       id,
       userId: req.user.userId,
@@ -90,7 +91,7 @@ export class WorkflowStepController {
   })
   async workflowStepCreate(
     @Body() payload: WorkflowStepCreateDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.workflowStepCreate(
       payload,
@@ -108,7 +109,7 @@ export class WorkflowStepController {
   async workflowStepUpdate(
     @Param('id') id: string,
     @Body() payload: WorkflowStepUpdateDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.workflowStepUpdate({
       id,
@@ -124,7 +125,7 @@ export class WorkflowStepController {
     status: 200,
     description: 'Workflow Step deleted successfully',
   })
-  async workflowStepDelete(@Param('id') id: string, @Req() req: any) {
+  async workflowStepDelete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.workflowStepService.workflowStepDelete({
       id,
       userId: req.user.userId,
@@ -138,7 +139,7 @@ export class WorkflowStepController {
   @ApiResponse({ status: 200, type: WorkflowStepListResponseDto })
   async getStepsByWorkflow(
     @Param('workflowId') workflowId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.getStepsByWorkflow({
       workflowId,
@@ -156,7 +157,7 @@ export class WorkflowStepController {
   async assignStepToUser(
     @Param('id') id: string,
     @Body() payload: { assignedToUserId: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.assignStepToUser({
       id,
@@ -194,7 +195,7 @@ export class WorkflowStepController {
   async completeStep(
     @Param('id') id: string,
     @Body() payload: WorkflowStepApproveDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.completeStep({
       id,
@@ -234,7 +235,7 @@ export class WorkflowStepController {
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body() payload: WorkflowStepVerifyDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.verifyStep({
       id,
@@ -274,7 +275,7 @@ export class WorkflowStepController {
   async rejectStep(
     @Param('id') id: string,
     @Body() payload: WorkflowStepRejectDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.rejectStep({
       id,
@@ -297,7 +298,7 @@ export class WorkflowStepController {
   })
   async getCalendarView(
     @Query() payload: WorkflowStepCalendarDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.workflowStepService.getCalendarView({
       ...payload,

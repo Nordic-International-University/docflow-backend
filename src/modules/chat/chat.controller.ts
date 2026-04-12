@@ -17,6 +17,7 @@ import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PoliciesGuard, CheckPolicies } from '../../casl'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { PERMISSIONS } from '@constants'
 import { ChatService } from './chat.service'
 import { ChatGateway } from './chat.gateway'
@@ -52,7 +53,7 @@ export class ChatController {
     private readonly gateway: ChatGateway,
   ) {}
 
-  private ctx(req: any) {
+  private ctx(req: AuthenticatedRequest) {
     return { userId: req.user.userId, roleName: req.user.roleName }
   }
 
@@ -61,7 +62,7 @@ export class ChatController {
   @Get()
   @Permissions(PERMISSIONS.CHAT.LIST)
   async list(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('search') search?: string,
     @Query('limit') limit?: number,
   ) {
@@ -73,7 +74,7 @@ export class ChatController {
 
   @Post('direct')
   @Permissions(PERMISSIONS.CHAT.CREATE_DIRECT)
-  async createDirect(@Body() payload: CreateDirectChatDto, @Req() req: any) {
+  async createDirect(@Body() payload: CreateDirectChatDto, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.createOrGetDirectChat(payload, this.ctx(req))
     if (result.created) {
       this.gateway.emitChatCreated(result.id, [req.user.userId, payload.userId])
@@ -83,11 +84,11 @@ export class ChatController {
 
   @Post('group')
   @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
-  async createGroup(@Body() payload: CreateGroupChatDto, @Req() req: any) {
+  async createGroup(@Body() payload: CreateGroupChatDto, @Req() req: AuthenticatedRequest) {
     const chat = await this.chat.createGroupChat(payload, this.ctx(req))
     this.gateway.emitChatCreated(
       chat.id,
-      chat.members.map((m: any) => m.userId),
+      chat.members.map((m: { userId: string }) => m.userId),
     )
     return chat
   }
@@ -96,7 +97,7 @@ export class ChatController {
 
   @Get('settings/me')
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async getSettingsStatic(@Req() req: any) {
+  async getSettingsStatic(@Req() req: AuthenticatedRequest) {
     return this.chat.getSettings(this.ctx(req))
   }
 
@@ -104,7 +105,7 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
   async updateSettingsStatic(
     @Body() payload: UpdateChatSettingsDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.updateSettings(payload, this.ctx(req))
   }
@@ -113,7 +114,7 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.READ)
   async searchMessagesStatic(
     @Query() query: SearchMessagesDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.searchMessages(query.q, query.chatId, this.ctx(req))
   }
@@ -122,7 +123,7 @@ export class ChatController {
   @Permissions(PERMISSIONS.CHAT.READ)
   async getMessageReadsStatic(
     @Param('messageId') messageId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.getMessageReads(messageId, this.ctx(req))
   }
@@ -131,19 +132,19 @@ export class ChatController {
 
   @Post('block/:userId')
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async blockUser(@Param('userId') userId: string, @Req() req: any) {
+  async blockUser(@Param('userId') userId: string, @Req() req: AuthenticatedRequest) {
     return this.chat.blockUser(userId, this.ctx(req))
   }
 
   @Delete('block/:userId')
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async unblockUser(@Param('userId') userId: string, @Req() req: any) {
+  async unblockUser(@Param('userId') userId: string, @Req() req: AuthenticatedRequest) {
     return this.chat.unblockUser(userId, this.ctx(req))
   }
 
   @Get('block/list')
   @Permissions(PERMISSIONS.CHAT.SETTINGS)
-  async listBlocked(@Req() req: any) {
+  async listBlocked(@Req() req: AuthenticatedRequest) {
     return this.chat.getBlockedUsers(this.ctx(req))
   }
 
@@ -155,7 +156,7 @@ export class ChatController {
 
   @Post('join/invite')
   @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
-  async joinByInvite(@Body() payload: JoinByInviteDto, @Req() req: any) {
+  async joinByInvite(@Body() payload: JoinByInviteDto, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.joinByInviteCode(payload.code, this.ctx(req))
     this.gateway.emitChatCreated(result.chatId, [req.user.userId])
     return result
@@ -163,7 +164,7 @@ export class ChatController {
 
   @Post('join/username')
   @Permissions(PERMISSIONS.CHAT.CREATE_GROUP)
-  async joinByUsername(@Body() payload: JoinByUsernameDto, @Req() req: any) {
+  async joinByUsername(@Body() payload: JoinByUsernameDto, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.joinByUsername(
       payload.username,
       this.ctx(req),
@@ -176,7 +177,7 @@ export class ChatController {
 
   @Get(':id')
   @Permissions(PERMISSIONS.CHAT.READ)
-  async getChat(@Param('id') id: string, @Req() req: any) {
+  async getChat(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.chat.getChat(id, this.ctx(req))
   }
 
@@ -185,7 +186,7 @@ export class ChatController {
   async updateGroup(
     @Param('id') id: string,
     @Body() payload: UpdateGroupChatDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const chat = await this.chat.updateGroupChat(id, payload, this.ctx(req))
     this.gateway.emitChatUpdated(id, chat)
@@ -194,7 +195,7 @@ export class ChatController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.CHAT.MANAGE_GROUP)
-  async deleteChat(@Param('id') id: string, @Req() req: any) {
+  async deleteChat(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.deleteChat(id, this.ctx(req))
     this.gateway.emitChatDeleted(id)
     return result
@@ -207,7 +208,7 @@ export class ChatController {
   async addMembers(
     @Param('id') id: string,
     @Body() payload: AddMembersDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.addMembers(id, payload, this.ctx(req))
     this.gateway.emitChatUpdated(id, { membersAdded: result.userIds })
@@ -219,7 +220,7 @@ export class ChatController {
   async removeMember(
     @Param('id') id: string,
     @Param('userId') userId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.removeMember(id, userId, this.ctx(req))
     this.gateway.emitChatUpdated(id, { memberRemoved: userId })
@@ -228,7 +229,7 @@ export class ChatController {
 
   @Post(':id/leave')
   @Permissions(PERMISSIONS.CHAT.READ)
-  async leaveChat(@Param('id') id: string, @Req() req: any) {
+  async leaveChat(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.removeMember(
       id,
       req.user.userId,
@@ -244,7 +245,7 @@ export class ChatController {
     @Param('id') id: string,
     @Param('userId') userId: string,
     @Body() body: { role: 'ADMIN' | 'MEMBER' },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.setMemberRole(id, userId, body.role, this.ctx(req))
   }
@@ -257,7 +258,7 @@ export class ChatController {
     @Param('id') id: string,
     @Query('before') before: string | undefined,
     @Query('limit') limit: string | undefined,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.getMessages(id, this.ctx(req), {
       before,
@@ -273,7 +274,7 @@ export class ChatController {
     @Param('id') id: string,
     @Body() payload: SendMessageDto,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const message = await this.chat.sendMessage(
       id,
@@ -291,7 +292,7 @@ export class ChatController {
   async editMessage(
     @Param('messageId') messageId: string,
     @Body() payload: EditMessageDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const updated = await this.chat.editMessage(
       messageId,
@@ -305,7 +306,7 @@ export class ChatController {
 
   @Delete('messages/:messageId')
   @Permissions(PERMISSIONS.CHAT.SEND)
-  async deleteMessage(@Param('messageId') messageId: string, @Req() req: any) {
+  async deleteMessage(@Param('messageId') messageId: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.deleteMessage(messageId, this.ctx(req))
     const memberIds = await this.chat.getChatMemberIds(result.chatId)
     this.gateway.emitMessageDeleted(result.chatId, memberIds, result.messageId)
@@ -317,7 +318,7 @@ export class ChatController {
   async addReaction(
     @Param('messageId') messageId: string,
     @Body() payload: AddReactionDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.addReaction(
       messageId,
@@ -339,7 +340,7 @@ export class ChatController {
   async removeReaction(
     @Param('messageId') messageId: string,
     @Param('emoji') emoji: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.removeReaction(
       messageId,
@@ -361,7 +362,7 @@ export class ChatController {
   async forwardMessage(
     @Param('messageId') messageId: string,
     @Body() payload: ForwardMessageDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.forwardMessage(
       messageId,
@@ -384,7 +385,7 @@ export class ChatController {
   async markRead(
     @Param('id') id: string,
     @Body() body: { upToMessageId?: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.markChatRead(
       id,
@@ -407,7 +408,7 @@ export class ChatController {
   async forwardWorkflow(
     @Param('workflowId') workflowId: string,
     @Body() payload: ForwardEntityDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const msg = await this.chat.forwardWorkflow(
       workflowId,
@@ -424,7 +425,7 @@ export class ChatController {
   async forwardDocument(
     @Param('documentId') documentId: string,
     @Body() payload: ForwardEntityDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const msg = await this.chat.forwardDocument(
       documentId,
@@ -441,7 +442,7 @@ export class ChatController {
   async forwardTask(
     @Param('taskId') taskId: string,
     @Body() payload: ForwardEntityDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const msg = await this.chat.forwardTask(taskId, payload, this.ctx(req))
     const memberIds = await this.chat.getChatMemberIds(payload.toChatId)
@@ -456,7 +457,7 @@ export class ChatController {
   async muteChat(
     @Param('id') id: string,
     @Body() payload: MuteChatDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.muteChat(id, payload.mutedUntil ?? null, this.ctx(req))
   }
@@ -466,7 +467,7 @@ export class ChatController {
   async pinChat(
     @Param('id') id: string,
     @Body() payload: PinChatDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.pinChat(id, payload.pinned, this.ctx(req))
   }
@@ -476,14 +477,14 @@ export class ChatController {
   async archiveChat(
     @Param('id') id: string,
     @Body() payload: ArchiveChatDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.chat.archiveChat(id, payload.archived, this.ctx(req))
   }
 
   @Post(':id/clear-history')
   @Permissions(PERMISSIONS.CHAT.READ)
-  async clearHistory(@Param('id') id: string, @Req() req: any) {
+  async clearHistory(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.chat.clearChatHistory(id, this.ctx(req))
   }
 
@@ -494,7 +495,7 @@ export class ChatController {
   async updateVisibility(
     @Param('id') id: string,
     @Body() payload: UpdateGroupVisibilityDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.updateGroupVisibility(
       id,
@@ -510,7 +511,7 @@ export class ChatController {
   async updatePermissions(
     @Param('id') id: string,
     @Body() payload: UpdateGroupPermissionsDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const result = await this.chat.updateGroupPermissions(
       id,
@@ -523,7 +524,7 @@ export class ChatController {
 
   @Post(':id/invite/regenerate')
   @Permissions(PERMISSIONS.CHAT.MANAGE_GROUP)
-  async regenerateInvite(@Param('id') id: string, @Req() req: any) {
+  async regenerateInvite(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.chat.regenerateInviteCode(id, this.ctx(req))
   }
 
@@ -534,7 +535,7 @@ export class ChatController {
   async initiateCall(
     @Param('id') id: string,
     @Body() payload: InitiateCallDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     if (
       payload.type === 'VIDEO' &&
@@ -550,7 +551,7 @@ export class ChatController {
 
   @Post('calls/:callId/accept')
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
-  async acceptCall(@Param('callId') callId: string, @Req() req: any) {
+  async acceptCall(@Param('callId') callId: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.respondToCall(
       callId,
       'accept',
@@ -567,7 +568,7 @@ export class ChatController {
 
   @Post('calls/:callId/reject')
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
-  async rejectCall(@Param('callId') callId: string, @Req() req: any) {
+  async rejectCall(@Param('callId') callId: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.respondToCall(
       callId,
       'reject',
@@ -584,7 +585,7 @@ export class ChatController {
 
   @Post('calls/:callId/end')
   @Permissions(PERMISSIONS.CHAT.CALL_AUDIO)
-  async endCall(@Param('callId') callId: string, @Req() req: any) {
+  async endCall(@Param('callId') callId: string, @Req() req: AuthenticatedRequest) {
     const result = await this.chat.respondToCall(callId, 'end', this.ctx(req))
     this.gateway.emitCallStatus(callId, {
       action: 'ended',

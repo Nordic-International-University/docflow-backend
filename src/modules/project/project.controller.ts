@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { ProjectService } from './project.service'
 import {
   ProjectCreateDto,
@@ -37,7 +38,7 @@ export class ProjectController {
   @CheckPolicies((ability) => ability.can('read', 'Project'))
   async projectRetrieveAll(
     @Query() payload: ProjectRetrieveQueryDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.projectService.projectRetrieveAll({
       ...payload,
@@ -51,7 +52,7 @@ export class ProjectController {
   @Get(':id')
   @Permissions(PERMISSIONS.PROJECT.READ)
   @CheckPolicies((ability) => ability.can('read', 'Project'))
-  async projectRetrieveOne(@Param('id') id: string, @Req() req: any) {
+  async projectRetrieveOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.projectService.projectRetrieveOne({
       id,
       userId: req.user.userId,
@@ -63,7 +64,7 @@ export class ProjectController {
   @Post()
   @Permissions(PERMISSIONS.PROJECT.CREATE)
   @CheckPolicies((ability) => ability.can('create', 'Project'))
-  async projectCreate(@Body() payload: ProjectCreateDto, @Req() req: any) {
+  async projectCreate(@Body() payload: ProjectCreateDto, @Req() req: AuthenticatedRequest) {
     return await this.projectService.projectCreate({
       ...payload,
       createdBy: req.user.userId,
@@ -76,7 +77,7 @@ export class ProjectController {
   async projectUpdate(
     @Param('id') id: string,
     @Body() payload: ProjectUpdateDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return await this.projectService.projectUpdate({
       id,
@@ -88,7 +89,7 @@ export class ProjectController {
   @Delete(':id')
   @Permissions(PERMISSIONS.PROJECT.DELETE)
   @CheckPolicies((ability) => ability.can('delete', 'Project'))
-  async projectDelete(@Param('id') id: string, @Req() req: any) {
+  async projectDelete(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return await this.projectService.projectDelete({
       id,
       deletedBy: req.user.userId,

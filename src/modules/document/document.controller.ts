@@ -35,6 +35,8 @@ import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions, Public } from '@decorators'
 import { PERMISSIONS } from '@constants'
 import { PoliciesGuard, CheckPolicies } from '../../casl'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
+import { Response } from 'express'
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
@@ -61,6 +63,7 @@ export class DocumentController {
   @ApiQuery({ name: 'journalId', required: false, type: String })
   @ApiQuery({ name: 'templateId', required: false, type: String })
   async documentRetrieveAll(
+    @Req() req: AuthenticatedRequest,
     @Query('pageNumber') pageNumber?: number,
     @Query('pageSize') pageSize?: number,
     @Query('search') search?: string,
@@ -68,7 +71,6 @@ export class DocumentController {
     @Query('documentTypeId') documentTypeId?: string,
     @Query('journalId') journalId?: string,
     @Query('templateId') templateId?: string,
-    @Req() req?: any,
   ) {
     return await this.documentService.documentRetrieveAll({
       pageNumber,

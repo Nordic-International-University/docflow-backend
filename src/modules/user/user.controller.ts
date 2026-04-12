@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { UserService } from './user.service'
 import { UserDeleteDto } from './dtos/user-delete.dtos'
 import { UserCreateDto } from './dtos/user-create.dtos'

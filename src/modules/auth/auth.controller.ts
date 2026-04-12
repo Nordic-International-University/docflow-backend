@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common'
+import type { AuthenticatedRequest } from '../../common/types/request.types'
 import { Throttle, SkipThrottle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
 import {
@@ -84,7 +85,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'User profile' })
   @ApiResponse({ status: 200, description: 'Profile successful' })
-  async profile(@Req() req: any): Promise<any> {
+  async profile(@Req() req: AuthenticatedRequest): Promise<any> {
     return await this.authService.profile(req.user.userId)
   }
 
@@ -104,7 +105,7 @@ export class AuthController {
       },
     },
   })
-  async logout(@Req() req: any): Promise<any> {
+  async logout(@Req() req: AuthenticatedRequest): Promise<any> {
     const authHeader = req.headers['authorization']
     const accessToken = authHeader?.startsWith('Bearer ')
       ? authHeader.slice(7)
@@ -138,7 +139,7 @@ export class AuthController {
       },
     },
   })
-  async logoutAll(@Req() req: any): Promise<any> {
+  async logoutAll(@Req() req: AuthenticatedRequest): Promise<any> {
     const authHeader = req.headers['authorization']
     const accessToken = authHeader?.startsWith('Bearer ')
       ? authHeader.slice(7)
