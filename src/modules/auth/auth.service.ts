@@ -153,6 +153,13 @@ export class AuthService {
         throw new UnauthorizedException('User account is inactive or deleted')
       }
 
+      // SECURITY: eski refresh token'ni revoke qilish (rotation)
+      await this.prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { isRevoked: true },
+      })
+
+      // Yangi access token
       const accessToken = await this.jwtService.signAsync(
         {
           userId: storedToken.user.id,
@@ -167,8 +174,25 @@ export class AuthService {
         },
       )
 
+      // Yangi refresh token (rotation — har refresh'da yangi token)
+      const newRefreshToken = await this.jwtService.signAsync(
+        { userId: storedToken.user.id },
+        { secret: this.refreshSecret, expiresIn: this.refreshExpiresIn },
+      )
+
+      await this.prisma.refreshToken.create({
+        data: {
+          token: newRefreshToken,
+          userId: storedToken.user.id,
+          expiresAt: new Date(
+            Date.now() + this.refreshExpiresIn * 1000,
+          ),
+        },
+      })
+
       return {
         accessToken,
+        refreshToken: newRefreshToken,
       }
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token')

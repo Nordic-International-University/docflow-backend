@@ -67,7 +67,7 @@ export class ChatController {
   ) {
     return this.chat.listChats(this.ctx(req), {
       search,
-      limit: Number(limit) || 50,
+      limit: Math.min(Number(limit) || 50, 100),
     })
   }
 
@@ -261,7 +261,7 @@ export class ChatController {
   ) {
     return this.chat.getMessages(id, this.ctx(req), {
       before,
-      limit: Number(limit) || 50,
+      limit: Math.min(Number(limit) || 50, 100),
     })
   }
 

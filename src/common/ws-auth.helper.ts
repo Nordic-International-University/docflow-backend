@@ -40,6 +40,14 @@ export async function authenticateWsClient(
     secret: configService.get<string>('jwt.accessSecret'),
   })
 
+  // SECURITY: token blacklist tekshirish (logout qilingan token'lar)
+  const isBlacklisted = await prisma.tokenBlacklist.findFirst({
+    where: { token, expiresAt: { gte: new Date() } },
+  })
+  if (isBlacklisted) {
+    throw new Error('Token has been revoked')
+  }
+
   const user = await prisma.user.findFirst({
     where: { id: payload.userId, deletedAt: null, isActive: true },
     select: { id: true, username: true },

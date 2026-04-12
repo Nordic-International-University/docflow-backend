@@ -35,6 +35,33 @@ const INDEXABLE_MIMETYPES = new Set([
   ...DOCX_MIMETYPES,
   'application/pdf',
 ])
+
+// SECURITY: ruxsat etilgan fayl turlari — boshqa hamma bloklanadi
+const ALLOWED_MIMETYPES = new Set([
+  // Documents
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'application/msword', // doc
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+  'application/vnd.ms-excel', // xls
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // pptx
+  'application/vnd.ms-powerpoint', // ppt
+  'application/vnd.oasis.opendocument.text', // odt
+  'application/rtf',
+  'text/plain',
+  'text/csv',
+  // Images
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'image/bmp',
+  // Archives
+  'application/zip',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed',
+])
 @Injectable()
 export class AttachmentService {
   private readonly logger = new Logger(AttachmentService.name)
@@ -328,6 +355,14 @@ export class AttachmentService {
     if (!payload.file) {
       throw new BadRequestException(
         'No file provided. Make sure the request is multipart/form-data with field name "file"',
+      )
+    }
+
+    // SECURITY: fayl turi tekshirish — .exe, .sh, .bat va h.k. bloklanadi
+    if (!ALLOWED_MIMETYPES.has(payload.file.mimetype)) {
+      throw new BadRequestException(
+        `Bu fayl turi qo'llab-quvvatlanmaydi: ${payload.file.mimetype}. ` +
+          "Ruxsat etilgan: PDF, Word, Excel, PowerPoint, rasmlar, arxivlar.",
       )
     }
 
