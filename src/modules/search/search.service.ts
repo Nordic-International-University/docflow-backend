@@ -126,23 +126,35 @@ export class SearchService {
       }
 
       // 2. PDF/DOCX content bo'yicha qidirish (search_index jadvalidan)
+      // document + attachment (hali document'ga biriktirilmaganlar ham)
       const contentMatches = await this.prisma.searchIndex.findMany({
         where: {
-          entityType: 'document',
+          entityType: { in: ['document', 'attachment'] },
           content: { contains: searchTerm, mode: searchMode },
         },
-        select: { entityId: true, title: true, content: true },
+        select: { entityType: true, entityId: true, title: true, content: true },
         take: limit,
       })
 
       // Title match'da topilmaganlarni content match'dan qo'shish
       for (const match of contentMatches) {
-        if (docIds.has(match.entityId)) continue // allaqachon bor
+        // Attachment bo'lsa — uning document'ini topish
+        let documentId = match.entityId
+        if (match.entityType === 'attachment') {
+          const att = await this.prisma.attachment.findFirst({
+            where: { id: match.entityId },
+            select: { documentId: true },
+          })
+          if (!att?.documentId) continue // hali document'ga biriktirilmagan
+          documentId = att.documentId
+        }
+
+        if (docIds.has(documentId)) continue // allaqachon bor
 
         // ABAC check — bu document'ga ruxsat bormi
         const doc = await this.prisma.document.findFirst({
           where: {
-            id: match.entityId,
+            id: documentId,
             deletedAt: null,
             ...docFilter,
           },
