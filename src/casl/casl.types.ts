@@ -63,6 +63,12 @@ export interface CaslUser {
   id: string
   roleName?: string
   departmentId?: string | null
+  /** Boshliq bo'lgan bo'lim + uning barcha child'lari (rekursiv) */
+  subordinateDeptIds?: string[]
+  /** O'z bo'limidan root'gacha zanjir */
+  ancestorDeptIds?: string[]
+  /** Bo'lim boshliq'imi */
+  isDeptHead?: boolean
 }
 
 /** Convenience type for AbilityBuilder */

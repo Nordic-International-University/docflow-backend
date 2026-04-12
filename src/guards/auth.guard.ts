@@ -10,6 +10,7 @@ import { Reflector } from '@nestjs/core'
 import { JwtService } from '@nestjs/jwt'
 import { Request } from 'express'
 import { PrismaService } from '@prisma'
+import { DepartmentHierarchyService } from '../casl/department-hierarchy.service'
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -20,6 +21,7 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector,
     private prisma: PrismaService,
     private configService: ConfigService,
+    private deptHierarchy: DepartmentHierarchyService,
   ) {
     this.accessSecret = this.configService.get<string>('jwt.accessSecret')
   }
@@ -111,7 +113,13 @@ export class AuthGuard implements CanActivate {
       const permissionKeys =
         user.role?.permissions.map((rp) => rp.permission.key) || []
 
-      // Attach user with permissions to request
+      // ABAC: department hierarchy resolver (cached 5 min)
+      const deptScope = await this.deptHierarchy.resolveScope(
+        user.id,
+        user.departmentId,
+      )
+
+      // Attach user with permissions + ABAC context to request
       request['user'] = {
         userId: user.id,
         username: user.username,
@@ -122,6 +130,10 @@ export class AuthGuard implements CanActivate {
         departmentName: user.department?.name,
         permissions: permissionKeys,
         sessionId: payload.sessionId,
+        // ABAC context — PoliciesGuard va service'larda ishlatiladi
+        subordinateDeptIds: deptScope.subordinateDeptIds,
+        ancestorDeptIds: deptScope.ancestorDeptIds,
+        isDeptHead: deptScope.isDeptHead,
       }
     } catch (error) {
       if (error instanceof UnauthorizedException) {
