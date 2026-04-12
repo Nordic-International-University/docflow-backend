@@ -1643,3 +1643,16 @@ model UserBlock {
   @@index([blockedId])
   @@map("user_block")
 }
+
+// Document number uchun atomic sequence counter jadvali.
+// INSERT ... ON CONFLICT DO UPDATE orqali Postgres darajasida atomic —
+// race condition yo'q, application lock kerak emas.
+// Raw SQL via $queryRawUnsafe ishlatiladi (document-number-generator.util.ts),
+// lekin schema'da model sifatida ham belgilangan — Prisma drift detection uchun.
+model DocumentSequence {
+  key        String   @id              @db.VarChar(255)
+  counter    Int      @default(0)
+  updatedAt  DateTime @map("updated_at")  @db.Timestamp @default(now())
+
+  @@map("document_sequence")
+}
