@@ -2,6 +2,44 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { isAdmin } from '@common/helpers'
 import { AnalyticsQueryDto, TimeRange } from './dtos/analytics-query.dto'
+
+/**
+ * Analytics scope — foydalanuvchi nima ko'ra olishini belgilaydi.
+ *
+ * Admin → hamma
+ * Dept Head → o'z dept + subordinate deptlar
+ * Regular → faqat o'zi
+ */
+export interface AnalyticsScope {
+  userId: string
+  isFullAccess: boolean
+  departmentIds: string[] // bo'sh bo'lsa — faqat shaxsiy
+  isDeptHead: boolean
+}
+
+function buildScope(user: {
+  userId: string
+  roleName?: string
+  departmentId?: string
+  subordinateDeptIds?: string[]
+  isDeptHead?: boolean
+}): AnalyticsScope {
+  const fullAccess = isAdmin(user.roleName)
+  const deptIds = fullAccess
+    ? [] // admin uchun filter yo'q
+    : user.subordinateDeptIds?.length
+      ? user.subordinateDeptIds
+      : user.departmentId
+        ? [user.departmentId]
+        : []
+
+  return {
+    userId: user.userId,
+    isFullAccess: fullAccess,
+    departmentIds: deptIds,
+    isDeptHead: user.isDeptHead ?? false,
+  }
+}
 import {
   DashboardAnalyticsResponseDto,
   DocumentAnalyticsResponseDto,
@@ -15,9 +53,41 @@ export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboardAnalytics(
-    query: AnalyticsQueryDto,
+    query: AnalyticsQueryDto & {
+      userId?: string
+      roleName?: string
+      departmentId?: string
+      subordinateDeptIds?: string[]
+      isDeptHead?: boolean
+    },
   ): Promise<DashboardAnalyticsResponseDto> {
     const { currentPeriod, previousPeriod } = this.calculateDateRanges(query)
+    const scope = buildScope(query as any)
+
+    // Scope filter — dept head o'z bo'limlari, regular o'ziniki, admin hamma
+    const docScopeFilter = scope.isFullAccess
+      ? {}
+      : scope.departmentIds.length > 0
+        ? { journal: { departmentId: { in: scope.departmentIds } } }
+        : { createdById: scope.userId }
+
+    const userScopeFilter = scope.isFullAccess
+      ? {}
+      : scope.departmentIds.length > 0
+        ? { departmentId: { in: scope.departmentIds } }
+        : { id: scope.userId }
+
+    const workflowScopeFilter = scope.isFullAccess
+      ? {}
+      : scope.departmentIds.length > 0
+        ? { document: { journal: { departmentId: { in: scope.departmentIds } } } }
+        : { document: { createdById: scope.userId } }
+
+    const taskScopeFilter = scope.isFullAccess
+      ? {}
+      : scope.departmentIds.length > 0
+        ? { project: { departmentId: { in: scope.departmentIds } } }
+        : { OR: [{ createdById: scope.userId }, { assignees: { some: { userId: scope.userId } } }] }
 
     // Count total documents
     const totalDocuments = await this.getMetricWithChange(
@@ -25,6 +95,7 @@ export class AnalyticsService {
         return this.prisma.document.count({
           where: {
             deletedAt: null,
+            ...docScopeFilter,
             ...(startDate && endDate
               ? { createdAt: { gte: startDate, lte: endDate } }
               : {}),
@@ -35,12 +106,13 @@ export class AnalyticsService {
       previousPeriod,
     )
 
-    // Count active users (users who have logged in or created documents)
+    // Count active users (scoped)
     const activeUsers = await this.getMetricWithChange(
       async (startDate, endDate) => {
         const usersWithActivity = await this.prisma.user.count({
           where: {
             deletedAt: null,
+            ...userScopeFilter,
             OR: [
               {
                 createdDocuments: {
@@ -97,11 +169,12 @@ export class AnalyticsService {
       previousPeriod,
     )
 
-    // Active workflows
+    // Active workflows (scoped)
     const activeWorkflows = await this.prisma.workflow.count({
       where: {
         deletedAt: null,
         status: { in: ['ACTIVE', 'PAUSED'] },
+        ...workflowScopeFilter,
       },
     })
 
@@ -125,13 +198,14 @@ export class AnalyticsService {
 
     // ============ YANGI: Task, Project, Chat statistika ============
 
-    // Haqiqiy tasklar (task moduli)
+    // Haqiqiy tasklar (scoped)
     const totalTasks = await this.getMetricWithChange(
       async (startDate, endDate) => {
         return this.prisma.task.count({
           where: {
             deletedAt: null,
             isArchived: false,
+            ...taskScopeFilter,
             ...(startDate && endDate
               ? { createdAt: { gte: startDate, lte: endDate } }
               : {}),
@@ -142,26 +216,36 @@ export class AnalyticsService {
       previousPeriod,
     )
 
-    // Bajarilgan tasklar
+    // Bajarilgan tasklar (scoped)
     const completedTasks = await this.prisma.task.count({
       where: {
         deletedAt: null,
         completedAt: { not: null },
+        ...taskScopeFilter,
       },
     })
 
-    // Muddati o'tgan tasklar
+    // Muddati o'tgan tasklar (scoped)
     const overdueTasks = await this.prisma.task.count({
       where: {
         deletedAt: null,
         completedAt: null,
         dueDate: { lt: new Date() },
+        ...taskScopeFilter,
       },
     })
 
-    // Loyihalar
+    // Loyihalar (scoped)
     const totalProjects = await this.prisma.project.count({
-      where: { deletedAt: null, isArchived: false },
+      where: {
+        deletedAt: null,
+        isArchived: false,
+        ...(scope.isFullAccess
+          ? {}
+          : scope.departmentIds.length > 0
+            ? { departmentId: { in: scope.departmentIds } }
+            : { createdById: scope.userId }),
+      },
     })
 
     // Chat xabarlari (bugun)
@@ -1100,9 +1184,17 @@ export class AnalyticsService {
     month: number
     currentUserRole?: string
     currentUserDepartmentId?: string
+    subordinateDeptIds?: string[]
+    isDeptHead?: boolean
   }) {
     const { userId, year, month } = payload
-    const admin = isAdmin(payload.currentUserRole)
+    const scope = buildScope({
+      userId,
+      roleName: payload.currentUserRole,
+      departmentId: payload.currentUserDepartmentId,
+      subordinateDeptIds: payload.subordinateDeptIds,
+      isDeptHead: payload.isDeptHead,
+    })
 
     // ============ 1. SHAXSIY KPI (joriy oy) ============
     const personalKpi = await this.prisma.userMonthlyKpi.findFirst({
@@ -1128,13 +1220,18 @@ export class AnalyticsService {
     })
 
     // ============ 3. KOMPANIYA / DEPARTAMENT REYTINGI ============
+    // Admin → hamma, Dept Head → subordinate deptlar, Regular → o'z dept
     const leaderboard = await this.prisma.userMonthlyKpi.findMany({
       where: {
         year,
         month,
-        ...(payload.currentUserDepartmentId && !admin
-          ? { departmentId: payload.currentUserDepartmentId }
-          : {}),
+        ...(scope.isFullAccess
+          ? {}
+          : scope.departmentIds.length > 0
+            ? { departmentId: { in: scope.departmentIds } }
+            : payload.currentUserDepartmentId
+              ? { departmentId: payload.currentUserDepartmentId }
+              : {}),
       },
       orderBy: { finalScore: 'desc' },
       take: 20,
@@ -1217,11 +1314,17 @@ export class AnalyticsService {
       }
     }
 
-    // ============ 6. BARCHA DEPARTAMENT REYTINGI (admin uchun) ============
+    // ============ 6. DEPARTAMENT REYTINGI (admin: hamma, dept head: subordinate) ============
     let allDepartments: any[] = []
-    if (admin) {
+    if (scope.isFullAccess || scope.isDeptHead) {
       const depts = await this.prisma.departmentMonthlyKpi.findMany({
-        where: { year, month },
+        where: {
+          year,
+          month,
+          ...(scope.isFullAccess
+            ? {}
+            : { departmentId: { in: scope.departmentIds } }),
+        },
         orderBy: { averageScore: 'desc' },
       })
       allDepartments = await Promise.all(

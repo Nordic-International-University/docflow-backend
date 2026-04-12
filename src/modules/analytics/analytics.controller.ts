@@ -9,6 +9,7 @@ import { AnalyticsService } from './analytics.service'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
 import { PERMISSIONS } from '@constants'
+import { PoliciesGuard } from '../../casl'
 import { AnalyticsQueryDto } from './dtos/analytics-query.dto'
 import {
   DashboardAnalyticsResponseDto,
@@ -19,7 +20,7 @@ import {
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({ path: 'analytics', version: '1' })
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
@@ -34,8 +35,16 @@ export class AnalyticsController {
   })
   async getDashboardAnalytics(
     @Query() query: AnalyticsQueryDto,
+    @Req() req: any,
   ): Promise<DashboardAnalyticsResponseDto> {
-    return this.analyticsService.getDashboardAnalytics(query)
+    return this.analyticsService.getDashboardAnalytics({
+      ...query,
+      userId: req.user.userId,
+      roleName: req.user.roleName,
+      departmentId: req.user.departmentId,
+      subordinateDeptIds: req.user.subordinateDeptIds,
+      isDeptHead: req.user.isDeptHead,
+    } as any)
   }
 
   @Get('documents')
@@ -100,6 +109,8 @@ export class AnalyticsController {
       month: month ? parseInt(month, 10) : now.getMonth() + 1,
       currentUserRole: req.user.roleName,
       currentUserDepartmentId: req.user.departmentId,
+      subordinateDeptIds: req.user.subordinateDeptIds,
+      isDeptHead: req.user.isDeptHead,
     })
   }
 }
