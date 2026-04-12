@@ -102,10 +102,15 @@ export class WopiController {
         user.userId,
       )
 
+      const collaboraBase =
+        process.env.COLLABORA_URL || 'https://office.docverse.uz'
+      const collaboraUrl = `${collaboraBase}/browser/dist/cool.html?WOPISrc=${encodeURIComponent(tokenResponse.wopiSrc)}&access_token=${tokenResponse.accessToken}`
+
       return res.status(HttpStatus.OK).json({
         accessToken: tokenResponse.accessToken,
         expiresAt: tokenResponse.expiresAt,
         wopiSrc: tokenResponse.wopiSrc,
+        collaboraUrl,
       })
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
