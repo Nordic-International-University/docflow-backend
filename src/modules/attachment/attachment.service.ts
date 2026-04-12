@@ -23,10 +23,17 @@ import { isAdmin } from '@common/helpers'
 import { parsePagination } from '@common/helpers'
 import { PdfConverterUtil } from '@common/utils/pdf-converter.util'
 import { setCachedPdf } from '@common/utils/pdf-conversion-cache'
+import { bestEffort } from '@common/helpers'
+import PizZip from 'pizzip'
 
 const DOCX_MIMETYPES = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/msword',
+])
+
+const INDEXABLE_MIMETYPES = new Set([
+  ...DOCX_MIMETYPES,
+  'application/pdf',
 ])
 @Injectable()
 export class AttachmentService {
@@ -364,6 +371,24 @@ export class AttachmentService {
       })
     }
 
+    // PDF/DOCX matnini search_index'ga avtomatik saqlash (best-effort)
+    if (
+      INDEXABLE_MIMETYPES.has(payload.file.mimetype) &&
+      Buffer.isBuffer(payload.file.buffer)
+    ) {
+      bestEffort(
+        () =>
+          this.indexAttachmentText(
+            attachment.id,
+            payload.file.buffer,
+            payload.file.mimetype,
+            decodedFileName,
+          ),
+        `search index attachment ${attachment.id}`,
+        this.logger,
+      )
+    }
+
     return {
       id: attachment.id,
       fileName: attachment.fileName,
@@ -371,6 +396,110 @@ export class AttachmentService {
       fileSize: attachment.fileSize,
       mimeType: attachment.mimeType,
     }
+  }
+
+  /**
+   * PDF/DOCX'dan matn chiqarib search_index jadvaliga saqlash.
+   * Attachment yuklanganda avtomatik chaqiriladi (best-effort).
+   */
+  private async indexAttachmentText(
+    attachmentId: string,
+    buffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ): Promise<void> {
+    let text = ''
+
+    if (mimeType === 'application/pdf') {
+      try {
+        const pageCount = await PdfConverterUtil.getPageCount(buffer)
+        const texts: string[] = []
+        for (let i = 0; i < Math.min(pageCount, 50); i++) {
+          try {
+            const t = await PdfConverterUtil.extractText(buffer, i)
+            if (t) texts.push(t)
+          } catch {}
+        }
+        text = texts.join(' ')
+      } catch {}
+    } else if (DOCX_MIMETYPES.has(mimeType)) {
+      try {
+        const zip = new PizZip(buffer)
+        const docXml = zip.file('word/document.xml')
+        if (docXml) {
+          text = docXml
+            .asText()
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        }
+      } catch {}
+    }
+
+    if (!text || text.length < 3) return
+
+    // Attachment'ga bog'langan document bormi?
+    const att = await this.#_prisma.attachment.findFirst({
+      where: { id: attachmentId },
+      select: { documentId: true },
+    })
+
+    if (att?.documentId) {
+      // Document mavjud — shu document'ning search_index'ini yangilash
+      const existing = await this.#_prisma.searchIndex.findUnique({
+        where: {
+          entityType_entityId: {
+            entityType: 'document',
+            entityId: att.documentId,
+          },
+        },
+      })
+
+      const combinedContent = existing?.content
+        ? existing.content + ' ' + text
+        : text
+
+      await this.#_prisma.searchIndex.upsert({
+        where: {
+          entityType_entityId: {
+            entityType: 'document',
+            entityId: att.documentId,
+          },
+        },
+        create: {
+          entityType: 'document',
+          entityId: att.documentId,
+          title: fileName,
+          content: combinedContent.substring(0, 50000),
+        },
+        update: {
+          content: combinedContent.substring(0, 50000),
+        },
+      })
+    } else {
+      // Document yo'q (hali biriktirilmagan) — attachment sifatida saqlash
+      await this.#_prisma.searchIndex.upsert({
+        where: {
+          entityType_entityId: {
+            entityType: 'attachment',
+            entityId: attachmentId,
+          },
+        },
+        create: {
+          entityType: 'attachment',
+          entityId: attachmentId,
+          title: fileName,
+          content: text.substring(0, 50000),
+        },
+        update: {
+          content: text.substring(0, 50000),
+        },
+      })
+    }
+
+    this.logger.log(
+      `[search-index] Auto-indexed ${mimeType === 'application/pdf' ? 'PDF' : 'DOCX'}: ${fileName} (${text.length} chars)`,
+    )
   }
 
   /**
