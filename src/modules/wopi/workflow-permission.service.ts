@@ -1,4 +1,3 @@
-import { ROLE_NAMES } from '@constants'
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { StepActionType } from '@prisma/client'

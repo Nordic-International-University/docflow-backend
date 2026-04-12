@@ -73,8 +73,6 @@ export class UserController {
   @Permissions(PERMISSIONS.USER.UPDATE)
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   async userUpdate(@Param('id') id: string, @Body() payload: UserUpdateDto) {
-    console.log('Received ID:', id)
-    console.log('Updating user with payload:', payload)
     return await this.userService.userUpdate({
       id,
       ...payload,

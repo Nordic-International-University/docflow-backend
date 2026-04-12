@@ -110,7 +110,6 @@ export class PermissionService {
     //   'Permission',
     //   createdPermission.id,
     //   AuditAction.CREATE,
-    //   payload.createdBy || createdPermission.id,
     //   {
     //     newValues: {
     //       name: createdPermission.name,
@@ -217,7 +216,6 @@ export class PermissionService {
     //   'Permission',
     //   payload.id,
     //   AuditAction.DELETE,
-    //   payload.deletedBy || payload.id,
     //   {
     //     oldValues: {
     //       name: permission.name,

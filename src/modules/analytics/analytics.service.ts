@@ -1,4 +1,3 @@
-import { ROLE_NAMES } from '@constants'
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { isAdmin } from '@common/helpers'

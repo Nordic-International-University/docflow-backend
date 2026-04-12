@@ -119,7 +119,6 @@ export class DocumentController {
     @Body() payload: DocumentCreateDto,
     @Req() req: any,
   ): Promise<any> {
-    console.log('req', req.user)
     return await this.documentService.documentCreate({
       userId: req.user.userId,
       ...payload,

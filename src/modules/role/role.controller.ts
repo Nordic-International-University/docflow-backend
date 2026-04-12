@@ -31,7 +31,6 @@ export class RoleController {
   @Permissions(PERMISSIONS.ROLE.LIST)
   @ApiOperation({ summary: 'Role Retrieve All' })
   async roleRetrieveAll(@Query() payload: any) {
-    console.log('RoleController roleRetrieveAll payload', payload)
     return await this.roleService.roleRetrieveAll(payload)
   }
 

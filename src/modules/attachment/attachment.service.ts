@@ -18,7 +18,6 @@ import {
 } from './interfaces'
 import { PrismaService } from '@prisma'
 import { MinioService } from '@clients'
-import { ROLE_NAMES } from '@constants'
 import { isAdmin } from '@common/helpers'
 
 import { parsePagination } from '@common/helpers'

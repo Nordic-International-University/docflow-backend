@@ -1,4 +1,3 @@
-import { ROLE_NAMES } from '@constants'
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log'

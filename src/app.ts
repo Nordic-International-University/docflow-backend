@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Logger, Module } from '@nestjs/common'
 import { PrismaModule } from '@prisma'
 import { CaslModule } from './casl'
 import { ConfigModule, ConfigService } from '@nestjs/config'
@@ -52,7 +52,7 @@ import { RedisModule } from '@clients'
 import { MulterModule } from '@nestjs/platform-express'
 import * as multer from 'multer'
 
-console.log('Sandbox mode is active.')
+Logger.log('Sandbox mode is active.', 'Bootstrap')
 
 @Module({
   imports: [

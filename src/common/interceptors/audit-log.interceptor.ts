@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NestInterceptor,
   ExecutionContext,
   CallHandler,
@@ -77,7 +78,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             },
           )
         } catch (error) {
-          console.error('Failed to create audit log:', error)
+          Logger.error(`Failed to create audit log: ${error?.message}`, error?.stack, 'AuditLogInterceptor')
         }
       }),
     )

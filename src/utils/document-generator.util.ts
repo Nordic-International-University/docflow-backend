@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common'
 import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 
@@ -22,7 +23,7 @@ export class DocumentGeneratorUtil {
 
       return buffer
     } catch (error) {
-      console.error('Error generating document from template:', error)
+      Logger.error(`Error generating document from template: ${error?.message}`, error?.stack, 'DocumentGenerator')
       throw new Error(`Document generation failed: ${error.message}`)
     }
   }

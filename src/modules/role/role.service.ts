@@ -156,7 +156,6 @@ export class RoleService {
     //   'Role',
     //   role.id,
     //   AuditAction.CREATE,
-    //   payload.createdBy || role.id,
     //   {
     //     newValues: {
     //       name: role.name,
@@ -305,7 +304,6 @@ export class RoleService {
     //   'Role',
     //   payload.id,
     //   AuditAction.DELETE,
-    //   payload.deletedBy || payload.id,
     //   {
     //     oldValues: {
     //       name: existingRole.name,

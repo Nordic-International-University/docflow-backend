@@ -8,7 +8,6 @@ import { PrismaService } from '@prisma'
 import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
 import { ProjectStatus, ProjectVisibility } from '@prisma/client'
-import { ROLE_NAMES } from '@constants'
 import { isAdmin } from '@common/helpers'
 import {
   ProjectCreateDto,

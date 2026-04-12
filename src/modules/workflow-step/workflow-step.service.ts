@@ -22,7 +22,6 @@ import {
   WorkflowStepCalendarResponseDto,
 } from './dtos'
 import { DocumentStatus, WorkflowStatus } from '@prisma/client'
-import { ROLE_NAMES } from '@constants'
 import { NotificationService } from '../notification/notification.service'
 import { NotificationGateway } from '../notification/notification.gateway'
 import { TelegramService } from '../telegram/telegram.service'

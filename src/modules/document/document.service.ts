@@ -124,7 +124,6 @@ import {
 import { popCachedPdf } from '@common/utils/pdf-conversion-cache'
 import { WorkflowPermissionService } from '../wopi/workflow-permission.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
-import { ROLE_NAMES } from '@constants'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
 import { isAdmin, isSuperAdmin } from '@common/helpers'
 
@@ -1520,7 +1519,6 @@ export class DocumentService {
           `XFDF submission recorded for user ${userId} on workflow step ${userWorkflowStep.id}`,
         )
       }
-      this.logger.log('Nooooooooooooooooooooooooo')
     } catch (error) {
       this.logger.error('Error updating XFDF URL and merging PDF:', error)
       throw new Error(`Failed to update XFDF and merge PDF: ${error.message}`)

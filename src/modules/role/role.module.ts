@@ -4,7 +4,6 @@ import { RoleService } from './role.service'
 import { RoleController } from './role.controller'
 import { AuthGuard } from '@guards'
 import { AuthService } from 'modules/auth'
-// import { AuthModule } from '@auth'
 
 @Module({
   imports: [PrismaModule],
