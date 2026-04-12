@@ -1241,7 +1241,9 @@ export class DocumentService {
     const wopiSrc = encodeURIComponent(
       `${process.env.WOPI_HOST_URL || 'https://api.docverse.uz'}/api/v1/wopi/files/${attachment.id}`,
     )
-    const collaboraUrl = `https://office.docverse.uz/browser/dist/cool.html?WOPISrc=${wopiSrc}`
+    const collaboraBase =
+      process.env.COLLABORA_URL || 'https://office.docverse.uz'
+    const collaboraUrl = `${collaboraBase}/browser/dist/cool.html?WOPISrc=${wopiSrc}`
 
     return {
       document: {
