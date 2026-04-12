@@ -122,6 +122,15 @@ import {
   translateActionTypeToUzbek,
 } from '@common'
 import { popCachedPdf } from '@common/utils/pdf-conversion-cache'
+import {
+  createBlankDocx,
+  createBlankXlsx,
+  createBlankPptx,
+} from '@common/utils/blank-document.util'
+import {
+  getWorkflowStepActionTitle,
+  getAuditActionTitle,
+} from '@common/utils/document-labels.util'
 import { WorkflowPermissionService } from '../wopi/workflow-permission.service'
 import { AuditLogService } from '../audit-log/audit-log.service'
 import { AuditAction } from '../audit-log/interfaces/audit-log-enums'
@@ -193,7 +202,10 @@ export class DocumentService {
 
     // Status validation — noto'g'ri enum Prisma'ga tushmasdan oldin 400
     const validStatuses = Object.values(DocumentStatus)
-    if (payload.status && !validStatuses.includes(payload.status as DocumentStatus)) {
+    if (
+      payload.status &&
+      !validStatuses.includes(payload.status as DocumentStatus)
+    ) {
       throw new BadRequestException(
         `Noto'g'ri status: "${payload.status}". Mavjud: ${validStatuses.join(', ')}`,
       )
@@ -374,7 +386,6 @@ export class DocumentService {
       throw new NotFoundException('Document not found')
     }
 
-    // Frontend uchun aniq ko'rsatma: qaysi faylni ochish kerak va qanday rejimda
     const atts: DocumentAttachmentSelect[] = document.attachments || []
     const OFFICE_MIMES = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -389,14 +400,9 @@ export class DocumentService {
     const latestPdf =
       atts.find((a) => a.mimeType === 'application/pdf') || null
 
-    // Foydalanuvchi roli
     const isCreator = document.createdBy?.id === payload.userId
     const isPlatformAdmin = isAdmin(payload.roleName)
 
-    // Mantiq:
-    //  - DRAFT/REJECTED + creator/admin → DOCX edit (Collabora full edit)
-    //  - PENDING/IN_REVIEW + workflow ishtirokchi → PDF + XFDF annotation
-    //  - APPROVED/ARCHIVED yoki boshqalar → PDF read-only
     let primaryAttachment: DocumentAttachmentSelect | null = null
     let displayMode: 'EDIT_DOCX' | 'ANNOTATE_PDF' | 'VIEW_PDF' | 'NONE' = 'NONE'
     let canEdit = false
@@ -650,7 +656,7 @@ export class DocumentService {
             type: `STEP_${action.actionType}`,
             timestamp: action.createdAt,
             actor: action.performedBy,
-            title: this.getActionTitle(
+            title: getWorkflowStepActionTitle(
               action.actionType,
               step.order,
               step.actionType,
@@ -698,7 +704,7 @@ export class DocumentService {
         type: `AUDIT_${log.action}`,
         timestamp: log.performedAt,
         actor: log.performedBy,
-        title: this.getAuditTitle(log.action),
+        title: getAuditActionTitle(log.action),
         description: '',
         meta: {
           changes: log.changes,
@@ -749,37 +755,6 @@ export class DocumentService {
       auditLogs,
       timeline,
     }
-  }
-
-  private getActionTitle(
-    actionType: string,
-    stepOrder: number,
-    stepActionType: string,
-  ): string {
-    const stepActionUz = translateActionTypeToUzbek(stepActionType)
-    const map: Record<string, string> = {
-      STARTED: `${stepOrder}-bosqich boshlandi: ${stepActionUz}`,
-      APPROVED: `${stepOrder}-bosqich tasdiqlandi: ${stepActionUz}`,
-      REJECTED: `${stepOrder}-bosqich rad etildi: ${stepActionUz}`,
-      REASSIGNED: `${stepOrder}-bosqich qayta tayinlandi`,
-      COMMENTED: `${stepOrder}-bosqichga izoh qoldirildi`,
-      DELEGATED: `${stepOrder}-bosqich boshqaga uzatildi`,
-    }
-    return map[actionType] || `${stepOrder}-bosqich: ${actionType}`
-  }
-
-  private getAuditTitle(action: string): string {
-    const map: Record<string, string> = {
-      CREATE: 'Hujjat yaratildi',
-      UPDATE: "Hujjat ma'lumotlari yangilandi",
-      DELETE: "Hujjat o'chirildi",
-      RESTORE: 'Hujjat qayta tiklandi',
-      APPROVE: 'Hujjat tasdiqlandi',
-      REJECT: 'Hujjat rad etildi',
-      ARCHIVE: 'Hujjat arxivlandi',
-      OTHER: 'Boshqa amal',
-    }
-    return map[action] || action
   }
 
   async documentCreate(payload: DocumentCreateRequest): Promise<void> {
@@ -1809,9 +1784,9 @@ export class DocumentService {
 
     // Create minimal blank file
     const blankFiles: Record<string, Buffer> = {
-      docx: this.createBlankDocx(),
-      xlsx: this.createBlankXlsx(),
-      pptx: this.createBlankPptx(),
+      docx: createBlankDocx(),
+      xlsx: createBlankXlsx(),
+      pptx: createBlankPptx(),
     }
 
     const buffer = blankFiles[fileType]
@@ -1901,82 +1876,4 @@ export class DocumentService {
     }
   }
 
-  // Minimal valid DOCX (empty document)
-  private createBlankDocx(): Buffer {
-    const PizZip = require('pizzip')
-    const Docxtemplater = require('docxtemplater')
-    const zip = new PizZip()
-    // Minimal OOXML structure
-    zip.file(
-      '[Content_Types].xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
-    )
-    zip.file(
-      '_rels/.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
-    )
-    zip.file(
-      'word/document.xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t></w:t></w:r></w:p></w:body></w:document>',
-    )
-    zip.file(
-      'word/_rels/document.xml.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>',
-    )
-    return zip.generate({ type: 'nodebuffer' })
-  }
-
-  // Minimal valid XLSX
-  private createBlankXlsx(): Buffer {
-    const PizZip = require('pizzip')
-    const zip = new PizZip()
-    zip.file(
-      '[Content_Types].xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
-    )
-    zip.file(
-      '_rels/.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
-    )
-    zip.file(
-      'xl/workbook.xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>',
-    )
-    zip.file(
-      'xl/_rels/workbook.xml.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
-    )
-    zip.file(
-      'xl/worksheets/sheet1.xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>',
-    )
-    return zip.generate({ type: 'nodebuffer' })
-  }
-
-  // Minimal valid PPTX
-  private createBlankPptx(): Buffer {
-    const PizZip = require('pizzip')
-    const zip = new PizZip()
-    zip.file(
-      '[Content_Types].xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>',
-    )
-    zip.file(
-      '_rels/.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>',
-    )
-    zip.file(
-      'ppt/presentation.xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>',
-    )
-    zip.file(
-      'ppt/_rels/presentation.xml.rels',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>',
-    )
-    zip.file(
-      'ppt/slides/slide1.xml',
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>',
-    )
-    return zip.generate({ type: 'nodebuffer' })
-  }
 }
