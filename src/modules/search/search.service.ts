@@ -79,8 +79,9 @@ export class SearchService {
 
     const searchMode = 'insensitive' as const
 
-    // ═══════════ DOCUMENTS ═══════════
+    // ═══════════ DOCUMENTS (title + description + number + PDF/DOCX content) ═══════════
     if (type === 'all' || type === 'document') {
+      // 1. Title/description/number bo'yicha qidirish
       const docs = await this.prisma.document.findMany({
         where: {
           deletedAt: null,
@@ -105,6 +106,8 @@ export class SearchService {
         orderBy: { createdAt: 'desc' },
       })
 
+      const docIds = new Set(docs.map((d) => d.id))
+
       for (const doc of docs) {
         allResults.push({
           type: 'document',
@@ -121,7 +124,64 @@ export class SearchService {
           },
         })
       }
-      facets['document'] = docs.length
+
+      // 2. PDF/DOCX content bo'yicha qidirish (search_index jadvalidan)
+      const contentMatches = await this.prisma.searchIndex.findMany({
+        where: {
+          entityType: 'document',
+          content: { contains: searchTerm, mode: searchMode },
+        },
+        select: { entityId: true, title: true, content: true },
+        take: limit,
+      })
+
+      // Title match'da topilmaganlarni content match'dan qo'shish
+      for (const match of contentMatches) {
+        if (docIds.has(match.entityId)) continue // allaqachon bor
+
+        // ABAC check — bu document'ga ruxsat bormi
+        const doc = await this.prisma.document.findFirst({
+          where: {
+            id: match.entityId,
+            deletedAt: null,
+            ...docFilter,
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            documentNumber: true,
+            status: true,
+            createdBy: { select: { fullname: true } },
+            documentType: { select: { name: true } },
+            journal: { select: { name: true } },
+          },
+        })
+
+        if (doc) {
+          // Content'dan snippet chiqarish
+          const snippet = this.extractSnippet(match.content, searchTerm)
+
+          allResults.push({
+            type: 'document',
+            id: doc.id,
+            title: doc.title,
+            description: snippet || doc.description,
+            score: 30, // content match — title'dan past
+            meta: {
+              documentNumber: doc.documentNumber,
+              status: doc.status,
+              createdBy: doc.createdBy?.fullname,
+              documentType: doc.documentType?.name,
+              journal: doc.journal?.name,
+              matchedIn: 'content', // frontend "fayl ichida topildi" ko'rsatadi
+            },
+          })
+          docIds.add(doc.id)
+        }
+      }
+
+      facets['document'] = docIds.size
     }
 
     // ═══════════ TASKS ═══════════
@@ -385,5 +445,29 @@ export class SearchService {
     }
 
     return score
+  }
+
+  /**
+   * Content'dan qidiruv so'zi atrofidagi snippet chiqarish.
+   * "...matn boshi **qidiruv** matn oxiri..."
+   */
+  private extractSnippet(
+    content: string | null,
+    query: string,
+    contextChars = 80,
+  ): string | null {
+    if (!content) return null
+    const lower = content.toLowerCase()
+    const idx = lower.indexOf(query.toLowerCase())
+    if (idx === -1) return null
+
+    const start = Math.max(0, idx - contextChars)
+    const end = Math.min(content.length, idx + query.length + contextChars)
+    let snippet = content.substring(start, end).trim()
+
+    if (start > 0) snippet = '...' + snippet
+    if (end < content.length) snippet += '...'
+
+    return snippet
   }
 }

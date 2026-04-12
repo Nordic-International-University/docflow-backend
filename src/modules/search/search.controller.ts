@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Param,
   Query,
   Req,
   UseGuards,
@@ -15,13 +17,17 @@ import {
 import { AuthGuard, PermissionGuard } from '@guards'
 import { PoliciesGuard } from '../../casl'
 import { SearchService, SearchResponse } from './search.service'
+import { SearchIndexService } from './search-index.service'
 
 @ApiTags('Search')
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({ path: 'search', version: '1' })
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    private readonly searchIndexService: SearchIndexService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -53,5 +59,18 @@ export class SearchController {
       ability: req?.ability,
       userId: req?.user?.userId,
     })
+  }
+
+  @Post('index/document/:id')
+  @ApiOperation({ summary: 'Index a document (extract PDF/DOCX text)' })
+  async indexDocument(@Param('id') id: string) {
+    await this.searchIndexService.indexDocumentAttachments(id)
+    return { message: 'Document indexed' }
+  }
+
+  @Post('index/all')
+  @ApiOperation({ summary: 'Bulk index all documents (admin)' })
+  async bulkIndex() {
+    return this.searchIndexService.bulkIndexAllDocuments()
   }
 }
