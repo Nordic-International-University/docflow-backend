@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 import { PERMISSIONS } from '@constants'
 import { ChatService } from './chat.service'
 import { ChatGateway } from './chat.gateway'
@@ -43,7 +44,7 @@ import {
 
 @ApiBearerAuth()
 @ApiTags('Chat')
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({ path: 'chat', version: '1' })
 export class ChatController {
   constructor(

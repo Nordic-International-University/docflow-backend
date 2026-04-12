@@ -26,10 +26,11 @@ import {
 } from './dtos'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
+import { PoliciesGuard } from '../../casl'
 import { PERMISSIONS } from '@constants'
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @ApiTags('AuditLog')
 @Controller({ path: 'audit-log', version: '1' })
 export class AuditLogController {

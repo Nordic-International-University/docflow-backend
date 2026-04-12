@@ -24,6 +24,7 @@ import {
 } from './dtos/user-telegram.dtos'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 import { PERMISSIONS } from '@constants'
 import {
   ApiBearerAuth,
@@ -36,7 +37,7 @@ import {
 
 @ApiBearerAuth()
 @ApiTags('User')
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @Controller({
   path: 'user',
   version: '1',
@@ -47,6 +48,7 @@ export class UserController {
   @Get()
   @ApiOperation({ summary: 'User Retrieve All' })
   @Permissions(PERMISSIONS.USER.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'User'))
   @ApiResponse({ status: 200, type: UserListResponseDto })
   async userRetrieveAll(@Query() payload: UserRetrieveAllDto) {
     return await this.userService.userRetrieveAll(payload)
@@ -55,6 +57,7 @@ export class UserController {
   @Get(':id')
   @ApiOperation({ summary: 'User Retrieve One' })
   @Permissions(PERMISSIONS.USER.READ)
+  @CheckPolicies((ability) => ability.can('read', 'User'))
   @ApiResponse({ status: 200, type: UserResponseDto })
   async userRetrieveOne(@Param('id') id: string) {
     return await this.userService.userRetrieveOne({ id })
@@ -63,6 +66,7 @@ export class UserController {
   @Post()
   @ApiOperation({ summary: 'User Create' })
   @Permissions(PERMISSIONS.USER.CREATE)
+  @CheckPolicies((ability) => ability.can('create', 'User'))
   @ApiResponse({ status: 201, description: 'User created successfully' })
   async userCreate(@Body() payload: UserCreateDto) {
     return await this.userService.userCreate(payload)
@@ -71,6 +75,7 @@ export class UserController {
   @Patch(':id')
   @ApiOperation({ summary: 'User Update' })
   @Permissions(PERMISSIONS.USER.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'User'))
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   async userUpdate(@Param('id') id: string, @Body() payload: UserUpdateDto) {
     return await this.userService.userUpdate({
@@ -82,6 +87,7 @@ export class UserController {
   @Delete(':id')
   @ApiOperation({ summary: 'User Delete' })
   @Permissions(PERMISSIONS.USER.DELETE)
+  @CheckPolicies((ability) => ability.can('delete', 'User'))
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
   async userDelete(@Param() payload: UserDeleteDto) {
     return await this.userService.userDelete(payload)
@@ -96,6 +102,7 @@ export class UserController {
       'Get the deep link and instructions for linking a Telegram account to this user.',
   })
   @Permissions(PERMISSIONS.USER.READ)
+  @CheckPolicies((ability) => ability.can('read', 'User'))
   @ApiParam({
     name: 'id',
     description: 'User ID',
@@ -116,6 +123,7 @@ export class UserController {
     description: 'Manually link a Telegram ID to this user account.',
   })
   @Permissions(PERMISSIONS.USER.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'User'))
   @ApiParam({
     name: 'id',
     description: 'User ID',
@@ -144,6 +152,7 @@ export class UserController {
     description: 'Remove the Telegram link from this user account.',
   })
   @Permissions(PERMISSIONS.USER.UPDATE)
+  @CheckPolicies((ability) => ability.can('update', 'User'))
   @ApiParam({
     name: 'id',
     description: 'User ID',
@@ -168,6 +177,7 @@ export class UserController {
     description: 'Check if a Telegram account is linked to this user.',
   })
   @Permissions(PERMISSIONS.USER.READ)
+  @CheckPolicies((ability) => ability.can('read', 'User'))
   @ApiParam({
     name: 'id',
     description: 'User ID',

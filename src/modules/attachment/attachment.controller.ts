@@ -33,10 +33,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { AuthGuard, PermissionGuard } from '@guards'
 import { Permissions } from '@decorators'
+import { PoliciesGuard, CheckPolicies } from '../../casl'
 import { PERMISSIONS } from '@constants'
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard, PermissionGuard)
+@UseGuards(AuthGuard, PermissionGuard, PoliciesGuard)
 @ApiTags('Attachment')
 @Controller({
   path: 'attachment',
@@ -47,6 +48,7 @@ export class AttachmentController {
 
   @Get()
   @Permissions(PERMISSIONS.ATTACHMENT.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Attachment'))
   @ApiOperation({ summary: 'Attachment Retrieve All' })
   @ApiResponse({ status: 200, type: AttachmentListResponseDto })
   async attachmentRetrieveAll(
@@ -62,6 +64,7 @@ export class AttachmentController {
 
   @Get(':id')
   @Permissions(PERMISSIONS.ATTACHMENT.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Attachment'))
   @ApiOperation({ summary: 'Attachment Retrieve One' })
   @ApiResponse({ status: 200, type: AttachmentResponseDto })
   async attachmentRetrieveOne(@Param('id') id: string, @Req() req: any) {
@@ -74,6 +77,7 @@ export class AttachmentController {
 
   @Post()
   @Permissions(PERMISSIONS.ATTACHMENT.UPLOAD)
+  @CheckPolicies((ability) => ability.can('create', 'Attachment'))
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Attachment Create' })
@@ -101,6 +105,7 @@ export class AttachmentController {
 
   @Patch(':id')
   @Permissions(PERMISSIONS.ATTACHMENT.READ)
+  @CheckPolicies((ability) => ability.can('read', 'Attachment'))
   @ApiOperation({ summary: 'Attachment Update' })
   @ApiResponse({ status: 200, description: 'Attachment updated successfully' })
   async attachmentUpdate(
@@ -115,6 +120,7 @@ export class AttachmentController {
 
   @Delete(':id')
   @Permissions(PERMISSIONS.ATTACHMENT.DELETE)
+  @CheckPolicies((ability) => ability.can('delete', 'Attachment'))
   @ApiOperation({ summary: 'Attachment Delete' })
   @ApiResponse({ status: 200, description: 'Attachment deleted successfully' })
   async attachmentDelete(@Param('id') id: string) {
@@ -123,6 +129,7 @@ export class AttachmentController {
 
   @Post('repair-filenames')
   @Permissions(PERMISSIONS.ATTACHMENT.LIST)
+  @CheckPolicies((ability) => ability.can('read', 'Attachment'))
   @ApiOperation({
     summary: 'Repair Cyrillic Filenames',
     description:

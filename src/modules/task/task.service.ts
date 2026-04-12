@@ -16,6 +16,8 @@ import {
   isAdmin,
   parsePagination,
 } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+
 @Injectable()
 export class TaskService {
   private readonly logger = new Logger(TaskService.name)
@@ -331,32 +333,33 @@ export class TaskService {
       userId?: string
       roleName?: string
       userDepartmentId?: string
+      ability?: any
     },
   ) {
     const { page, limit, skip } = parsePagination(payload)
 
-    // Project visibility filter — faqat ko'rinadigan loyihalar tasklari
-    const admin = isAdmin(payload.roleName)
-
-    const projectAccessFilter: any = admin
-      ? {}
-      : {
-          project: {
-            OR: [
-              { visibility: 'PUBLIC' },
-              { createdById: payload.userId },
-              { members: { some: { userId: payload.userId } } },
-              ...(payload.userDepartmentId
-                ? [
-                    {
-                      visibility: 'DEPARTMENT',
-                      departmentId: payload.userDepartmentId,
-                    },
-                  ]
-                : []),
-            ],
-          },
-        }
+    // ABAC: ability borsa CASL, yo'qsa eski manual project visibility filter
+    const projectAccessFilter: any = payload.ability
+      ? accessibleBy(payload.ability, 'read').Task
+      : isAdmin(payload.roleName)
+        ? {}
+        : {
+            project: {
+              OR: [
+                { visibility: 'PUBLIC' },
+                { createdById: payload.userId },
+                { members: { some: { userId: payload.userId } } },
+                ...(payload.userDepartmentId
+                  ? [
+                      {
+                        visibility: 'DEPARTMENT',
+                        departmentId: payload.userDepartmentId,
+                      },
+                    ]
+                  : []),
+              ],
+            },
+          }
 
     const where: any = {
       deletedAt: null,

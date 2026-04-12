@@ -9,6 +9,8 @@ import { AuditLogService } from '../audit-log'
 import { AuditAction } from '../audit-log'
 import { ProjectStatus, ProjectVisibility } from '@prisma/client'
 import { isAdmin } from '@common/helpers'
+import { accessibleBy } from '@casl/prisma'
+import type { AppAbility } from '../../casl/casl.types'
 import {
   ProjectCreateDto,
   ProjectUpdateDto,
@@ -213,17 +215,21 @@ export class ProjectService {
       userId?: string
       roleName?: string
       userDepartmentId?: string
+      ability?: AppAbility
     },
   ) {
     const { page, limit, skip } = parsePagination(payload)
 
-    const visibilityFilter = payload.userId
-      ? this.buildVisibilityFilter(
-          payload.userId,
-          payload.roleName,
-          payload.userDepartmentId,
-        )
-      : {}
+    // ABAC: ability borsa CASL, yo'qsa eski manual visibility filter
+    const visibilityFilter = (payload as any).ability
+      ? accessibleBy((payload as any).ability, 'read').Project
+      : payload.userId
+        ? this.buildVisibilityFilter(
+            payload.userId,
+            payload.roleName,
+            payload.userDepartmentId,
+          )
+        : {}
 
     const andConditions: any[] = [{ deletedAt: null }, { isArchived: false }]
 

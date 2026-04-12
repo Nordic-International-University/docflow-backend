@@ -40,6 +40,7 @@ export class TaskController {
       userId: req.user.userId,
       roleName: req.user.roleName,
       userDepartmentId: req.user.departmentId,
+      ability: req.ability,
     })
   }
 
