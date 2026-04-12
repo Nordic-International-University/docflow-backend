@@ -127,6 +127,8 @@ export class DocumentController {
   ): Promise<any> {
     return await this.documentService.documentCreate({
       userId: req.user.userId,
+      subordinateDeptIds: req.user.subordinateDeptIds,
+      roleName: req.user.roleName,
       ...payload,
     })
   }

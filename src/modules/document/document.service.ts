@@ -439,18 +439,23 @@ export class DocumentService {
       throw new NotFoundException('User not found')
     }
 
-    const isSuper = isSuperAdmin(user.role?.name)
-
-    if (journal.departmentId && !isSuper) {
+    // ABAC: journal departmentId tekshirish — admin hamma, dept head subordinate,
+    // oddiy user faqat o'z bo'limi
+    const adminUser = isAdmin(user.role?.name)
+    if (journal.departmentId && !adminUser) {
       if (!user.departmentId) {
         throw new ForbiddenException(
-          'You must be assigned to a department to create documents',
+          "Hujjat yaratish uchun bo'limga biriktirilgan bo'lishingiz kerak",
         )
       }
 
-      if (user.departmentId !== journal.departmentId) {
+      // O'z bo'limi + subordinate bo'limlar (boshliq bo'lsa)
+      const subordinateDeptIds: string[] = (payload as any).subordinateDeptIds ?? []
+      const allowedDeptIds = new Set([user.departmentId, ...subordinateDeptIds])
+
+      if (!allowedDeptIds.has(journal.departmentId)) {
         throw new ForbiddenException(
-          'You can only create documents with journals from your own department',
+          "Faqat o'z bo'limingiz yoki qo'l ostingizdagi bo'limlar jurnalidan hujjat yaratishingiz mumkin",
         )
       }
     }
