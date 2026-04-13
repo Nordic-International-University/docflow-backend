@@ -980,6 +980,13 @@ export class DocumentService {
       throw new NotFoundException('Bu hujjat uchun PDF manzili topilmadi')
     }
 
+    // XFDF content bo'sh bo'lsa — xatolik qaytarish
+    if (!xfdfContent || xfdfContent.trim().length === 0) {
+      throw new BadRequestException(
+        "XFDF ma'lumot bo'sh. Iltimos, annotatsiya qo'shib qayta urinib ko'ring",
+      )
+    }
+
     // Check permissions: document creator and Super Admin can always edit
     let userWorkflowStep = null
     if (userId) {
