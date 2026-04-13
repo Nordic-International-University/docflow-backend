@@ -181,7 +181,10 @@ export class AbilityFactory {
     can('create', 'Project')
     can('read', 'Project', { visibility: 'PUBLIC' } as any)
     can('read', 'Project', { createdById: user.id })
-    // Project members — service'da qo'shimcha check (CASL nested relation)
+    // Project member — PRIVATE project'ni ham ko'ra oladi
+    can('read', 'Project', {
+      members: { some: { userId: user.id } },
+    } as any)
 
     if (user.departmentId) {
       can('read', 'Project', {
@@ -207,7 +210,20 @@ export class AbilityFactory {
 
     can('create', 'Task')
     can('read', 'Task', { createdById: user.id })
-    // Task assignees + watchers — service'da qo'shimcha check
+    // Task assignee — tayinlangan task'ni ko'ra + update + complete qila oladi
+    can('read', 'Task', {
+      assignees: { some: { userId: user.id } },
+    } as any)
+    can('update', 'Task', {
+      assignees: { some: { userId: user.id } },
+    } as any)
+    can('complete', 'Task', {
+      assignees: { some: { userId: user.id } },
+    } as any)
+    // Project member — loyihadagi barcha task'larni ko'ra oladi
+    can('read', 'Task', {
+      project: { members: { some: { userId: user.id } } },
+    } as any)
     can('update', 'Task', { createdById: user.id })
     can('delete', 'Task', { createdById: user.id })
     can('complete', 'Task', { createdById: user.id })
