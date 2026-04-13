@@ -991,17 +991,14 @@ export class DocumentService {
     let userWorkflowStep = null
     if (userId) {
       const isCreator = document.createdById === userId
-      this.logger.log(
-        `[xfdf-permission] userId=${userId} createdById=${document.createdById} isCreator=${isCreator}`,
-      )
       const user = await this.#_prisma.user.findFirst({
         where: { id: userId, deletedAt: null },
         select: { role: { select: { name: true } } },
       })
-      const isSuper = isSuperAdmin(user?.role?.name)
+      const adminUser = isAdmin(user?.role?.name)
 
-      // If not creator and not super admin, verify workflow permission
-      if (!isCreator && !isSuper) {
+      // If not creator and not admin, verify workflow permission
+      if (!isCreator && !adminUser) {
         await this.#_workflowPermissionService.verifyXfdfEditPermission(
           userId,
           documentId,

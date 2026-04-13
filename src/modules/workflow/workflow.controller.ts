@@ -77,8 +77,8 @@ export class WorkflowController {
   @CheckPolicies((ability) => ability.can('create', 'Workflow'))
   @ApiOperation({ summary: 'Workflow Create' })
   @ApiResponse({ status: 201, description: 'Workflow created successfully' })
-  async workflowCreate(@Body() payload: WorkflowCreateDto) {
-    return await this.workflowService.workflowCreate(payload)
+  async workflowCreate(@Body() payload: WorkflowCreateDto, @Req() req: AuthenticatedRequest) {
+    return await this.workflowService.workflowCreate(payload, req.user.userId, req.user.roleName)
   }
 
   @Patch(':id')

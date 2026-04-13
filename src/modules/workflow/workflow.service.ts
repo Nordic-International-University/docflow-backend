@@ -480,6 +480,8 @@ export class WorkflowService {
 
   async workflowCreate(
     payload: WorkflowCreateDto,
+    userId?: string,
+    roleName?: string,
   ): Promise<WorkflowResponseDto> {
     const {
       steps: providedSteps,
@@ -497,6 +499,15 @@ export class WorkflowService {
 
     if (!document) {
       throw new NotFoundException('Hujjat topilmadi')
+    }
+
+    // SECURITY: faqat hujjat yaratuvchisi yoki admin workflow yarata oladi
+    if (userId && !isAdmin(roleName)) {
+      if (document.createdById !== userId) {
+        throw new BadRequestException(
+          "Faqat o'zingiz yaratgan hujjatga ish jarayoni qo'sha olasiz",
+        )
+      }
     }
 
     // Check for existing workflow
