@@ -41,7 +41,7 @@ export class TaskLabelService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     // Verify label exists and belongs to the same project as the task
@@ -58,7 +58,7 @@ export class TaskLabelService {
     })
 
     if (!label) {
-      throw new NotFoundException('Label not found')
+      throw new NotFoundException('Yorliq topilmadi')
     }
 
     if (label.projectId !== task.projectId) {
@@ -76,7 +76,7 @@ export class TaskLabelService {
     })
 
     if (existingAssignment) {
-      throw new ConflictException('Label is already assigned to this task')
+      throw new ConflictException('Yorliq allaqachon bu vazifaga biriktirilgan')
     }
 
     const taskLabel = await this.#_prisma.taskLabel.create({
@@ -164,7 +164,7 @@ export class TaskLabelService {
     })
 
     if (!taskLabel) {
-      throw new NotFoundException('Task label not found')
+      throw new NotFoundException("Vazifa yorlig'i topilmadi")
     }
 
     return taskLabel as TaskLabelRetrieveOneResponse
@@ -185,7 +185,7 @@ export class TaskLabelService {
     })
 
     if (!existingTaskLabel) {
-      throw new NotFoundException('Task label not found')
+      throw new NotFoundException("Vazifa yorlig'i topilmadi")
     }
 
     // Hard delete for join table

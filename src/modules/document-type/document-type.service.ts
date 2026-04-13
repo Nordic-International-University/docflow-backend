@@ -36,7 +36,7 @@ export class DocumentTypeService {
     })
 
     if (existingDocumentType) {
-      throw new ConflictException('Document type name must be unique')
+      throw new ConflictException("Hujjat turi nomi noyob bo'lishi kerak")
     }
 
     const createdDocumentType = await this.#_prisma.documentType.create({
@@ -139,7 +139,7 @@ export class DocumentTypeService {
     })
 
     if (!documentType) {
-      throw new NotFoundException('Document type not found')
+      throw new NotFoundException('Hujjat turi topilmadi')
     }
 
     return documentType
@@ -157,7 +157,7 @@ export class DocumentTypeService {
     })
 
     if (!existingDocumentType) {
-      throw new NotFoundException('Document type not found')
+      throw new NotFoundException('Hujjat turi topilmadi')
     }
 
     // Check if name is being updated and if it conflicts with existing document type
@@ -173,7 +173,7 @@ export class DocumentTypeService {
       })
 
       if (nameExists) {
-        throw new ConflictException('Document type name must be unique')
+        throw new ConflictException("Hujjat turi nomi noyob bo'lishi kerak")
       }
     }
 
@@ -232,7 +232,7 @@ export class DocumentTypeService {
     })
 
     if (!existingDocumentType) {
-      throw new NotFoundException('Document type not found')
+      throw new NotFoundException('Hujjat turi topilmadi')
     }
 
     await this.#_prisma.documentType.update({

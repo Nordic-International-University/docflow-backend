@@ -97,7 +97,7 @@ export class TaskScoreConfigService {
     })
 
     if (!config) {
-      throw new NotFoundException('Task score config not found')
+      throw new NotFoundException('Vazifa baho sozlamasi topilmadi')
     }
 
     return {
@@ -160,7 +160,7 @@ export class TaskScoreConfigService {
     })
 
     if (!existing) {
-      throw new NotFoundException('Task score config not found')
+      throw new NotFoundException('Vazifa baho sozlamasi topilmadi')
     }
 
     const updateData: Record<string, unknown> = {
@@ -207,7 +207,7 @@ export class TaskScoreConfigService {
     })
 
     if (!existing) {
-      throw new NotFoundException('Task score config not found')
+      throw new NotFoundException('Vazifa baho sozlamasi topilmadi')
     }
 
     await this.#_prisma.taskScoreConfig.update({

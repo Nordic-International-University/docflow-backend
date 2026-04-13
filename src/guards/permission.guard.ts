@@ -41,7 +41,7 @@ export class PermissionGuard implements CanActivate {
     // If no user, this should have been caught by AuthGuard
     // But we'll handle it gracefully
     if (!user) {
-      throw new ForbiddenException('User not authenticated')
+      throw new ForbiddenException('Foydalanuvchi autentifikatsiya qilinmagan')
     }
 
     // Get user's permissions

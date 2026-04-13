@@ -54,7 +54,7 @@ export class DepartmentService {
       })
 
       if (codeExists) {
-        throw new ConflictException('Department code must be unique')
+        throw new ConflictException("Bo'lim kodi noyob bo'lishi kerak")
       }
     }
 
@@ -172,7 +172,7 @@ export class DepartmentService {
     })
 
     if (!department) {
-      throw new NotFoundException('Department not found')
+      throw new NotFoundException("Bo'lim topilmadi")
     }
 
     return department
@@ -190,7 +190,7 @@ export class DepartmentService {
     })
 
     if (!existingDepartment) {
-      throw new NotFoundException('Department not found')
+      throw new NotFoundException("Bo'lim topilmadi")
     }
 
     if (updateData.code) {
@@ -203,7 +203,7 @@ export class DepartmentService {
       })
 
       if (codeExists) {
-        throw new ConflictException('Department code must be unique')
+        throw new ConflictException("Bo'lim kodi noyob bo'lishi kerak")
       }
     }
 
@@ -305,7 +305,7 @@ export class DepartmentService {
     })
 
     if (!existingDepartment) {
-      throw new NotFoundException('Department not found')
+      throw new NotFoundException("Bo'lim topilmadi")
     }
 
     await this.#_prisma.$transaction([

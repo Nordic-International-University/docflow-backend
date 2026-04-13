@@ -35,7 +35,7 @@ export class BoardColumnService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     // Check if column name is unique within project
@@ -115,7 +115,7 @@ export class BoardColumnService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     const columns = await this.#_prisma.boardColumn.findMany({
@@ -163,7 +163,7 @@ export class BoardColumnService {
     })
 
     if (!existingColumn) {
-      throw new NotFoundException('Board column not found')
+      throw new NotFoundException('Ustun topilmadi')
     }
 
     // Check if name is being changed and if it's unique
@@ -271,7 +271,7 @@ export class BoardColumnService {
     })
 
     if (!existingColumn) {
-      throw new NotFoundException('Board column not found')
+      throw new NotFoundException('Ustun topilmadi')
     }
 
     // Don't allow deletion if there are tasks in this column
@@ -316,7 +316,7 @@ export class BoardColumnService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     // Verify all columns exist and belong to the project

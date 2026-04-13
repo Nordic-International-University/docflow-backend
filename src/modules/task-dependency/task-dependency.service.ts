@@ -32,7 +32,7 @@ export class TaskDependencyService {
   ): Promise<void> {
     // Prevent self-dependency
     if (payload.taskId === payload.dependsOnTaskId) {
-      throw new BadRequestException('A task cannot depend on itself')
+      throw new BadRequestException("Vazifa o'ziga bog'liq bo'la olmaydi")
     }
 
     // Verify both tasks exist
@@ -62,11 +62,11 @@ export class TaskDependencyService {
     ])
 
     if (!task) {
-      throw new NotFoundException('Dependent task not found')
+      throw new NotFoundException("Bog'liq vazifa topilmadi")
     }
 
     if (!dependsOnTask) {
-      throw new NotFoundException('Blocking task not found')
+      throw new NotFoundException("To'suvchi vazifa topilmadi")
     }
 
     // Verify tasks are in the same project
@@ -85,7 +85,7 @@ export class TaskDependencyService {
     })
 
     if (existingDependency) {
-      throw new ConflictException('This dependency already exists')
+      throw new ConflictException('Bu bog\'liqlik allaqachon mavjud')
     }
 
     // Check for circular dependency (A depends on B, B depends on A)
@@ -216,7 +216,7 @@ export class TaskDependencyService {
     })
 
     if (!dependency) {
-      throw new NotFoundException('Task dependency not found')
+      throw new NotFoundException("Vazifa bog'liqligi topilmadi")
     }
 
     return dependency as TaskDependencyRetrieveOneResponse
@@ -244,7 +244,7 @@ export class TaskDependencyService {
     })
 
     if (!existingDependency) {
-      throw new NotFoundException('Task dependency not found')
+      throw new NotFoundException("Vazifa bog'liqligi topilmadi")
     }
 
     // Hard delete

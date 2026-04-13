@@ -338,7 +338,7 @@ export class AttachmentService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found')
+      throw new NotFoundException('Biriktirma topilmadi')
     }
 
     return {
@@ -586,7 +586,7 @@ export class AttachmentService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found')
+      throw new NotFoundException('Biriktirma topilmadi')
     }
 
     if (
@@ -606,7 +606,7 @@ export class AttachmentService {
 
       if (existingAttachment) {
         throw new ForbiddenException(
-          'Attachment with same file name and URL already exists',
+          'Xuddi shu nomdagi va manzildagi biriktirma allaqachon mavjud',
         )
       }
     }
@@ -620,7 +620,7 @@ export class AttachmentService {
       })
 
       if (!document) {
-        throw new NotFoundException('Document not found')
+        throw new NotFoundException('Hujjat topilmadi')
       }
     }
 
@@ -633,7 +633,7 @@ export class AttachmentService {
       })
 
       if (!user) {
-        throw new NotFoundException('User not found')
+        throw new NotFoundException('Foydalanuvchi topilmadi')
       }
     }
 
@@ -663,7 +663,7 @@ export class AttachmentService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found')
+      throw new NotFoundException('Biriktirma topilmadi')
     }
 
     await this.#_prisma.attachment.update({

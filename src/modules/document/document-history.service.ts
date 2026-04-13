@@ -10,7 +10,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { isAdmin } from '@common/helpers'
@@ -59,8 +59,8 @@ export class DocumentHistoryService {
         },
       })
       if (!hasAccess) {
-        throw new ForbiddenException(
-          "Bu hujjat tarixini ko'rish huquqingiz yo'q",
+        throw new BadRequestException(
+          "Bu hujjat tarixini ko'rish uchun sizda ruxsat mavjud emas",
         )
       }
     }

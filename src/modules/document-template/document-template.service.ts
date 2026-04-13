@@ -40,7 +40,7 @@ export class DocumentTemplateService {
 
     if (existingTemplate) {
       throw new ConflictException(
-        'Document template with this name already exists',
+        'Bu nomli hujjat shabloni allaqachon mavjud',
       )
     }
 
@@ -53,7 +53,7 @@ export class DocumentTemplateService {
     })
 
     if (!documentType) {
-      throw new NotFoundException('Document type not found')
+      throw new NotFoundException('Hujjat turi topilmadi')
     }
 
     const createdTemplate = await this.#_prisma.documentTemplate.create({
@@ -209,7 +209,7 @@ export class DocumentTemplateService {
     })
 
     if (!template) {
-      throw new NotFoundException('Document template not found')
+      throw new NotFoundException('Hujjat shabloni topilmadi')
     }
 
     return template
@@ -228,7 +228,7 @@ export class DocumentTemplateService {
     })
 
     if (!existingTemplate) {
-      throw new NotFoundException('Document template not found')
+      throw new NotFoundException('Hujjat shabloni topilmadi')
     }
 
     // Check if name is being updated and if it conflicts with another template
@@ -243,7 +243,7 @@ export class DocumentTemplateService {
 
       if (nameExists) {
         throw new ConflictException(
-          'Document template with this name already exists',
+          'Bu nomli hujjat shabloni allaqachon mavjud',
         )
       }
     }
@@ -258,7 +258,7 @@ export class DocumentTemplateService {
       })
 
       if (!documentType) {
-        throw new NotFoundException('Document type not found')
+        throw new NotFoundException('Hujjat turi topilmadi')
       }
     }
 
@@ -345,7 +345,7 @@ export class DocumentTemplateService {
     })
 
     if (!existingTemplate) {
-      throw new NotFoundException('Document template not found')
+      throw new NotFoundException('Hujjat shabloni topilmadi')
     }
 
     // Check if template is being used by any documents
@@ -358,7 +358,7 @@ export class DocumentTemplateService {
 
     if (documentsUsingTemplate > 0) {
       throw new ConflictException(
-        'Cannot delete template that is being used by documents',
+        "Hujjatlarda ishlatilayotgan shablonni o'chirib bo'lmaydi",
       )
     }
 

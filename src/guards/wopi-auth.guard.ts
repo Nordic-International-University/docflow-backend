@@ -19,7 +19,7 @@ export class WopiAuthGuard implements CanActivate {
     const accessToken = request.query.access_token as string
 
     if (!accessToken) {
-      throw new UnauthorizedException('Missing WOPI access token')
+      throw new UnauthorizedException('WOPI kirish tokeni topilmadi')
     }
 
     try {
@@ -41,7 +41,7 @@ export class WopiAuthGuard implements CanActivate {
       if (error instanceof UnauthorizedException) {
         throw error
       }
-      throw new UnauthorizedException('Invalid WOPI access token')
+      throw new UnauthorizedException('Yaroqsiz WOPI kirish tokeni')
     }
   }
 }

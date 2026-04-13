@@ -116,7 +116,7 @@ export class UserMonthlyKpiService {
     })
 
     if (!kpi) {
-      throw new NotFoundException('User monthly KPI not found')
+      throw new NotFoundException('Foydalanuvchi oylik KPI topilmadi')
     }
 
     const [user, department] = await Promise.all([

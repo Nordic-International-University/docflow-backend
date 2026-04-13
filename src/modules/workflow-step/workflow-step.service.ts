@@ -185,7 +185,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     return this.mapToResponseDto(workflowStep)
@@ -211,7 +211,7 @@ export class WorkflowStepService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -238,7 +238,7 @@ export class WorkflowStepService {
       })
 
       if (!user) {
-        throw new NotFoundException('Assigned user not found')
+        throw new NotFoundException('Tayinlangan foydalanuvchi topilmadi')
       }
     }
 
@@ -308,7 +308,7 @@ export class WorkflowStepService {
     })
 
     if (!existingStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -335,7 +335,7 @@ export class WorkflowStepService {
       })
 
       if (!user) {
-        throw new NotFoundException('Assigned user not found')
+        throw new NotFoundException('Tayinlangan foydalanuvchi topilmadi')
       }
     }
 
@@ -406,7 +406,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -446,7 +446,7 @@ export class WorkflowStepService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     const workflowSteps = await this.prisma.workflowStep.findMany({
@@ -525,7 +525,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -561,7 +561,7 @@ export class WorkflowStepService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     const previousAssignedUserId = workflowStep.assignedToUserId
@@ -692,7 +692,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -714,7 +714,7 @@ export class WorkflowStepService {
 
     // Check if the step is already completed
     if (workflowStep.status === WorkflowStatus.COMPLETED) {
-      throw new BadRequestException('This step has already been completed')
+      throw new BadRequestException('Bu bosqich allaqachon yakunlangan')
     }
 
     // Validate XFDF submission for APPROVAL and SIGN action types
@@ -1016,11 +1016,11 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     if (!payload.userId) {
-      throw new BadRequestException('User ID is required to reject a step')
+      throw new BadRequestException('Bosqichni rad etish uchun foydalanuvchi IDsi talab qilinadi')
     }
 
     // Check if workflow is already completed (immutable)
@@ -1081,7 +1081,7 @@ export class WorkflowStepService {
       })
 
       if (!rollbackUser) {
-        throw new NotFoundException('Rollback user not found')
+        throw new NotFoundException('Qaytarish foydalanuvchisi topilmadi')
       }
 
       // Find the previous step assigned to this user in the same workflow
@@ -1284,7 +1284,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     const skip = (pageNumber - 1) * pageSize
@@ -1341,7 +1341,7 @@ export class WorkflowStepService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     const skip = (pageNumber - 1) * pageSize
@@ -1410,7 +1410,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     const action = await this.prisma.workflowStepAction.create({
@@ -1640,7 +1640,7 @@ export class WorkflowStepService {
     })
 
     if (!workflowStep) {
-      throw new NotFoundException('Workflow step not found')
+      throw new NotFoundException('Ish jarayoni bosqichi topilmadi')
     }
 
     // Verify this is a VERIFICATION type step
@@ -1669,7 +1669,7 @@ export class WorkflowStepService {
 
     // Check if the step is already completed
     if (workflowStep.status === WorkflowStatus.COMPLETED) {
-      throw new BadRequestException('This step has already been completed')
+      throw new BadRequestException('Bu bosqich allaqachon yakunlangan')
     }
 
     // Helper function to decode filename

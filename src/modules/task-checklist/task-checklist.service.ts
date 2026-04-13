@@ -44,7 +44,7 @@ export class TaskChecklistService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     const checklist = await this.#_prisma.taskChecklist.create({
@@ -168,7 +168,7 @@ export class TaskChecklistService {
     })
 
     if (!checklist) {
-      throw new NotFoundException('Task checklist not found')
+      throw new NotFoundException("Nazorat ro'yxati topilmadi")
     }
 
     return checklist as TaskChecklistRetrieveOneResponse
@@ -187,7 +187,7 @@ export class TaskChecklistService {
     })
 
     if (!existingChecklist) {
-      throw new NotFoundException('Task checklist not found')
+      throw new NotFoundException("Nazorat ro'yxati topilmadi")
     }
 
     await this.#_prisma.taskChecklist.update({
@@ -235,7 +235,7 @@ export class TaskChecklistService {
     })
 
     if (!existingChecklist) {
-      throw new NotFoundException('Task checklist not found')
+      throw new NotFoundException("Nazorat ro'yxati topilmadi")
     }
 
     // Soft delete checklist and its items
@@ -284,7 +284,7 @@ export class TaskChecklistService {
     })
 
     if (!checklist) {
-      throw new NotFoundException('Task checklist not found')
+      throw new NotFoundException("Nazorat ro'yxati topilmadi")
     }
 
     const item = await this.#_prisma.taskChecklistItem.create({
@@ -384,7 +384,7 @@ export class TaskChecklistService {
     })
 
     if (!item) {
-      throw new NotFoundException('Task checklist item not found')
+      throw new NotFoundException("Nazorat ro'yxati bandi topilmadi")
     }
 
     return item as TaskChecklistItemResponse
@@ -403,7 +403,7 @@ export class TaskChecklistService {
     })
 
     if (!existingItem) {
-      throw new NotFoundException('Task checklist item not found')
+      throw new NotFoundException("Nazorat ro'yxati bandi topilmadi")
     }
 
     // Handle completion status change
@@ -474,7 +474,7 @@ export class TaskChecklistService {
     })
 
     if (!existingItem) {
-      throw new NotFoundException('Task checklist item not found')
+      throw new NotFoundException("Nazorat ro'yxati bandi topilmadi")
     }
 
     // Soft delete

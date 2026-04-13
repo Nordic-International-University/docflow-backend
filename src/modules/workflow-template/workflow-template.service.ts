@@ -52,7 +52,7 @@ export class WorkflowTemplateService {
       })
 
       if (!documentType) {
-        throw new NotFoundException('Document type not found')
+        throw new NotFoundException('Hujjat turi topilmadi')
       }
     }
 
@@ -60,7 +60,7 @@ export class WorkflowTemplateService {
     const stepOrders = steps.map((step) => step.order)
     const uniqueOrders = new Set(stepOrders)
     if (stepOrders.length !== uniqueOrders.size) {
-      throw new BadRequestException('Step orders must be unique')
+      throw new BadRequestException("Bosqich tartib raqamlari noyob bo'lishi kerak")
     }
 
     // Validate assigned users exist (if provided)
@@ -78,7 +78,7 @@ export class WorkflowTemplateService {
       })
 
       if (users.length !== userIds.length) {
-        throw new NotFoundException('One or more assigned users not found')
+        throw new NotFoundException('Tayinlangan foydalanuvchilardan biri yoki bir nechtasi topilmadi')
       }
     }
 
@@ -97,7 +97,7 @@ export class WorkflowTemplateService {
       })
 
       if (roles.length !== roleIds.length) {
-        throw new NotFoundException('One or more assigned roles not found')
+        throw new NotFoundException('Tayinlangan rollardan biri yoki bir nechtasi topilmadi')
       }
     }
 
@@ -339,7 +339,7 @@ export class WorkflowTemplateService {
     })
 
     if (!template) {
-      throw new NotFoundException('Workflow template not found')
+      throw new NotFoundException('Ish jarayoni shabloni topilmadi')
     }
 
     return this.mapToResponseDto(template)
@@ -365,7 +365,7 @@ export class WorkflowTemplateService {
     })
 
     if (!existingTemplate) {
-      throw new NotFoundException('Workflow template not found')
+      throw new NotFoundException('Ish jarayoni shabloni topilmadi')
     }
 
     const existingStepsCount = existingTemplate.steps.length
@@ -397,7 +397,7 @@ export class WorkflowTemplateService {
       })
 
       if (!documentType) {
-        throw new NotFoundException('Document type not found')
+        throw new NotFoundException('Hujjat turi topilmadi')
       }
     }
 
@@ -407,7 +407,7 @@ export class WorkflowTemplateService {
       const stepOrders = steps.map((step) => step.order)
       const uniqueOrders = new Set(stepOrders)
       if (stepOrders.length !== uniqueOrders.size) {
-        throw new BadRequestException('Step orders must be unique')
+        throw new BadRequestException("Bosqich tartib raqamlari noyob bo'lishi kerak")
       }
 
       // Validate assigned users
@@ -425,7 +425,7 @@ export class WorkflowTemplateService {
         })
 
         if (users.length !== userIds.length) {
-          throw new NotFoundException('One or more assigned users not found')
+          throw new NotFoundException('Tayinlangan foydalanuvchilardan biri yoki bir nechtasi topilmadi')
         }
       }
 
@@ -444,7 +444,7 @@ export class WorkflowTemplateService {
         })
 
         if (roles.length !== roleIds.length) {
-          throw new NotFoundException('One or more assigned roles not found')
+          throw new NotFoundException('Tayinlangan rollardan biri yoki bir nechtasi topilmadi')
         }
       }
 
@@ -626,7 +626,7 @@ export class WorkflowTemplateService {
     })
 
     if (!existingTemplate) {
-      throw new NotFoundException('Workflow template not found')
+      throw new NotFoundException('Ish jarayoni shabloni topilmadi')
     }
 
     // Soft delete the template (steps will be cascade deleted due to relation)

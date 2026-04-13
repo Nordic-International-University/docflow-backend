@@ -39,7 +39,7 @@ export class ProjectMemberService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     // Check if user exists
@@ -51,7 +51,7 @@ export class ProjectMemberService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     // Check if membership already exists
@@ -64,7 +64,7 @@ export class ProjectMemberService {
     })
 
     if (existingMembership) {
-      throw new ConflictException('User is already a member of this project')
+      throw new ConflictException("Foydalanuvchi allaqachon bu loyiha a'zosi")
     }
 
     const member = await this.#_prisma.projectMember.create({
@@ -203,7 +203,7 @@ export class ProjectMemberService {
     })
 
     if (!member) {
-      throw new NotFoundException('Project member not found')
+      throw new NotFoundException("Loyiha a'zosi topilmadi")
     }
 
     return member as ProjectMemberRetrieveOneResponse
@@ -222,7 +222,7 @@ export class ProjectMemberService {
     })
 
     if (!existingMember) {
-      throw new NotFoundException('Project member not found')
+      throw new NotFoundException("Loyiha a'zosi topilmadi")
     }
 
     await this.#_prisma.projectMember.update({
@@ -273,7 +273,7 @@ export class ProjectMemberService {
     })
 
     if (!existingMember) {
-      throw new NotFoundException('Project member not found')
+      throw new NotFoundException("Loyiha a'zosi topilmadi")
     }
 
     // Soft delete

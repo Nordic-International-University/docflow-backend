@@ -719,7 +719,7 @@ export class NotificationService {
     })
 
     if (!notification) {
-      throw new NotFoundException('Notification not found')
+      throw new NotFoundException('Bildirishnoma topilmadi')
     }
 
     const updated = await this.prisma.notification.update({
@@ -764,7 +764,7 @@ export class NotificationService {
     })
 
     if (!notification) {
-      throw new NotFoundException('Notification not found')
+      throw new NotFoundException('Bildirishnoma topilmadi')
     }
 
     await this.prisma.notification.update({

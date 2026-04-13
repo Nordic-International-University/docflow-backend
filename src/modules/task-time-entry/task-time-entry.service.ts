@@ -36,7 +36,7 @@ export class TaskTimeEntryService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     const timeEntry = await this.#_prisma.taskTimeEntry.create({
@@ -171,7 +171,7 @@ export class TaskTimeEntryService {
     })
 
     if (!timeEntry) {
-      throw new NotFoundException('Time entry not found')
+      throw new NotFoundException('Vaqt yozuvi topilmadi')
     }
 
     return {
@@ -193,7 +193,7 @@ export class TaskTimeEntryService {
     })
 
     if (!existingEntry) {
-      throw new NotFoundException('Time entry not found')
+      throw new NotFoundException('Vaqt yozuvi topilmadi')
     }
 
     const dataToUpdate: Record<string, unknown> = {
@@ -266,7 +266,7 @@ export class TaskTimeEntryService {
     })
 
     if (!existingEntry) {
-      throw new NotFoundException('Time entry not found')
+      throw new NotFoundException('Vaqt yozuvi topilmadi')
     }
 
     // Soft delete

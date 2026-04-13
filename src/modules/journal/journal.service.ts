@@ -126,7 +126,7 @@ export class JournalService {
     })
 
     if (!journal) {
-      throw new NotFoundException('Journal not found')
+      throw new NotFoundException('Jurnal topilmadi')
     }
 
     return {
@@ -144,7 +144,7 @@ export class JournalService {
     })
 
     if (!departament) {
-      throw new NotFoundException('Department not found')
+      throw new NotFoundException("Bo'lim topilmadi")
     }
 
     const user = await this.prisma.user.findFirst({
@@ -155,7 +155,7 @@ export class JournalService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     const createdJournal = await this.prisma.journal.create({
@@ -198,7 +198,7 @@ export class JournalService {
     })
 
     if (!existingJournal) {
-      throw new NotFoundException('Journal not found')
+      throw new NotFoundException('Jurnal topilmadi')
     }
 
     if (updateData.departmentId) {
@@ -210,7 +210,7 @@ export class JournalService {
       })
 
       if (!departament) {
-        throw new NotFoundException('Department not found')
+        throw new NotFoundException("Bo'lim topilmadi")
       }
     }
 
@@ -223,7 +223,7 @@ export class JournalService {
       })
 
       if (!user) {
-        throw new NotFoundException('User not found')
+        throw new NotFoundException('Foydalanuvchi topilmadi')
       }
     }
 
@@ -291,7 +291,7 @@ export class JournalService {
     })
 
     if (!existingJournal) {
-      throw new NotFoundException('Journal not found')
+      throw new NotFoundException('Jurnal topilmadi')
     }
 
     await this.prisma.journal.update({

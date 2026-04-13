@@ -472,7 +472,7 @@ export class WorkflowService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     return this.mapToResponseDto(workflow as any)
@@ -496,7 +496,7 @@ export class WorkflowService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     // Check for existing workflow
@@ -508,7 +508,7 @@ export class WorkflowService {
     })
 
     if (existingWorkflow) {
-      throw new ConflictException('Workflow already exists for this document')
+      throw new ConflictException('Bu hujjat uchun ish jarayoni allaqachon mavjud')
     }
 
     // Determine steps - either from template or from provided steps
@@ -544,7 +544,7 @@ export class WorkflowService {
       }
 
       if (!template.steps || template.steps.length === 0) {
-        throw new BadRequestException('Workflow template has no steps defined')
+        throw new BadRequestException('Ish jarayoni shablonida bosqichlar belgilanmagan')
       }
 
       if (!workflowData.type) {
@@ -587,7 +587,7 @@ export class WorkflowService {
     const stepOrders = steps.map((step) => step.order)
     const uniqueOrders = new Set(stepOrders)
     if (stepOrders.length !== uniqueOrders.size) {
-      throw new BadRequestException('Step orders must be unique')
+      throw new BadRequestException("Bosqich tartib raqamlari noyob bo'lishi kerak")
     }
 
     // Validate assigned users exist (if provided)
@@ -605,7 +605,7 @@ export class WorkflowService {
       })
 
       if (users.length !== userIds.length) {
-        throw new NotFoundException('One or more assigned users not found')
+        throw new NotFoundException('Tayinlangan foydalanuvchilardan biri yoki bir nechtasi topilmadi')
       }
     }
 
@@ -830,7 +830,7 @@ export class WorkflowService {
     })
 
     if (!existingWorkflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     // If updating currentStepOrder, verify the step exists
@@ -952,7 +952,7 @@ export class WorkflowService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     // Use transaction to soft delete workflow and its steps
@@ -1066,7 +1066,7 @@ export class WorkflowService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found for this document')
+      throw new NotFoundException('Bu hujjat uchun ish jarayoni topilmadi')
     }
 
     return this.mapToResponseDto(workflow as any)
@@ -1087,7 +1087,7 @@ export class WorkflowService {
     })
 
     if (!workflow) {
-      throw new NotFoundException('Workflow not found')
+      throw new NotFoundException('Ish jarayoni topilmadi')
     }
 
     const nextStepOrder = workflow.currentStepOrder + 1

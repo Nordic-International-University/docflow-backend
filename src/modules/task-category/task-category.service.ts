@@ -37,7 +37,7 @@ export class TaskCategoryService {
     })
 
     if (nameExists) {
-      throw new ConflictException('Task category name must be unique')
+      throw new ConflictException("Vazifa toifasi nomi noyob bo'lishi kerak")
     }
 
     const category = await this.#_prisma.taskCategory.create({
@@ -146,7 +146,7 @@ export class TaskCategoryService {
     })
 
     if (!category) {
-      throw new NotFoundException('Task category not found')
+      throw new NotFoundException('Vazifa toifasi topilmadi')
     }
 
     return {
@@ -167,7 +167,7 @@ export class TaskCategoryService {
     })
 
     if (!existingCategory) {
-      throw new NotFoundException('Task category not found')
+      throw new NotFoundException('Vazifa toifasi topilmadi')
     }
 
     if (updateData.name) {
@@ -180,7 +180,7 @@ export class TaskCategoryService {
       })
 
       if (nameExists) {
-        throw new ConflictException('Task category name must be unique')
+        throw new ConflictException("Vazifa toifasi nomi noyob bo'lishi kerak")
       }
     }
 
@@ -227,7 +227,7 @@ export class TaskCategoryService {
     })
 
     if (!existingCategory) {
-      throw new NotFoundException('Task category not found')
+      throw new NotFoundException('Vazifa toifasi topilmadi')
     }
 
     // Soft delete - set deletedAt and also deactivate

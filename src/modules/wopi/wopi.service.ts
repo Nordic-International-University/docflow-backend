@@ -41,7 +41,7 @@ export class WopiService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found or inactive')
+      throw new NotFoundException("Foydalanuvchi topilmadi yoki faol emas")
     }
 
     // Get workflow-based permissions
@@ -312,7 +312,7 @@ export class WopiService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('File not found')
+      throw new NotFoundException("Fayl topilmadi")
     }
 
     return attachment
@@ -328,7 +328,7 @@ export class WopiService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found or inactive')
+      throw new NotFoundException("Foydalanuvchi topilmadi yoki faol emas")
     }
   }
 

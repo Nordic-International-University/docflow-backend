@@ -128,7 +128,7 @@ export class TaskCommentService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     if (payload.parentCommentId) {
@@ -268,7 +268,7 @@ export class TaskCommentService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     const where = {
@@ -389,7 +389,7 @@ export class TaskCommentService {
     })
 
     if (!comment) {
-      throw new NotFoundException('Task comment not found')
+      throw new NotFoundException('Vazifa izohi topilmadi')
     }
 
     return {
@@ -422,7 +422,7 @@ export class TaskCommentService {
     })
 
     if (!existingComment) {
-      throw new NotFoundException('Task comment not found')
+      throw new NotFoundException('Vazifa izohi topilmadi')
     }
 
     await this.#_prisma.taskComment.update({
@@ -477,7 +477,7 @@ export class TaskCommentService {
     })
 
     if (!existingComment) {
-      throw new NotFoundException('Task comment not found')
+      throw new NotFoundException('Vazifa izohi topilmadi')
     }
 
     await this.#_prisma.taskComment.update({

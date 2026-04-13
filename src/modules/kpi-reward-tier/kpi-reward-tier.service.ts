@@ -25,7 +25,7 @@ export class KpiRewardTierService {
   ): Promise<void> {
     // Validate score range
     if (payload.minScore > payload.maxScore) {
-      throw new BadRequestException('minScore cannot be greater than maxScore')
+      throw new BadRequestException("Minimal ball maksimal balldan katta bo'lishi mumkin emas")
     }
 
     // Check for overlapping ranges
@@ -115,7 +115,7 @@ export class KpiRewardTierService {
     })
 
     if (!tier) {
-      throw new NotFoundException('KPI reward tier not found')
+      throw new NotFoundException('KPI mukofot darajasi topilmadi')
     }
 
     return {
@@ -179,7 +179,7 @@ export class KpiRewardTierService {
     })
 
     if (!existing) {
-      throw new NotFoundException('KPI reward tier not found')
+      throw new NotFoundException('KPI mukofot darajasi topilmadi')
     }
 
     const updateData: Record<string, unknown> = {
@@ -232,7 +232,7 @@ export class KpiRewardTierService {
     })
 
     if (!existing) {
-      throw new NotFoundException('KPI reward tier not found')
+      throw new NotFoundException('KPI mukofot darajasi topilmadi')
     }
 
     await this.#_prisma.kpiRewardTier.update({

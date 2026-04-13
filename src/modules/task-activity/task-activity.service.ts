@@ -92,7 +92,7 @@ export class TaskActivityService {
     })
 
     if (!activity) {
-      throw new NotFoundException('Task activity not found')
+      throw new NotFoundException('Vazifa faoliyati topilmadi')
     }
 
     return activity as TaskActivityRetrieveOneResponse

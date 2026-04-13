@@ -44,7 +44,7 @@ export class AuthGuard implements CanActivate {
         : null
 
     if (!token) {
-      throw new UnauthorizedException('Missing authentication token')
+      throw new UnauthorizedException('Autentifikatsiya tokeni topilmadi')
     }
 
     try {
@@ -59,7 +59,7 @@ export class AuthGuard implements CanActivate {
       })
 
       if (isBlacklisted) {
-        throw new UnauthorizedException('Token has been revoked')
+        throw new UnauthorizedException('Token bekor qilingan')
       }
 
       const payload = await this.jwtService.verifyAsync(token, {
@@ -106,7 +106,7 @@ export class AuthGuard implements CanActivate {
       })
 
       if (!user) {
-        throw new UnauthorizedException('User not found or inactive')
+        throw new UnauthorizedException('Foydalanuvchi topilmadi yoki faol emas')
       }
 
       // Extract permission keys
@@ -139,7 +139,7 @@ export class AuthGuard implements CanActivate {
       if (error instanceof UnauthorizedException) {
         throw error
       }
-      throw new UnauthorizedException('Invalid or expired token')
+      throw new UnauthorizedException("Yaroqsiz yoki muddati o'tgan token")
     }
     return true
   }

@@ -39,7 +39,7 @@ export class TaskAttachmentService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     // Verify attachment exists
@@ -51,7 +51,7 @@ export class TaskAttachmentService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found')
+      throw new NotFoundException('Biriktirma topilmadi')
     }
 
     // Check for duplicate task-attachment combination
@@ -178,7 +178,7 @@ export class TaskAttachmentService {
     })
 
     if (!taskAttachment) {
-      throw new NotFoundException('Task attachment not found')
+      throw new NotFoundException('Vazifa biriktirmasi topilmadi')
     }
 
     return {
@@ -203,7 +203,7 @@ export class TaskAttachmentService {
     })
 
     if (!existingAttachment) {
-      throw new NotFoundException('Task attachment not found')
+      throw new NotFoundException('Vazifa biriktirmasi topilmadi')
     }
 
     await this.#_prisma.taskAttachment.update({
@@ -248,7 +248,7 @@ export class TaskAttachmentService {
     })
 
     if (!existingAttachment) {
-      throw new NotFoundException('Task attachment not found')
+      throw new NotFoundException('Vazifa biriktirmasi topilmadi')
     }
 
     // Soft delete

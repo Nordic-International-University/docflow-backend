@@ -1,5 +1,5 @@
 import {
-  ForbiddenException,
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -182,7 +182,7 @@ export class TaskService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     if (payload.parentTaskId) {
@@ -565,7 +565,7 @@ export class TaskService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     return {
@@ -597,7 +597,7 @@ export class TaskService {
     })
 
     if (!existingTask) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     // SECURITY: ownership/membership check — creator, assignee, yoki project owner/manager
@@ -612,8 +612,8 @@ export class TaskService {
           (m.role === 'OWNER' || m.role === 'MANAGER'),
       )
       if (!isCreator && !isAssignee && !isProjectOwner) {
-        throw new ForbiddenException(
-          'Bu topshiriqni tahrirlash huquqingiz yo\'q',
+        throw new BadRequestException(
+          "Faqat o'zingiz yaratgan yoki sizga tayinlangan vazifani tahrirlashingiz mumkin",
         )
       }
     }
@@ -850,7 +850,7 @@ export class TaskService {
       },
     })
 
-    if (!task) throw new NotFoundException('Topshiriq topilmadi')
+    if (!task) throw new NotFoundException('Vazifa topilmadi')
 
     // SECURITY: faqat creator yoki assignee yakunlay oladi
     const isCreator = task.createdById === payload.completedBy
@@ -858,8 +858,8 @@ export class TaskService {
       (a) => a.userId === payload.completedBy,
     )
     if (!isCreator && !isAssignee) {
-      throw new ForbiddenException(
-        "Bu topshiriqni yakunlash huquqingiz yo'q",
+      throw new BadRequestException(
+        "Faqat o'zingizga tegishli vazifani yakunlay olasiz",
       )
     }
 
@@ -979,7 +979,7 @@ export class TaskService {
       },
     })
 
-    if (!task) throw new NotFoundException('Topshiriq topilmadi')
+    if (!task) throw new NotFoundException('Vazifa topilmadi')
 
     // Clear completedAt if set (boardMove may have cleared it already)
     if (task.completedAt) {
@@ -1047,7 +1047,7 @@ export class TaskService {
     })
 
     if (!existingTask) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     // SECURITY: faqat creator yoki project owner o'chira oladi
@@ -1056,8 +1056,8 @@ export class TaskService {
       (m) => m.userId === payload.deletedBy && m.role === 'OWNER',
     )
     if (!isCreator && !isProjectOwner) {
-      throw new ForbiddenException(
-        "Bu topshiriqni o'chirish huquqingiz yo'q",
+      throw new BadRequestException(
+        "Faqat o'zingiz yaratgan vazifani o'chira olasiz",
       )
     }
 

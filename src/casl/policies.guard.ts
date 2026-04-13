@@ -8,7 +8,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { AbilityFactory } from './ability.factory'
@@ -34,7 +34,7 @@ export class PoliciesGuard implements CanActivate {
     const user = request.user
 
     if (!user) {
-      throw new ForbiddenException('User context topilmadi')
+      throw new BadRequestException("Foydalanuvchi ma'lumotlari topilmadi")
     }
 
     const caslUser: CaslUser = {
@@ -52,7 +52,9 @@ export class PoliciesGuard implements CanActivate {
 
     for (const handler of handlers) {
       if (!handler(ability)) {
-        throw new ForbiddenException("Bu operatsiyani bajarish huquqingiz yo'q")
+        throw new BadRequestException(
+          'Bu amalni bajarish uchun sizda ruxsat mavjud emas',
+        )
       }
     }
 

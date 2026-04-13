@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, Logger } from '@nestjs/common'
+import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { StepActionType } from '@prisma/client'
 import { STEP_ACTION_WOPI_PERMISSIONS } from '@constants'
@@ -180,22 +180,22 @@ export class WorkflowPermissionService {
     const permissions = await this.getUserPermissionsForFile(userId, fileId)
 
     if (!permissions.UserCanWrite) {
-      throw new ForbiddenException(
-        `You do not have permission to edit this document. Your current workflow step (${permissions.actionType || 'none'}) does not allow editing.`,
+      throw new BadRequestException(
+        `Bu hujjatni tahrirlash uchun sizda ruxsat mavjud emas. Joriy bosqich turi (${permissions.actionType || 'noma\'lum'}) tahrirlashga ruxsat bermaydi`,
       )
     }
   }
 
   /**
    * Verify that a user has read permission for a file
-   * Throws ForbiddenException if user cannot read
+   * Throws BadRequestException if user cannot read
    */
   async verifyReadPermission(userId: string, fileId: string): Promise<void> {
     const permissions = await this.getUserPermissionsForFile(userId, fileId)
 
     if (!permissions.UserCanRead) {
-      throw new ForbiddenException(
-        'You do not have permission to access this document.',
+      throw new BadRequestException(
+        "Bu hujjatga kirish uchun sizda ruxsat mavjud emas",
       )
     }
   }
@@ -313,7 +313,7 @@ export class WorkflowPermissionService {
 
   /**
    * Verify that a user has XFDF editing permission
-   * Throws ForbiddenException if user does not have an active workflow step
+   * Throws BadRequestException if user does not have an active workflow step
    */
   async verifyXfdfEditPermission(
     userId: string,
@@ -325,8 +325,8 @@ export class WorkflowPermissionService {
     )
 
     if (!hasPermission) {
-      throw new ForbiddenException(
-        'You do not have permission to edit XFDF annotations. Only users with an active workflow step can perform this action.',
+      throw new BadRequestException(
+        "XFDF izohlarini tahrirlash uchun sizda ruxsat mavjud emas. Faqat faol bosqichga tayinlangan foydalanuvchilar bu amalni bajara oladi",
       )
     }
   }

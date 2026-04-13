@@ -95,7 +95,7 @@ export class PermissionService {
     })
 
     if (permission) {
-      throw new ForbiddenException('Permission key already used')
+      throw new ForbiddenException('Ruxsat kaliti allaqachon ishlatilgan')
     }
 
     const createdPermission = await this.#_prisma.permission.create({
@@ -133,7 +133,7 @@ export class PermissionService {
     })
 
     if (!existingPermission) {
-      throw new ForbiddenException('Permission not found')
+      throw new ForbiddenException('Ruxsat topilmadi')
     }
 
     // Check if key is being changed and if it's already used
@@ -148,7 +148,7 @@ export class PermissionService {
 
       if (keyExists) {
         throw new ForbiddenException(
-          'Permission key already used by another permission',
+          'Ruxsat kaliti boshqa ruxsat tomonidan allaqachon ishlatilgan',
         )
       }
     }
@@ -200,7 +200,7 @@ export class PermissionService {
     })
 
     if (!permission) {
-      throw new ForbiddenException('Permission not found')
+      throw new ForbiddenException('Ruxsat topilmadi')
     }
 
     await this.#_prisma.permission.update({

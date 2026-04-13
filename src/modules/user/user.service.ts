@@ -167,7 +167,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     return {
@@ -197,7 +197,7 @@ export class UserService {
     })
 
     if (existingUser) {
-      throw new ConflictException('Username already exists')
+      throw new ConflictException('Foydalanuvchi nomi allaqachon mavjud')
     }
 
     if (payload.roleId) {
@@ -209,7 +209,7 @@ export class UserService {
       })
 
       if (!role) {
-        throw new NotFoundException('Role not found')
+        throw new NotFoundException('Rol topilmadi')
       }
     }
 
@@ -222,7 +222,7 @@ export class UserService {
       })
 
       if (!department) {
-        throw new NotFoundException('Department not found')
+        throw new NotFoundException("Bo'lim topilmadi")
       }
     }
 
@@ -268,7 +268,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     if (payload.username && payload.username !== user.username) {
@@ -283,7 +283,7 @@ export class UserService {
       })
 
       if (existingUser) {
-        throw new ForbiddenException('Username already exists')
+        throw new ForbiddenException('Foydalanuvchi nomi allaqachon mavjud')
       }
     }
 
@@ -299,7 +299,7 @@ export class UserService {
       })
 
       if (existingUser) {
-        throw new ForbiddenException('Telegram ID already exists')
+        throw new ForbiddenException('Telegram ID allaqachon mavjud')
       }
     }
 
@@ -312,7 +312,7 @@ export class UserService {
       })
 
       if (!role) {
-        throw new NotFoundException('Role not found')
+        throw new NotFoundException('Rol topilmadi')
       }
     }
 
@@ -325,7 +325,7 @@ export class UserService {
       })
 
       if (!department) {
-        throw new NotFoundException('Department not found')
+        throw new NotFoundException("Bo'lim topilmadi")
       }
     }
 
@@ -391,7 +391,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     await this.#_prisma.user.update({
@@ -435,7 +435,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'docflow_bot'
@@ -457,7 +457,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     // Check if Telegram ID is already linked to another user
@@ -487,7 +487,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     if (!user.telegramId) {
@@ -512,7 +512,7 @@ export class UserService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     return {

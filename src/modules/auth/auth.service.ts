@@ -66,12 +66,12 @@ export class AuthService {
     })
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials')
+      throw new UnauthorizedException("Login yoki parol noto'g'ri")
     }
 
     const isPasswordValid = await argon2.verify(user.password, payload.password)
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials')
+      throw new UnauthorizedException("Login yoki parol noto'g'ri")
     }
 
     await this.prisma.user.update({
@@ -146,11 +146,11 @@ export class AuthService {
       })
 
       if (!storedToken) {
-        throw new UnauthorizedException('Invalid or expired refresh token')
+        throw new UnauthorizedException("Yaroqsiz yoki muddati o'tgan yangilash tokeni")
       }
 
       if (!storedToken.user.isActive || storedToken.user.deletedAt) {
-        throw new UnauthorizedException('User account is inactive or deleted')
+        throw new UnauthorizedException("Foydalanuvchi hisobi faol emas yoki o'chirilgan")
       }
 
       // SECURITY: eski refresh token'ni revoke qilish (rotation)
@@ -195,7 +195,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       }
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired refresh token')
+      throw new UnauthorizedException("Yaroqsiz yoki muddati o'tgan yangilash tokeni")
     }
   }
 
@@ -289,7 +289,7 @@ export class AuthService {
     })
 
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throw new UnauthorizedException("Foydalanuvchi topilmadi")
     }
 
     const permissionKeys =

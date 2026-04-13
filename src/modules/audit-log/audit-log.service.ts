@@ -157,7 +157,7 @@ export class AuditLogService {
     })
 
     if (!auditLog) {
-      throw new NotFoundException('Audit log entry not found')
+      throw new NotFoundException('Audit log yozuvi topilmadi')
     }
 
     return auditLog

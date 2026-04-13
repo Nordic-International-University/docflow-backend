@@ -37,7 +37,7 @@ export class ProjectLabelService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     // Check if name is unique within project
@@ -50,7 +50,7 @@ export class ProjectLabelService {
     })
 
     if (nameExists) {
-      throw new ConflictException('Label name must be unique within project')
+      throw new ConflictException("Yorliq nomi loyiha ichida noyob bo'lishi kerak")
     }
 
     const label = await this.#_prisma.projectLabel.create({
@@ -160,7 +160,7 @@ export class ProjectLabelService {
     })
 
     if (!label) {
-      throw new NotFoundException('Project label not found')
+      throw new NotFoundException("Loyiha yorlig'i topilmadi")
     }
 
     return {
@@ -181,7 +181,7 @@ export class ProjectLabelService {
     })
 
     if (!existingLabel) {
-      throw new NotFoundException('Project label not found')
+      throw new NotFoundException("Loyiha yorlig'i topilmadi")
     }
 
     if (updateData.name) {
@@ -195,7 +195,7 @@ export class ProjectLabelService {
       })
 
       if (nameExists) {
-        throw new ConflictException('Label name must be unique within project')
+        throw new ConflictException("Yorliq nomi loyiha ichida noyob bo'lishi kerak")
       }
     }
 
@@ -245,7 +245,7 @@ export class ProjectLabelService {
     })
 
     if (!existingLabel) {
-      throw new NotFoundException('Project label not found')
+      throw new NotFoundException("Loyiha yorlig'i topilmadi")
     }
 
     // Soft delete

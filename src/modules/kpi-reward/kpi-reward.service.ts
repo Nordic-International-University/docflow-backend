@@ -122,7 +122,7 @@ export class KpiRewardService {
     })
 
     if (!reward) {
-      throw new NotFoundException('KPI reward not found')
+      throw new NotFoundException('KPI mukofoti topilmadi')
     }
 
     const [user, approver] = await Promise.all([
@@ -171,7 +171,7 @@ export class KpiRewardService {
     })
 
     if (!reward) {
-      throw new NotFoundException('KPI reward not found')
+      throw new NotFoundException('KPI mukofoti topilmadi')
     }
 
     if (reward.status !== KpiRewardStatus.PENDING) {
@@ -198,7 +198,7 @@ export class KpiRewardService {
     })
 
     if (!reward) {
-      throw new NotFoundException('KPI reward not found')
+      throw new NotFoundException('KPI mukofoti topilmadi')
     }
 
     if (reward.status !== KpiRewardStatus.APPROVED) {
@@ -226,11 +226,11 @@ export class KpiRewardService {
     })
 
     if (!reward) {
-      throw new NotFoundException('KPI reward not found')
+      throw new NotFoundException('KPI mukofoti topilmadi')
     }
 
     if (reward.status === KpiRewardStatus.PAID) {
-      throw new BadRequestException('Cannot reject a paid reward')
+      throw new BadRequestException("To'langan mukofotni rad etib bo'lmaydi")
     }
 
     await this.#_prisma.kpiReward.update({

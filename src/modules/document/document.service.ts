@@ -4,7 +4,6 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import {
@@ -320,7 +319,7 @@ export class DocumentService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     const atts: DocumentAttachmentSelect[] = document.attachments || []
@@ -402,7 +401,7 @@ export class DocumentService {
     })
 
     if (!documentType) {
-      throw new NotFoundException('Document type not found')
+      throw new NotFoundException('Hujjat turi topilmadi')
     }
 
     const journal = await this.#_prisma.journal.findFirst({
@@ -416,7 +415,7 @@ export class DocumentService {
     })
 
     if (!journal) {
-      throw new NotFoundException('Journal not found')
+      throw new NotFoundException('Jurnal topilmadi')
     }
 
     const user = await this.#_prisma.user.findFirst({
@@ -436,7 +435,7 @@ export class DocumentService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     // ABAC: journal departmentId tekshirish — admin hamma, dept head subordinate,
@@ -444,7 +443,7 @@ export class DocumentService {
     const adminUser = isAdmin(user.role?.name)
     if (journal.departmentId && !adminUser) {
       if (!user.departmentId) {
-        throw new ForbiddenException(
+        throw new BadRequestException(
           "Hujjat yaratish uchun bo'limga biriktirilgan bo'lishingiz kerak",
         )
       }
@@ -454,7 +453,7 @@ export class DocumentService {
       const allowedDeptIds = new Set([user.departmentId, ...subordinateDeptIds])
 
       if (!allowedDeptIds.has(journal.departmentId)) {
-        throw new ForbiddenException(
+        throw new BadRequestException(
           "Faqat o'z bo'limingiz yoki qo'l ostingizdagi bo'limlar jurnalidan hujjat yaratishingiz mumkin",
         )
       }
@@ -480,7 +479,7 @@ export class DocumentService {
       })
 
       if (!template) {
-        throw new NotFoundException('Document template not found')
+        throw new NotFoundException('Hujjat shabloni topilmadi')
       }
 
       if (template.requiredTags) {
@@ -502,7 +501,7 @@ export class DocumentService {
         payload.userId,
       )
     } else if (payload.templateId && !payload.tags) {
-      throw new BadRequestException('Tags are required when using a template')
+      throw new BadRequestException('Shablon ishlatilganda teglar talab qilinadi')
     }
 
     this.logger.log(payload)
@@ -784,7 +783,7 @@ export class DocumentService {
     })
 
     if (!existingDocument) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     // SECURITY: faqat yaratuvchi yoki admin tahrirlashi mumkin
@@ -793,8 +792,8 @@ export class DocumentService {
       !isAdmin(payload.roleName) &&
       existingDocument.createdById !== payload.userId
     ) {
-      throw new ForbiddenException(
-        "Bu hujjatni tahrirlash huquqingiz yo'q",
+      throw new BadRequestException(
+        "Faqat o'zingiz yaratgan hujjatni tahrirlashingiz mumkin",
       )
     }
 
@@ -811,7 +810,7 @@ export class DocumentService {
       })
 
       if (documentWithSameNumber) {
-        throw new ConflictException('Document number must be unique')
+        throw new ConflictException("Hujjat raqami noyob bo'lishi kerak")
       }
     }
 
@@ -824,7 +823,7 @@ export class DocumentService {
       })
 
       if (!documentType) {
-        throw new NotFoundException('Document type not found')
+        throw new NotFoundException('Hujjat turi topilmadi')
       }
     }
 
@@ -837,7 +836,7 @@ export class DocumentService {
       })
 
       if (!journal) {
-        throw new NotFoundException('Journal not found')
+        throw new NotFoundException('Jurnal topilmadi')
       }
     }
 
@@ -908,7 +907,7 @@ export class DocumentService {
     })
 
     if (!existingDocument) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     await this.#_prisma.document.update({
@@ -952,7 +951,7 @@ export class DocumentService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     return {
@@ -974,11 +973,11 @@ export class DocumentService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     if (!document.pdfUrl) {
-      throw new NotFoundException('PDF URL not found for this document')
+      throw new NotFoundException('Bu hujjat uchun PDF manzili topilmadi')
     }
 
     // Check permissions: document creator and Super Admin can always edit

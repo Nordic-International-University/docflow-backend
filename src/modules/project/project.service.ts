@@ -1,6 +1,6 @@
 import {
   ConflictException,
-  ForbiddenException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -82,7 +82,7 @@ export class ProjectService {
     })
 
     if (!project) {
-      throw new ForbiddenException("Bu loyihaga kirish huquqingiz yo'q")
+      throw new BadRequestException("Bu loyihaga kirish uchun sizda ruxsat mavjud emas")
     }
   }
 
@@ -98,7 +98,7 @@ export class ProjectService {
     })
 
     if (keyExists) {
-      throw new ConflictException('Project key must be unique')
+      throw new ConflictException("Loyiha kaliti noyob bo'lishi kerak")
     }
 
     // Visibility default — DEPARTMENT bo'lim tanlangan bo'lsa, aks holda PRIVATE
@@ -382,7 +382,7 @@ export class ProjectService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     return {
@@ -404,7 +404,7 @@ export class ProjectService {
     })
 
     if (!existingProject) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     if (updateData.key) {
@@ -417,7 +417,7 @@ export class ProjectService {
       })
 
       if (keyExists) {
-        throw new ConflictException('Project key must be unique')
+        throw new ConflictException("Loyiha kaliti noyob bo'lishi kerak")
       }
     }
 
@@ -472,7 +472,7 @@ export class ProjectService {
     })
 
     if (!existingProject) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     await this.#_prisma.project.update({

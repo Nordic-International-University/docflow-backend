@@ -25,7 +25,7 @@ export class BoardService {
     })
 
     if (!project) {
-      throw new NotFoundException('Project not found')
+      throw new NotFoundException('Loyiha topilmadi')
     }
 
     const columns = await this.#_prisma.boardColumn.findMany({
@@ -152,7 +152,7 @@ export class BoardService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found in this project')
+      throw new NotFoundException('Bu loyihada vazifa topilmadi')
     }
 
     // Verify target column
@@ -166,7 +166,7 @@ export class BoardService {
     })
 
     if (!targetColumn) {
-      throw new NotFoundException('Target column not found in this project')
+      throw new NotFoundException('Bu loyihada maqsadli ustun topilmadi')
     }
 
     // WIP limit check (count existing tasks + 1 for the incoming task, exclude if same column)

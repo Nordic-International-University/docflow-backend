@@ -36,7 +36,7 @@ export class TaskWatcherService {
     })
 
     if (!task) {
-      throw new NotFoundException('Task not found')
+      throw new NotFoundException('Vazifa topilmadi')
     }
 
     // Verify user exists
@@ -48,7 +48,7 @@ export class TaskWatcherService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Foydalanuvchi topilmadi')
     }
 
     // Check for duplicate watcher
@@ -62,7 +62,7 @@ export class TaskWatcherService {
     })
 
     if (existingWatcher) {
-      throw new ConflictException('User is already watching this task')
+      throw new ConflictException('Foydalanuvchi allaqachon bu vazifani kuzatmoqda')
     }
 
     const watcher = await this.#_prisma.taskWatcher.create({
@@ -147,7 +147,7 @@ export class TaskWatcherService {
     })
 
     if (!watcher) {
-      throw new NotFoundException('Task watcher not found')
+      throw new NotFoundException('Vazifa kuzatuvchisi topilmadi')
     }
 
     return watcher as TaskWatcherRetrieveOneResponse
@@ -164,7 +164,7 @@ export class TaskWatcherService {
     })
 
     if (!existingWatcher) {
-      throw new NotFoundException('Task watcher not found')
+      throw new NotFoundException('Vazifa kuzatuvchisi topilmadi')
     }
 
     // Hard delete - no soft delete for watchers

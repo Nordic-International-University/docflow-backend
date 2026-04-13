@@ -11,7 +11,6 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common'
 import { PrismaService } from '@prisma'
 import { MinioService } from '@clients'
@@ -114,7 +113,7 @@ export class DocumentPublicService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     return {
@@ -194,25 +193,25 @@ export class DocumentPublicService {
     })
 
     if (!document) {
-      throw new NotFoundException('Document not found')
+      throw new NotFoundException('Hujjat topilmadi')
     }
 
     if (!document.workflow || document.workflow.length === 0) {
       throw new BadRequestException(
-        'Document does not have an associated workflow',
+        'Hujjatga ish jarayoni biriktirilmagan',
       )
     }
 
     const workflow = document.workflow[0]
     if (workflow.status !== WorkflowStatus.COMPLETED) {
-      throw new ForbiddenException(
-        'Document workflow is not completed. Only approved documents can be downloaded.',
+      throw new BadRequestException(
+        "Hujjat ish jarayoni yakunlanmagan. Faqat tasdiqlangan hujjatlarni yuklab olish mumkin",
       )
     }
 
     if (document.status !== DocumentStatus.APPROVED) {
-      throw new ForbiddenException(
-        'Document is not approved. Only approved documents can be downloaded.',
+      throw new BadRequestException(
+        "Hujjat hali tasdiqlanmagan. Faqat tasdiqlangan hujjatlarni yuklab olish mumkin",
       )
     }
 
@@ -223,14 +222,14 @@ export class DocumentPublicService {
       )
 
       if (!isCreator && !wasAssigned) {
-        throw new ForbiddenException(
-          'You do not have permission to download this document',
+        throw new BadRequestException(
+          "Bu hujjatni yuklab olish uchun sizda ruxsat mavjud emas",
         )
       }
     }
 
     if (!document.pdfUrl) {
-      throw new NotFoundException('PDF file not found for this document')
+      throw new NotFoundException('Bu hujjat uchun PDF fayl topilmadi')
     }
 
     try {

@@ -45,7 +45,7 @@ export class WopiTokenService {
     })
 
     if (!attachment) {
-      throw new NotFoundException('File not found')
+      throw new NotFoundException("Fayl topilmadi")
     }
 
     // Get workflow-based permissions for this user and file
@@ -104,7 +104,7 @@ export class WopiTokenService {
    */
   async validateToken(rawToken: string): Promise<WopiTokenPayload> {
     if (!rawToken) {
-      throw new UnauthorizedException('Access token is required')
+      throw new UnauthorizedException("Kirish tokeni talab qilinadi")
     }
 
     const hashedToken = this.hashToken(rawToken)
@@ -133,24 +133,24 @@ export class WopiTokenService {
     })
 
     if (!tokenRecord) {
-      throw new UnauthorizedException('Invalid access token')
+      throw new UnauthorizedException("Yaroqsiz kirish tokeni")
     }
 
     // Check if token has expired
     if (new Date() > tokenRecord.expiresAt) {
       // Clean up expired token
       await this.revokeToken(hashedToken)
-      throw new UnauthorizedException('Access token has expired')
+      throw new UnauthorizedException("Kirish tokeni muddati tugagan")
     }
 
     // Check if user is still active
     if (!tokenRecord.user.isActive || tokenRecord.user.deletedAt) {
-      throw new UnauthorizedException('User is no longer active')
+      throw new UnauthorizedException("Foydalanuvchi endi faol emas")
     }
 
     // Check if file still exists
     if (tokenRecord.file.deletedAt) {
-      throw new NotFoundException('File no longer exists')
+      throw new NotFoundException("Fayl endi mavjud emas")
     }
 
     return {

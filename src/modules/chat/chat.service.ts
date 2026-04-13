@@ -1110,7 +1110,7 @@ export class ChatService {
       where: { id: taskId, deletedAt: null },
       include: { project: { select: { name: true, key: true } } },
     })
-    if (!task) throw new NotFoundException('Topshiriq topilmadi')
+    if (!task) throw new NotFoundException('Vazifa topilmadi')
 
     const snapshot = {
       id: task.id,
